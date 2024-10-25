@@ -9,6 +9,12 @@ add_subdirectory(vendor/glm)
 
 add_library(${PROJECT_NAME} src/engine.cpp)
 
+set(source "${CMAKE_SOURCE_DIR}/shaders")
+set(destination "${CMAKE_CURRENT_BINARY_DIR}/shaders")
+
+FILE(COPY ${CMAKE_SOURCE_DIR}/engine/shaders/vert.spv DESTINATION "${CMAKE_BINARY_DIR}/engine/shaders")
+FILE(COPY ${CMAKE_SOURCE_DIR}/engine/shaders/frag.spv DESTINATION "${CMAKE_BINARY_DIR}/engine/shaders")
+
 target_include_directories(${PROJECT_NAME}
         PUBLIC
             $<INSTALL_INTERFACE:include>
