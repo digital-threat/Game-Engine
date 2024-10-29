@@ -286,8 +286,8 @@ void Engine::createRenderPass()
 
 void Engine::createGraphicsPipeline()
 {
-    auto vertShaderCode = readFile("../engine/shaders/vert.spv");
-    auto fragShaderCode = readFile("../engine/shaders/frag.spv");
+    auto vertShaderCode = readFile("../engine/shaders/vertex_shader.spv");
+    auto fragShaderCode = readFile("../engine/shaders/fragment_shader.spv");
 
     VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
