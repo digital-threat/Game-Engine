@@ -11,6 +11,8 @@
 constexpr u32 WIDTH = 800;
 constexpr u32 HEIGHT = 600;
 
+constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+
 const std::vector<const char*> validationLayers =
 {
     "VK_LAYER_KHRONOS_validation"
@@ -72,11 +74,12 @@ private:
     VkPipeline graphicsPipeline = VK_NULL_HANDLE;
 
     VkCommandPool commandPool = VK_NULL_HANDLE;
-    VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+    std::vector<VkCommandBuffer> commandBuffers;
 
-    VkSemaphore imageAvailableSemaphore = VK_NULL_HANDLE;
-    VkSemaphore renderFinishedSemaphore = VK_NULL_HANDLE;
-    VkFence inFlightFence = VK_NULL_HANDLE;
+    std::vector<VkSemaphore> imageAvailableSemaphores;
+    std::vector<VkSemaphore> renderFinishedSemaphores;
+    std::vector<VkFence> inFlightFences;
+    u32 currentFrame = 0;
 
 public:
     void run()
@@ -84,7 +87,7 @@ public:
         initWindow();
         initVulkan();
         mainLoop();
-        cleanup();
+        //cleanup();
     }
 
 private:
@@ -110,7 +113,7 @@ private:
         createGraphicsPipeline();
         createFramebuffers();
         createCommandPool();
-        createCommandBuffer();
+        createCommandBuffers();
         createSyncObjects();
     }
 
@@ -127,33 +130,6 @@ private:
 
     void cleanup()
     {
-        vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
-        vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
-        vkDestroyFence(device, inFlightFence, nullptr);
-
-        vkDestroyCommandPool(device, commandPool, nullptr);
-
-        for (auto framebuffer : swapChainFramebuffers)
-        {
-            vkDestroyFramebuffer(device, framebuffer, nullptr);
-        }
-
-        vkDestroyPipeline(device, graphicsPipeline, nullptr);
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-        vkDestroyRenderPass(device, renderPass, nullptr);
-
-        for (auto imageView : swapChainImageViews)
-        {
-            vkDestroyImageView(device, imageView, nullptr);
-        }
-
-        vkDestroySwapchainKHR(device, swapChain, nullptr);
-        vkDestroyDevice(device, nullptr);
-        vkDestroySurfaceKHR(instance, surface, nullptr);
-        vkDestroyInstance(instance, nullptr);
-
-        glfwDestroyWindow(window);
-
         glfwTerminate();
     }
 
@@ -167,7 +143,7 @@ private:
     void createGraphicsPipeline();
     void createFramebuffers();
     void createCommandPool();
-    void createCommandBuffer();
+    void createCommandBuffers();
     void createSyncObjects();
 
     void drawFrame();
