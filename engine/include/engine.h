@@ -79,6 +79,9 @@ private:
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
+
+    bool framebufferResized = false;
+
     u32 currentFrame = 0;
 
 public:
@@ -87,7 +90,7 @@ public:
         initWindow();
         initVulkan();
         mainLoop();
-        //cleanup();
+        cleanup();
     }
 
 private:
@@ -99,6 +102,8 @@ private:
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
         window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+        glfwSetWindowUserPointer(window, this);
+        glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
     }
 
     void initVulkan()
@@ -132,6 +137,15 @@ private:
     {
         glfwTerminate();
     }
+
+    static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
+    {
+        auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
+        app->framebufferResized = true;
+    }
+
+    void recreateSwapChain();
+    void cleanupSwapChain();
 
     void createInstance();
     void createSurface();
