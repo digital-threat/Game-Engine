@@ -36,6 +36,22 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
+inline VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
+                                             const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
+                                             const VkAllocationCallbacks *pAllocator,
+                                             VkDebugUtilsMessengerEXT *pDebugMessenger)
+{
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    if (func != nullptr)
+    {
+        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+    }
+    else
+    {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
+
 struct QueueFamilyIndices
 {
     std::optional<u32> graphicsFamily;
@@ -107,9 +123,10 @@ const std::vector<u16> indices =
 
 class Engine
 {
-
 private:
-    GLFWwindow* window;
+    GLFWwindow *window = nullptr;
+
+    VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
 
     VkInstance instance = VK_NULL_HANDLE;
     VkSurfaceKHR surface = VK_NULL_HANDLE;
@@ -143,7 +160,7 @@ private:
     std::vector<VkDeviceMemory> uniformBuffersMemory;
     std::vector<void*> uniformBuffersMapped;
 
-    VkDescriptorPool descriptorPool;
+    VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
     std::vector<VkDescriptorSet> descriptorSets;
 
     std::vector<VkCommandBuffer> commandBuffers;
@@ -181,6 +198,7 @@ private:
     void initVulkan()
     {
         createInstance();
+        setupDebugMessenger();
         createSurface();
         pickPhysicalDevice();
         createLogicalDevice();
@@ -226,6 +244,7 @@ private:
     void cleanupSwapChain();
 
     void createInstance();
+    void setupDebugMessenger();
     void createSurface();
     void pickPhysicalDevice();
     void createLogicalDevice();
@@ -250,15 +269,23 @@ private:
     bool isDeviceSuitable(VkPhysicalDevice device);
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
     bool checkValidationLayerSupport();
+    std::vector<const char*> getRequiredExtensions();
+    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-    static std::vector<char> readFile(const std::string &filename);
     VkShaderModule createShaderModule(const std::vector<char>& code);
     u32 findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
     void updateUniformBuffer(u32 currentImage);
+
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                                        VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                                        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+                                                        void *pUserData);
+
+    static std::vector<char> readFile(const std::string &filename);
 };
