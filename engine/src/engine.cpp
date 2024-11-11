@@ -4,6 +4,9 @@
 #include <set>
 #include <limits>
 #include <algorithm>
+#include <chrono>
+#include <cstring>
+
 
 void Engine::recreateSwapChain()
 {
@@ -349,8 +352,8 @@ void Engine::createDescriptorSetLayout()
 
 void Engine::createGraphicsPipeline()
 {
-    auto vertShaderCode = readFile("../engine/shaders/vertex_shader.spv");
-    auto fragShaderCode = readFile("../engine/shaders/fragment_shader.spv");
+    auto vertShaderCode = readFile("assets/shaders/vertex_shader.spv");
+    auto fragShaderCode = readFile("assets/shaders/fragment_shader.spv");
 
     VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -493,6 +496,11 @@ void Engine::createCommandPool()
     {
         throw std::runtime_error("failed to create command pool!");
     }
+}
+
+void Engine::createTextureImage()
+{
+
 }
 
 void Engine::createVertexBuffer()

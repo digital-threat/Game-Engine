@@ -7,12 +7,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <vendor/stb/stb_image.h>
+
 #include <vector>
 #include <array>
 #include <optional>
-#include <cstring>
 #include <fstream>
-#include <chrono>
 #include "types.h"
 
 constexpr u32 WIDTH = 800;
@@ -209,6 +209,7 @@ private:
         createGraphicsPipeline();
         createFramebuffers();
         createCommandPool();
+        createTextureImage();
         createVertexBuffer();
         createIndexBuffer();
         createUniformBuffers();
@@ -234,12 +235,6 @@ private:
         glfwTerminate();
     }
 
-    static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
-    {
-        auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
-        app->framebufferResized = true;
-    }
-
     void recreateSwapChain();
     void cleanupSwapChain();
 
@@ -255,6 +250,7 @@ private:
     void createGraphicsPipeline();
     void createFramebuffers();
     void createCommandPool();
+    void createTextureImage();
     void createVertexBuffer();
     void createIndexBuffer();
     void createUniformBuffers();
@@ -288,4 +284,10 @@ private:
                                                         void *pUserData);
 
     static std::vector<char> readFile(const std::string &filename);
+
+    static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
+    {
+        auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
+        app->framebufferResized = true;
+    }
 };

@@ -7,3 +7,43 @@ add_executable(${PROJECT_NAME} src/main.cpp)
 
 target_link_libraries(${PROJECT_NAME} engine)
 target_include_directories(${PROJECT_NAME} PRIVATE ../engine)
+
+set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders)
+set(SHADER_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/assets/shaders)
+
+file(MAKE_DIRECTORY ${SHADER_BINARY_DIR})
+
+file(GLOB_RECURSE SHADER_FILES "${SHADER_SOURCE_DIR}/*.vert" "${SHADER_SOURCE_DIR}/*.frag")
+
+# Shader files must not have the same name, even if they have different extensions
+foreach(SHADER ${SHADER_FILES})
+    get_filename_component(SHADER_NAME ${SHADER} NAME_WE)
+    set(SHADER_BINARY ${SHADER_BINARY_DIR}/${SHADER_NAME}.spv)
+
+    add_custom_command(
+            OUTPUT ${SHADER_BINARY}
+            COMMAND ${Vulkan_GLSLC_EXECUTABLE} ${SHADER} -o ${SHADER_BINARY}
+            DEPENDS ${SHADER}
+            COMMENT "Compiling ${SHADER} to ${SHADER_BINARY}"
+            VERBATIM
+    )
+
+    list(APPEND SHADER_BINARIES ${SHADER_BINARY})
+endforeach()
+
+target_sources(${PROJECT_NAME} PRIVATE ${SHADER_BINARIES})
+
+
+
+set(TEXTURES_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures")
+set(TEXTURES_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/assets/textures")
+
+file(MAKE_DIRECTORY ${TEXTURES_BINARY_DIR})
+
+add_custom_command(
+        TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${TEXTURES_SOURCE_DIR}"
+        "${TEXTURES_BINARY_DIR}"
+        COMMENT "Copying textures to build directory"
+)
