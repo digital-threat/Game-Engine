@@ -14,6 +14,7 @@
 #include <optional>
 #include <fstream>
 #include "types.h"
+#include "vertex.h"
 
 constexpr u32 WIDTH = 800;
 constexpr u32 HEIGHT = 600;
@@ -70,37 +71,6 @@ struct SwapChainSupportDetails
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-struct Vertex
-{
-    glm::vec2 pos;
-    glm::vec3 color;
-
-    static VkVertexInputBindingDescription getBindingDescription()
-    {
-        VkVertexInputBindingDescription bindingDescription{};
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(Vertex);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-        return bindingDescription;
-    }
-
-    static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions()
-    {
-        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
-        attributeDescriptions[0].binding = 0;
-        attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(Vertex, pos);
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(Vertex, color);
-
-        return attributeDescriptions;
-    }
-};
-
 struct UniformBufferObject
 {
     alignas(16) glm::mat4 model;
@@ -110,15 +80,26 @@ struct UniformBufferObject
 
 const std::vector<Vertex> vertices =
 {
-    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+    {glm::vec3(-0.5f, -0.5f, -0.5f),   glm::vec3(0, 0, 0), glm::vec2(0.0f, 0.0f)},
+    {glm::vec3(0.5f, -0.5f, -0.5f),    glm::vec3(0, 0, 0), glm::vec2(1.0f, 0.0f)},
+    {glm::vec3(0.5f, 0.5f, -0.5f),    glm::vec3(0, 0, 0), glm::vec2(1.0f, 1.0f)},
+    {glm::vec3(-0.5f, 0.5f, -0.5f),   glm::vec3(0, 0, 0), glm::vec2(0.0f, 1.0f)},
+
+    {glm::vec3(-0.5f, -0.5f, 0.5f),    glm::vec3(0, 0, 0), glm::vec2(0.0f, 0.0f)},
+    {glm::vec3(0.5f, -0.5f, 0.5f),     glm::vec3(0, 0, 0), glm::vec2(1.0f, 0.0f)},
+    {glm::vec3(0.5f, 0.5f, 0.5f),     glm::vec3(0, 0, 0), glm::vec2(1.0f, 1.0f)},
+    {glm::vec3(-0.5f, 0.5f, 0.5f),    glm::vec3(0, 0, 0), glm::vec2(0.0f, 1.0f)},
 };
 
 const std::vector<u16> indices =
 {
-    0, 1, 2, 2, 3, 0
+    4, 5, 6, 6, 7, 4, // Top
+    0, 3, 2, 2, 1, 0, // Bottom
+    0, 1, 5, 5, 4, 0, // Front
+    1, 2, 6, 6, 5, 1, // Right
+    2, 3, 7, 7, 6, 2, // Back
+    3, 0, 4, 4, 7, 3  // Left
+
 };
 
 class Engine
@@ -168,6 +149,9 @@ private:
     VkImage textureImage = VK_NULL_HANDLE;
     VkDeviceMemory textureImageMemory = VK_NULL_HANDLE;
 
+    VkImageView textureImageView = VK_NULL_HANDLE;
+    VkSampler textureSampler = VK_NULL_HANDLE;
+
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
@@ -213,6 +197,8 @@ private:
         createFramebuffers();
         createCommandPool();
         createTextureImage();
+        createTextureImageView();
+        createTextureSampler();
         createVertexBuffer();
         createIndexBuffer();
         createUniformBuffers();
@@ -254,6 +240,8 @@ private:
     void createFramebuffers();
     void createCommandPool();
     void createTextureImage();
+    void createTextureImageView();
+    void createTextureSampler();
     void createVertexBuffer();
     void createIndexBuffer();
     void createUniformBuffers();
@@ -283,7 +271,9 @@ private:
     void updateUniformBuffer(u32 currentImage);
 
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-    void copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height) ;
+    void copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height);
+
+    VkImageView createImageView(VkImage image, VkFormat format);
 
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
