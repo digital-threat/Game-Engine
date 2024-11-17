@@ -8,6 +8,7 @@ find_package(Vulkan REQUIRED)
 add_subdirectory(vendor/glfw)
 add_subdirectory(vendor/glm)
 add_subdirectory(vendor/vk-bootstrap)
+add_subdirectory(vendor/vma)
 
 # Dear ImGui library
 file(GLOB IMGUI_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui/*.cpp)
@@ -34,4 +35,5 @@ target_link_libraries(${PROJECT_NAME}
             glfw
             glm::glm-header-only
             vk-bootstrap::vk-bootstrap
+            GPUOpen::VulkanMemoryAllocator
 )
