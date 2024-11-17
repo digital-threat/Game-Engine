@@ -9,11 +9,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <vendor/stb/stb_image.h>
+#include <VkBootstrap.h>
 
 #include <vector>
 #include <array>
 #include <optional>
 #include <fstream>
+
 #include "types.h"
 #include "vertex.h"
 
@@ -22,37 +24,11 @@ constexpr u32 HEIGHT = 600;
 
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
-const std::vector<const char*> validationLayers =
-{
-    "VK_LAYER_KHRONOS_validation"
-};
-
-const std::vector<const char*> deviceExtensions =
-{
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
-
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
 const bool enableValidationLayers = true;
 #endif
-
-inline VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
-                                             const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
-                                             const VkAllocationCallbacks *pAllocator,
-                                             VkDebugUtilsMessengerEXT *pDebugMessenger)
-{
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != nullptr)
-    {
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    }
-    else
-    {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
 
 struct QueueFamilyIndices
 {
@@ -63,13 +39,6 @@ struct QueueFamilyIndices
     {
         return graphicsFamily.has_value() && presentFamily.has_value();
     }
-};
-
-struct SwapChainSupportDetails
-{
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
 };
 
 struct UniformBufferObject
@@ -107,23 +76,23 @@ class Engine
 private:
     GLFWwindow *window = nullptr;
 
-    VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
+    vkb::Instance m_vkb_instance;
+    vkb::PhysicalDevice m_vkb_physical_device;
+    vkb::Device m_vkb_device;
+    vkb::Swapchain m_vkb_swapchain;
 
-    VkInstance instance = VK_NULL_HANDLE;
-    VkSurfaceKHR surface = VK_NULL_HANDLE;
+    VkInstance m_instance = VK_NULL_HANDLE;
+    VkSurfaceKHR m_surface = VK_NULL_HANDLE;
 
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-    VkDevice device = VK_NULL_HANDLE;
+    VkPhysicalDevice m_physical_device = VK_NULL_HANDLE;
+    VkDevice m_device = VK_NULL_HANDLE;
 
-    VkQueue graphicsQueue = VK_NULL_HANDLE;
-    VkQueue presentQueue = VK_NULL_HANDLE;
+    VkQueue m_graphics_queue = VK_NULL_HANDLE;
+    VkQueue m_present_queue = VK_NULL_HANDLE;
 
-    VkSwapchainKHR swapChain = VK_NULL_HANDLE;
-    std::vector<VkImage> swapChainImages;
-    VkFormat swapChainImageFormat;
-    VkExtent2D swapChainExtent;
-    std::vector<VkImageView> swapChainImageViews;
-    std::vector<VkFramebuffer> swapChainFramebuffers;
+    std::vector<VkImage> m_swapchain_images;
+    std::vector<VkImageView> m_swapchain_image_views;
+    std::vector<VkFramebuffer> m_swapchain_framebuffers;
 
     VkRenderPass renderPass = VK_NULL_HANDLE;
     VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
@@ -167,7 +136,7 @@ public:
     void run()
     {
         initWindow();
-        initVulkan();
+        InitVulkan();
         mainLoop();
         cleanup();
     }
@@ -185,15 +154,13 @@ private:
         glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
     }
 
-    void initVulkan()
+    void InitVulkan()
     {
-        createInstance();
-        setupDebugMessenger();
-        createSurface();
-        pickPhysicalDevice();
-        createLogicalDevice();
-        createSwapChain();
-        createImageViews();
+        CreateInstance();
+        CreateSurface();
+        SelectPhysicalDevice();
+        CreateDevice();
+        CreateSwapchain();
         createRenderPass();
         createDescriptorSetLayout();
         createGraphicsPipeline();
@@ -220,7 +187,7 @@ private:
             drawFrame();
         }
 
-        vkDeviceWaitIdle(device);
+        vkDeviceWaitIdle(m_device);
     }
 
     void cleanup()
@@ -228,16 +195,14 @@ private:
         glfwTerminate();
     }
 
-    void recreateSwapChain();
-    void cleanupSwapChain();
+    void RecreateSwapchain();
+    void CleanupSwapchain();
 
-    void createInstance();
-    void setupDebugMessenger();
-    void createSurface();
-    void pickPhysicalDevice();
-    void createLogicalDevice();
-    void createSwapChain();
-    void createImageViews();
+    void CreateInstance();
+    void CreateSurface();
+    void SelectPhysicalDevice();
+    void CreateDevice();
+    void CreateSwapchain();
     void createRenderPass();
     void createDescriptorSetLayout();
     void createGraphicsPipeline();
@@ -258,15 +223,6 @@ private:
     void drawFrame();
 
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-    bool isDeviceSuitable(VkPhysicalDevice device);
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-    bool checkValidationLayerSupport();
-    std::vector<const char*> getRequiredExtensions();
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     VkShaderModule createShaderModule(const std::vector<char>& code);
     u32 findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties);
@@ -286,11 +242,6 @@ private:
 
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                                        VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                                        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-                                                        void *pUserData);
 
     static std::vector<char> readFile(const std::string &filename);
 
