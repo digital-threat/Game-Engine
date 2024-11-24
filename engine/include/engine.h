@@ -25,21 +25,10 @@ constexpr u32 HEIGHT = 600;
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
 #ifdef NDEBUG
-const bool enableValidationLayers = false;
+constexpr bool enableValidationLayers = false;
 #else
-const bool enableValidationLayers = true;
+constexpr bool enableValidationLayers = true;
 #endif
-
-struct QueueFamilyIndices
-{
-    std::optional<u32> graphicsFamily;
-    std::optional<u32> presentFamily;
-
-    bool isComplete()
-    {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
-};
 
 struct UniformBufferObject
 {
@@ -71,6 +60,16 @@ const std::vector<u16> indices =
     3, 0, 4, 4, 7, 3  // Left
 };
 
+struct FrameData
+{
+    std::vector<VkSemaphore> swapchain_semaphores;
+    std::vector<VkSemaphore> render_semaphores;
+    std::vector<VkFence> in_flight_fences;
+
+    VkCommandPool command_pool;
+    VkCommandBuffer main_command_buffer;
+};
+
 class Engine
 {
 private:
@@ -87,6 +86,9 @@ private:
     VkPhysicalDevice m_physical_device = VK_NULL_HANDLE;
     VkDevice m_device = VK_NULL_HANDLE;
 
+    FrameData m_frames[MAX_FRAMES_IN_FLIGHT]{};
+    u32 current_frame = 0;
+
     VkQueue m_graphics_queue = VK_NULL_HANDLE;
     VkQueue m_present_queue = VK_NULL_HANDLE;
 
@@ -99,8 +101,6 @@ private:
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
     VkPipeline graphicsPipeline = VK_NULL_HANDLE;
 
-    VkCommandPool commandPool = VK_NULL_HANDLE;
-
     VkBuffer vertexBuffer = VK_NULL_HANDLE;
     VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
     VkBuffer indexBuffer = VK_NULL_HANDLE;
@@ -112,8 +112,6 @@ private:
 
     VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
     std::vector<VkDescriptorSet> descriptorSets;
-
-    std::vector<VkCommandBuffer> commandBuffers;
 
     VkImage textureImage = VK_NULL_HANDLE;
     VkDeviceMemory textureImageMemory = VK_NULL_HANDLE;
@@ -129,8 +127,6 @@ private:
     std::vector<VkFence> inFlightFences;
 
     bool framebufferResized = false;
-
-    u32 currentFrame = 0;
 
 public:
     void run()
@@ -160,11 +156,12 @@ private:
         CreateSurface();
         SelectPhysicalDevice();
         CreateDevice();
+        GetQueues();
         CreateSwapchain();
         createRenderPass();
         createDescriptorSetLayout();
         createGraphicsPipeline();
-        createCommandPool();
+        CreateCommandPoolAndAllocateBuffers();
         createDepthResources();
         createFramebuffers();
         createTextureImage();
@@ -175,7 +172,6 @@ private:
         createUniformBuffers();
         createDescriptorPool();
         createDescriptorSets();
-        createCommandBuffers();
         createSyncObjects();
     }
 
@@ -202,11 +198,12 @@ private:
     void CreateSurface();
     void SelectPhysicalDevice();
     void CreateDevice();
+    void GetQueues();
     void CreateSwapchain();
     void createRenderPass();
     void createDescriptorSetLayout();
     void createGraphicsPipeline();
-    void createCommandPool();
+    void CreateCommandPoolAndAllocateBuffers();
     void createDepthResources();
     void createFramebuffers();
     void createTextureImage();
@@ -217,12 +214,12 @@ private:
     void createUniformBuffers();
     void createDescriptorPool();
     void createDescriptorSets();
-    void createCommandBuffers();
     void createSyncObjects();
 
     void drawFrame();
 
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    FrameData& GetCurrentFrame() { return m_frames[current_frame % MAX_FRAMES_IN_FLIGHT]; }
+
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     VkShaderModule createShaderModule(const std::vector<char>& code);
     u32 findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties);

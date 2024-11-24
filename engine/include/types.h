@@ -6,6 +6,16 @@
 #define local static
 #define internal static
 
+#define VK_CHECK(x)                                                                     \
+do                                                                                      \
+{                                                                                       \
+    VkResult error = x;                                                                 \
+    if (error)                                                                          \
+    {                                                                                   \
+        throw std::runtime_error("Detected Vulkan error: "+std::to_string(error));      \
+    }                                                                                   \
+} while (0)
+
 typedef std::uint8_t u8;
 typedef std::uint16_t u16;
 typedef std::uint32_t u32;

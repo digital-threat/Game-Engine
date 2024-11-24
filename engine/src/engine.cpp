@@ -40,16 +40,12 @@ void Engine::CleanupSwapchain()
 void Engine::CreateInstance()
 {
     vkb::InstanceBuilder instance_builder;
-
-    if (enableValidationLayers)
-    {
-        instance_builder.request_validation_layers();
-    }
-
-    instance_builder.use_default_debug_messenger();
     instance_builder.set_app_name ("Application");
     instance_builder.set_engine_name("No Engine");
-    instance_builder.require_api_version(1,1,0);
+    instance_builder.request_validation_layers(enableValidationLayers);
+    instance_builder.use_default_debug_messenger();
+    instance_builder.require_api_version(1,3,0);
+
     auto instance = instance_builder.build();
 
     if (!instance)
@@ -71,13 +67,26 @@ void Engine::CreateSurface()
 
 void Engine::SelectPhysicalDevice()
 {
-    VkPhysicalDeviceFeatures required_features{};
-    required_features.samplerAnisotropy = VK_TRUE;
+    VkPhysicalDeviceFeatures features{};
+    features.samplerAnisotropy = VK_TRUE;
+
+    VkPhysicalDeviceVulkan12Features features_12{};
+    features_12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    features_12.bufferDeviceAddress = true;
+    features_12.descriptorIndexing = true;
+
+    VkPhysicalDeviceVulkan13Features features_13{};
+    features_13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+    features_13.dynamicRendering = true;
+    features_13.synchronization2 = true;
 
     vkb::PhysicalDeviceSelector phys_device_selector(m_vkb_instance);
     phys_device_selector.set_surface(m_surface);
-    phys_device_selector.set_minimum_version(1, 1);
-    phys_device_selector.set_required_features(required_features);
+    phys_device_selector.set_minimum_version(1, 3);
+    phys_device_selector.set_required_features(features);
+    phys_device_selector.set_required_features_12(features_12);
+    phys_device_selector.set_required_features_13(features_13);
+
     auto phys_device = phys_device_selector.select();
 
     if (!phys_device)
@@ -92,6 +101,7 @@ void Engine::SelectPhysicalDevice()
 void Engine::CreateDevice()
 {
     vkb::DeviceBuilder device_builder{m_vkb_physical_device};
+
     auto device = device_builder.build();
 
     if (!device)
@@ -101,8 +111,12 @@ void Engine::CreateDevice()
 
     m_vkb_device = device.value();
     m_device = m_vkb_device.device;
+}
 
+void Engine::GetQueues()
+{
     auto graphics_queue = m_vkb_device.get_queue(vkb::QueueType::graphics);
+
     if (!graphics_queue)
     {
         throw std::runtime_error("Failed to get graphics queue. Error: " + graphics_queue.error().message() + "\n");
@@ -111,6 +125,7 @@ void Engine::CreateDevice()
     m_graphics_queue = graphics_queue.value();
 
     auto present_queue = m_vkb_device.get_queue(vkb::QueueType::present);
+
     if (!present_queue)
     {
         throw std::runtime_error("Failed to get present queue. Error: " + present_queue.error().message() + "\n");
@@ -367,18 +382,37 @@ void Engine::createFramebuffers()
     }
 }
 
-void Engine::createCommandPool()
+void Engine::CreateCommandPoolAndAllocateBuffers()
 {
-    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(m_physical_device);
+    auto graphics_queue_index = m_vkb_device.get_queue_index(vkb::QueueType::graphics);
+
+    if (!graphics_queue_index)
+    {
+        throw std::runtime_error("Failed to get graphics queue family index. Error: " + graphics_queue_index.error().message() + "\n");
+    }
 
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+    poolInfo.queueFamilyIndex = graphics_queue_index.value();
 
-    if (vkCreateCommandPool(m_device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-        throw std::runtime_error("failed to create command pool!");
+        if (vkCreateCommandPool(m_device, &poolInfo, nullptr, &m_frames[i].command_pool) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create command pool.");
+        }
+
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = m_frames[i].command_pool;
+        allocInfo.commandBufferCount = 1;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+        if (vkAllocateCommandBuffers(m_device, &allocInfo, &m_frames[i].main_command_buffer) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to allocate command buffers.");
+        }
     }
 }
 
@@ -604,22 +638,6 @@ void Engine::createDescriptorSets()
     }
 }
 
-void Engine::createCommandBuffers()
-{
-    commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = commandPool;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = static_cast<u32>(commandBuffers.size());
-
-    if (vkAllocateCommandBuffers(m_device, &allocInfo, commandBuffers.data()) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to allocate command buffers!");
-    }
-}
-
 void Engine::createSyncObjects()
 {
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -646,10 +664,10 @@ void Engine::createSyncObjects()
 
 void Engine::drawFrame()
 {
-    vkWaitForFences(m_device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_device, 1, &inFlightFences[current_frame], VK_TRUE, UINT64_MAX);
 
     u32 imageIndex;
-    VkResult result = vkAcquireNextImageKHR(m_device, m_vkb_swapchain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkAcquireNextImageKHR(m_device, m_vkb_swapchain, UINT64_MAX, imageAvailableSemaphores[current_frame], VK_NULL_HANDLE, &imageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         RecreateSwapchain();
@@ -660,30 +678,30 @@ void Engine::drawFrame()
         throw std::runtime_error("failed to acquire swap chain image!");
     }
 
-    updateUniformBuffer(currentFrame);
+    updateUniformBuffer(current_frame);
 
-    vkResetFences(m_device, 1, &inFlightFences[currentFrame]);
+    vkResetFences(m_device, 1, &inFlightFences[current_frame]);
 
-    vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-    recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+    vkResetCommandBuffer(m_frames[current_frame].main_command_buffer, 0);
+    recordCommandBuffer(m_frames[current_frame].main_command_buffer, imageIndex);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
+    VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[current_frame]};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
 
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
+    submitInfo.pCommandBuffers = &m_frames[current_frame].main_command_buffer;
 
-    VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
+    VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[current_frame]};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(m_graphics_queue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)
+    if (vkQueueSubmit(m_graphics_queue, 1, &submitInfo, inFlightFences[current_frame]) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
@@ -710,45 +728,7 @@ void Engine::drawFrame()
         throw std::runtime_error("failed to present swap chain image!");
     }
 
-    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-}
-
-QueueFamilyIndices Engine::findQueueFamilies(VkPhysicalDevice device)
-{
-    QueueFamilyIndices indices;
-
-    u32 queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-    int i = 0;
-    for (const auto& queueFamily : queueFamilies)
-    {
-        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-        {
-            indices.graphicsFamily = i;
-        }
-
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_surface, &presentSupport);
-
-        if (presentSupport)
-        {
-            indices.presentFamily = i;
-        }
-
-        if (indices.isComplete())
-        {
-            break;
-        }
-
-        i++;
-    }
-
-
-    return indices;
+    current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void Engine::recordCommandBuffer(VkCommandBuffer commandBuffer, u32 imageIndex)
@@ -799,7 +779,7 @@ void Engine::recordCommandBuffer(VkCommandBuffer commandBuffer, u32 imageIndex)
     // NOTE(Sergei): Nasty hardcoded index type!
     vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[current_frame], 0, nullptr);
     vkCmdDrawIndexed(commandBuffer, static_cast<u32>(indices.size()), 1, 0, 0, 0);
     vkCmdEndRenderPass(commandBuffer);
 
@@ -1085,7 +1065,7 @@ VkCommandBuffer Engine::beginSingleTimeCommands()
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = commandPool;
+    allocInfo.commandPool = m_frames[current_frame].command_pool;
     allocInfo.commandBufferCount = 1;
 
     VkCommandBuffer commandBuffer;
@@ -1112,5 +1092,5 @@ void Engine::endSingleTimeCommands(VkCommandBuffer commandBuffer)
     vkQueueSubmit(m_graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(m_graphics_queue);
 
-    vkFreeCommandBuffers(m_device, commandPool, 1, &commandBuffer);
+    vkFreeCommandBuffers(m_device, m_frames[current_frame].command_pool, 1, &commandBuffer);
 }
