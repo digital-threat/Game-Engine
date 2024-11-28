@@ -62,12 +62,11 @@ const std::vector<u16> indices =
 
 struct FrameData
 {
-    std::vector<VkSemaphore> swapchain_semaphores;
-    std::vector<VkSemaphore> render_semaphores;
-    std::vector<VkFence> in_flight_fences;
+    VkSemaphore swapchainSemaphore, renderSemaphore;
+    VkFence renderFence;
 
-    VkCommandPool command_pool;
-    VkCommandBuffer main_command_buffer;
+    VkCommandPool commandPool;
+    VkCommandBuffer mainCommandBuffer;
 };
 
 class Engine
@@ -75,26 +74,26 @@ class Engine
 private:
     GLFWwindow *window = nullptr;
 
-    vkb::Instance m_vkb_instance;
-    vkb::PhysicalDevice m_vkb_physical_device;
-    vkb::Device m_vkb_device;
-    vkb::Swapchain m_vkb_swapchain;
+    vkb::Instance mVkbInstance;
+    vkb::PhysicalDevice mVkbPhysicalDevice;
+    vkb::Device mVkbDevice;
+    vkb::Swapchain mVkbSwapchain;
 
-    VkInstance m_instance = VK_NULL_HANDLE;
-    VkSurfaceKHR m_surface = VK_NULL_HANDLE;
+    VkInstance mInstance = VK_NULL_HANDLE;
+    VkSurfaceKHR mSurface = VK_NULL_HANDLE;
 
-    VkPhysicalDevice m_physical_device = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
+    VkPhysicalDevice mPhysicalDevice = VK_NULL_HANDLE;
+    VkDevice mDevice = VK_NULL_HANDLE;
 
-    FrameData m_frames[MAX_FRAMES_IN_FLIGHT]{};
-    u32 current_frame = 0;
+    FrameData mFrames[MAX_FRAMES_IN_FLIGHT]{};
+    u32 mCurrentFrame = 0;
 
-    VkQueue m_graphics_queue = VK_NULL_HANDLE;
-    VkQueue m_present_queue = VK_NULL_HANDLE;
+    VkQueue mGraphicsQueue = VK_NULL_HANDLE;
+    VkQueue mPresentQueue = VK_NULL_HANDLE;
 
-    std::vector<VkImage> m_swapchain_images;
-    std::vector<VkImageView> m_swapchain_image_views;
-    std::vector<VkFramebuffer> m_swapchain_framebuffers;
+    std::vector<VkImage> mSwapchainImages;
+    std::vector<VkImageView> mSwapchainImageViews;
+    std::vector<VkFramebuffer> mSwapchainFramebuffers;
 
     VkRenderPass renderPass = VK_NULL_HANDLE;
     VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
@@ -121,10 +120,6 @@ private:
     VkImage depthImage = VK_NULL_HANDLE;
     VkDeviceMemory depthImageMemory = VK_NULL_HANDLE;
     VkImageView depthImageView = VK_NULL_HANDLE;
-
-    std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores;
-    std::vector<VkFence> inFlightFences;
 
     bool framebufferResized = false;
 
@@ -172,7 +167,7 @@ private:
         createUniformBuffers();
         createDescriptorPool();
         createDescriptorSets();
-        createSyncObjects();
+        CreateSyncObjects();
     }
 
     void mainLoop()
@@ -180,10 +175,10 @@ private:
         while (!glfwWindowShouldClose(window))
         {
             glfwPollEvents();
-            drawFrame();
+            Draw();
         }
 
-        vkDeviceWaitIdle(m_device);
+        vkDeviceWaitIdle(mDevice);
     }
 
     void cleanup()
@@ -214,13 +209,13 @@ private:
     void createUniformBuffers();
     void createDescriptorPool();
     void createDescriptorSets();
-    void createSyncObjects();
+    void CreateSyncObjects();
 
-    void drawFrame();
+    void Draw();
 
-    FrameData& GetCurrentFrame() { return m_frames[current_frame % MAX_FRAMES_IN_FLIGHT]; }
+    FrameData& GetCurrentFrame() { return mFrames[mCurrentFrame % MAX_FRAMES_IN_FLIGHT]; }
 
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void RecordCommandBuffer(VkCommandBuffer pCmd, uint32_t pImageIndex);
     VkShaderModule createShaderModule(const std::vector<char>& code);
     u32 findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
@@ -228,7 +223,6 @@ private:
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     void updateUniformBuffer(u32 currentImage);
 
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
     void copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height);
 
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
