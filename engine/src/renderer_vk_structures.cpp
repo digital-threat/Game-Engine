@@ -83,6 +83,22 @@ VkImageSubresourceRange Renderer::ImageSubresourceRange(VkImageAspectFlags pAspe
 	return subresourceRange;
 }
 
+VkImageViewCreateInfo Renderer::ImageViewCreateInfo(VkImage pImage, VkFormat pFormat, VkImageAspectFlags pAspectFlags)
+{
+	VkImageViewCreateInfo info{};
+	info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	info.pNext = nullptr;
+	info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	info.image = pImage;
+	info.format = pFormat;
+	info.subresourceRange.aspectMask = pAspectFlags;
+	info.subresourceRange.baseMipLevel = 0;
+	info.subresourceRange.levelCount = 1;
+	info.subresourceRange.baseArrayLayer = 0;
+	info.subresourceRange.layerCount = 1;
+	return info;
+}
+
 VkSubmitInfo2 Renderer::SubmitInfo(VkCommandBufferSubmitInfo *pCmd, VkSemaphoreSubmitInfo *pSignalSemaphoreInfo, VkSemaphoreSubmitInfo *pWaitSemaphoreInfo)
 {
 	VkSubmitInfo2 info{};
