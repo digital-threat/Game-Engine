@@ -8,16 +8,19 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <vk_mem_alloc.h>
 #include <vendor/stb/stb_image.h>
 #include <VkBootstrap.h>
 
 #include <vector>
 #include <array>
-#include <optional>
+#include <deque>
 #include <fstream>
+#include <functional>
 
 #include "types.h"
 #include "vertex.h"
+#include "renderer_types.h"
 
 constexpr u32 WIDTH = 800;
 constexpr u32 HEIGHT = 600;
@@ -60,6 +63,27 @@ const std::vector<u16> indices =
     3, 0, 4, 4, 7, 3  // Left
 };
 
+// TODO(Sergei): Temporary, replace!
+struct DeletionQueue
+{
+    std::deque<std::function<void()>> deletors;
+
+    void Push(std::function<void()>&& function)
+    {
+        deletors.push_back(function);
+    }
+
+    void Flush()
+    {
+        for (auto it = deletors.rbegin(); it != deletors.rend(); it++)
+        {
+            (*it)();
+        }
+
+        deletors.clear();
+    }
+};
+
 struct FrameData
 {
     VkSemaphore swapchainSemaphore, renderSemaphore;
@@ -67,12 +91,16 @@ struct FrameData
 
     VkCommandPool commandPool;
     VkCommandBuffer mainCommandBuffer;
+
+    DeletionQueue deletionQueue;
 };
 
 class Engine
 {
 private:
     GLFWwindow *window = nullptr;
+
+    VmaAllocator mAllocator{};
 
     vkb::Instance mVkbInstance;
     vkb::PhysicalDevice mVkbPhysicalDevice;
@@ -94,6 +122,8 @@ private:
     std::vector<VkImage> mSwapchainImages;
     std::vector<VkImageView> mSwapchainImageViews;
     std::vector<VkFramebuffer> mSwapchainFramebuffers;
+
+    VulkanImage mRenderTarget{};
 
     VkRenderPass renderPass = VK_NULL_HANDLE;
     VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
@@ -152,21 +182,22 @@ private:
         SelectPhysicalDevice();
         CreateDevice();
         GetQueues();
+        CreateAllocator();
         CreateSwapchain();
-        createRenderPass();
-        createDescriptorSetLayout();
-        createGraphicsPipeline();
+        //createRenderPass();
+        //createDescriptorSetLayout();
+        //createGraphicsPipeline();
         CreateCommandPoolAndAllocateBuffers();
-        createDepthResources();
-        createFramebuffers();
-        createTextureImage();
-        createTextureImageView();
-        createTextureSampler();
-        createVertexBuffer();
-        createIndexBuffer();
-        createUniformBuffers();
-        createDescriptorPool();
-        createDescriptorSets();
+        //createDepthResources();
+        //createFramebuffers();
+        //createTextureImage();
+        //createTextureImageView();
+        //createTextureSampler();
+        //createVertexBuffer();
+        //createIndexBuffer();
+        //createUniformBuffers();
+        //createDescriptorPool();
+        //createDescriptorSets();
         CreateSyncObjects();
     }
 
@@ -194,6 +225,7 @@ private:
     void SelectPhysicalDevice();
     void CreateDevice();
     void GetQueues();
+    void CreateAllocator();
     void CreateSwapchain();
     void createRenderPass();
     void createDescriptorSetLayout();
@@ -231,7 +263,7 @@ private:
     VkFormat findDepthFormat();
     bool hasStencilComponent(VkFormat format);
 
-    VkCommandBuffer beginSingleTimeCommands();
+    VkCommandBuffer BeginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 
     static std::vector<char> readFile(const std::string &filename);

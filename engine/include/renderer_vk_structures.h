@@ -16,8 +16,10 @@ namespace Renderer
 	VkSemaphoreCreateInfo SemaphoreCreateInfo(VkSemaphoreCreateFlags pFlags = 0);
 	VkSemaphoreSubmitInfo SemaphoreSubmitInfo(VkPipelineStageFlags2 pStageMask, VkSemaphore pSemaphore);
 
-	VkImageSubresourceRange ImageSubresourceRange(VkImageAspectFlags pAspectMask);
+	VkImageCreateInfo ImageCreateInfo(VkFormat pFormat, VkImageUsageFlags pUsageFlags, VkExtent3D pExtent);
 	VkImageViewCreateInfo ImageViewCreateInfo(VkImage pImage, VkFormat pFormat, VkImageAspectFlags pAspectFlags);
+
+	VkImageSubresourceRange ImageSubresourceRange(VkImageAspectFlags pAspectMask);
 
 	VkSubmitInfo2 SubmitInfo(VkCommandBufferSubmitInfo* pCmd, VkSemaphoreSubmitInfo* pSignalSemaphoreInfo, VkSemaphoreSubmitInfo* pWaitSemaphoreInfo);
 }

@@ -72,6 +72,23 @@ VkSemaphoreSubmitInfo Renderer::SemaphoreSubmitInfo(const VkPipelineStageFlags2 
 	return info;
 }
 
+// NOTE(Sergei): Linear tiling is for textures that need to be read on the CPU.
+VkImageCreateInfo Renderer::ImageCreateInfo(const VkFormat pFormat, const VkImageUsageFlags pUsageFlags, const VkExtent3D pExtent)
+{
+	VkImageCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	info.pNext = nullptr;
+	info.imageType = VK_IMAGE_TYPE_2D;
+	info.format = pFormat;
+	info.extent = pExtent;
+	info.mipLevels = 1;
+	info.arrayLayers = 1;
+	info.samples = VK_SAMPLE_COUNT_1_BIT;
+	info.tiling = VK_IMAGE_TILING_OPTIMAL;
+	info.usage = pUsageFlags;
+	return info;
+}
+
 VkImageSubresourceRange Renderer::ImageSubresourceRange(VkImageAspectFlags pAspectMask)
 {
 	VkImageSubresourceRange subresourceRange{};
