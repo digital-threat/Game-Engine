@@ -3,9 +3,65 @@
 #include <stdexcept>
 #include <chrono>
 #include <cstring>
-#include <renderer_vk_images.h>
-#include <renderer_vk_pipelines.h>
-#include <renderer_vk_structures.h>
+#include "renderer_vk_images.h"
+#include "renderer_vk_pipelines.h"
+#include "renderer_vk_structures.h"
+
+void Engine::InitImgui()
+{
+    VkDescriptorPoolSize poolSizes[] =
+    {
+        { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+        { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+    };
+
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    poolInfo.maxSets = 1000;
+    poolInfo.poolSizeCount = static_cast<u32>(std::size(poolSizes));
+    poolInfo.pPoolSizes = poolSizes;
+
+    VkDescriptorPool imguiPool;
+    VK_CHECK(vkCreateDescriptorPool(mDevice, &poolInfo, nullptr, &imguiPool));
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplGlfw_InitForVulkan(window, true);
+    ImGui_ImplVulkan_InitInfo initInfo{};
+    initInfo.Instance = mInstance;
+    initInfo.PhysicalDevice = mPhysicalDevice;
+    initInfo.Device = mDevice;
+    initInfo.Queue = mGraphicsQueue;
+    initInfo.DescriptorPool = imguiPool;
+    initInfo.MinImageCount = 3;
+    initInfo.ImageCount = 3;
+    initInfo.UseDynamicRendering = true;
+    initInfo.PipelineRenderingCreateInfo = {};
+    initInfo.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+    initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+    initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &mVkbSwapchain.image_format;
+    initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+    ImGui_ImplVulkan_Init(&initInfo);
+
+    ImGui_ImplVulkan_CreateFontsTexture();
+}
 
 void Engine::RecreateSwapchain()
 {
@@ -425,7 +481,7 @@ void Engine::createFramebuffers()
     }
 }
 
-void Engine::InitializeCommands()
+void Engine::CreateCommandObjects()
 {
     auto graphicsQueueIndex = mVkbDevice.get_queue_index(vkb::QueueType::graphics);
 
@@ -436,6 +492,7 @@ void Engine::InitializeCommands()
 
     VkCommandPoolCreateInfo poolInfo = Renderer::CommandPoolCreateInfo(graphicsQueueIndex.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
+    // Per frame
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
         if (vkCreateCommandPool(mDevice, &poolInfo, nullptr, &mFrames[i].commandPool) != VK_SUCCESS)
@@ -449,6 +506,18 @@ void Engine::InitializeCommands()
         {
             throw std::runtime_error("Failed to allocate command buffers.");
         }
+    }
+
+    // Immediate
+    if (vkCreateCommandPool(mDevice, &poolInfo, nullptr, &mImmediateCommandPool) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create command pool.");
+    }
+
+    VkCommandBufferAllocateInfo cmdAllocInfo = Renderer::CommandBufferAllocateInfo(mImmediateCommandPool, 1);
+    if (vkAllocateCommandBuffers(mDevice, &cmdAllocInfo, &mImmediateCommandBuffer) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to allocate command buffers.");
     }
 }
 
@@ -712,6 +781,7 @@ void Engine::CreateSyncObjects()
     VkFenceCreateInfo fenceInfo = Renderer::FenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
     VkSemaphoreCreateInfo semaphoreInfo = Renderer::SemaphoreCreateInfo();
 
+    // Per frame
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
         if (vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &mFrames[i].swapchainSemaphore) != VK_SUCCESS ||
@@ -720,6 +790,12 @@ void Engine::CreateSyncObjects()
         {
             throw std::runtime_error("Failed to create synchronization objects.");
         }
+    }
+
+    // Immediate
+    if(vkCreateFence(mDevice, &fenceInfo, nullptr, &mImmediateFence) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create fence.");
     }
 }
 
@@ -754,14 +830,18 @@ void Engine::Draw()
     }
 
     Renderer::TransitionImageLayout(cmd, mRenderTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    RecordCommandBuffer(GetCurrentFrame().mainCommandBuffer, imageIndex);
+    DrawBackground(GetCurrentFrame().mainCommandBuffer, imageIndex);
     Renderer::TransitionImageLayout(cmd, mRenderTarget.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     Renderer::TransitionImageLayout(cmd, mSwapchainImages[imageIndex],VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     VkExtent2D drawExtent = {mRenderTarget.extent.width, mRenderTarget.extent.height};
     Renderer::CopyImage(cmd, mRenderTarget.image, mSwapchainImages[imageIndex], drawExtent, mVkbSwapchain.extent);
 
-    Renderer::TransitionImageLayout(cmd, mSwapchainImages[imageIndex],VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    Renderer::TransitionImageLayout(cmd, mSwapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    DrawImgui(cmd, mSwapchainImageViews[imageIndex]);
+
+
+    Renderer::TransitionImageLayout(cmd, mSwapchainImages[imageIndex],VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
     {
@@ -802,7 +882,7 @@ void Engine::Draw()
     mCurrentFrame++;
 }
 
-void Engine::RecordCommandBuffer(const VkCommandBuffer pCmd, const u32 pImageIndex)
+void Engine::DrawBackground(const VkCommandBuffer pCmd, const u32 pImageIndex)
 {
     vkCmdBindPipeline(pCmd, VK_PIPELINE_BIND_POINT_COMPUTE, mGradientPipeline);
     vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_COMPUTE, mGradientPipelineLayout, 0, 1, &mRenderTargetDescriptorSet, 0, nullptr);
@@ -866,6 +946,18 @@ void Engine::RecordCommandBuffer(const VkCommandBuffer pCmd, const u32 pImageInd
     // }
 }
 
+void Engine::DrawImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView)
+{
+    VkRenderingAttachmentInfo colorAttachment = Renderer::RenderingAttachmentInfo(pTargetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    VkRenderingInfo renderInfo = Renderer::RenderingInfo(mVkbSwapchain.extent, &colorAttachment, nullptr);
+
+    vkCmdBeginRendering(pCmd, &renderInfo);
+
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), pCmd);
+
+    vkCmdEndRendering(pCmd);
+}
+
 void Engine::InitializeBackgroundPipeline()
 {
     VkPipelineLayoutCreateInfo computeLayout{};
@@ -901,6 +993,29 @@ void Engine::InitializeBackgroundPipeline()
     }
 
     vkDestroyShaderModule(mDevice, computeModule, nullptr);
+}
+
+void Engine::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&pFunction)
+{
+    VK_CHECK(vkResetFences(mDevice, 1, &mImmediateFence));
+    VK_CHECK(vkResetCommandBuffer(mImmediateCommandBuffer, 0));
+
+    VkCommandBuffer cmd = mImmediateCommandBuffer;
+
+    VkCommandBufferBeginInfo cmdBeginInfo = Renderer::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+    VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
+
+    pFunction(cmd);
+
+    VK_CHECK(vkEndCommandBuffer(cmd));
+
+    VkCommandBufferSubmitInfo cmdInfo = Renderer::CommandBufferSubmitInfo(cmd);
+    VkSubmitInfo2 submit = Renderer::SubmitInfo(&cmdInfo, nullptr, nullptr);
+
+    VK_CHECK(vkQueueSubmit2(mGraphicsQueue, 1, &submit, mImmediateFence));
+
+    VK_CHECK(vkWaitForFences(mDevice, 1, &mImmediateFence, true, UINT64_MAX));
 }
 
 u32 Engine::findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties)

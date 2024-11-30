@@ -11,17 +11,20 @@
 #include <vk_mem_alloc.h>
 #include <vendor/stb/stb_image.h>
 #include <VkBootstrap.h>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
 
 #include <vector>
 #include <array>
 #include <deque>
 #include <fstream>
 #include <functional>
-#include <renderer_vk_descriptors.h>
 
 #include "types.h"
 #include "vertex.h"
 #include "renderer_types.h"
+#include "renderer_vk_descriptors.h"
 #include "utility.h"
 
 constexpr u32 WIDTH = 800;
@@ -138,6 +141,10 @@ private:
     VkPipeline mGradientPipeline = VK_NULL_HANDLE;
     VkPipelineLayout mGradientPipelineLayout = VK_NULL_HANDLE;
 
+    VkFence mImmediateFence = VK_NULL_HANDLE;
+    VkCommandBuffer mImmediateCommandBuffer = VK_NULL_HANDLE;
+    VkCommandPool mImmediateCommandPool = VK_NULL_HANDLE;
+
     // Old
     VkRenderPass renderPass = VK_NULL_HANDLE;
     VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
@@ -168,14 +175,15 @@ private:
 public:
     void run()
     {
-        initWindow();
+        InitWindow();
         InitVulkan();
-        mainLoop();
-        cleanup();
+        InitImgui();
+        MainLoop();
+        Cleanup();
     }
 
 private:
-    void initWindow()
+    void InitWindow()
     {
         glfwInit();
 
@@ -197,7 +205,7 @@ private:
         CreateAllocator();
         CreateSwapchain();
         CreateSyncObjects();
-        InitializeCommands();
+        CreateCommandObjects();
         InitializeDescriptors();
         InitializePipelines();
 
@@ -217,18 +225,29 @@ private:
         //createUniformBuffers();
     }
 
-    void mainLoop()
+    void InitImgui();
+
+    void MainLoop()
     {
         while (!glfwWindowShouldClose(window))
         {
             glfwPollEvents();
+
+            ImGui_ImplVulkan_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+            ImGui::ShowDemoWindow();
+
+            ImGui::Render();
+
             Draw();
         }
 
         vkDeviceWaitIdle(mDevice);
     }
 
-    void cleanup()
+    void Cleanup()
     {
         glfwTerminate();
     }
@@ -246,7 +265,7 @@ private:
     void createRenderPass();
     void createDescriptorSetLayout();
     void InitializePipelines();
-    void InitializeCommands();
+    void CreateCommandObjects();
     void createDepthResources();
     void createFramebuffers();
     void createTextureImage();
@@ -260,11 +279,16 @@ private:
     void CreateSyncObjects();
 
     void Draw();
-    void RecordCommandBuffer(VkCommandBuffer pCmd, uint32_t pImageIndex);
+    void DrawBackground(VkCommandBuffer pCmd, uint32_t pImageIndex);
+    void DrawImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView);
     void InitializeBackgroundPipeline();
 
     FrameData& GetCurrentFrame() { return mFrames[mCurrentFrame % MAX_FRAMES_IN_FLIGHT]; }
 
+    void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& pFunction);
+
+
+    // Old
     u32 findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);

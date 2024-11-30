@@ -21,6 +21,9 @@ namespace Renderer
 
 	VkImageSubresourceRange ImageSubresourceRange(VkImageAspectFlags pAspectMask);
 
-	VkSubmitInfo2 SubmitInfo(VkCommandBufferSubmitInfo* pCmd, VkSemaphoreSubmitInfo* pSignalSemaphoreInfo, VkSemaphoreSubmitInfo* pWaitSemaphoreInfo);
+	VkSubmitInfo2 SubmitInfo(const VkCommandBufferSubmitInfo* pCmd, const VkSemaphoreSubmitInfo* pSignalSemaphoreInfo, const VkSemaphoreSubmitInfo* pWaitSemaphoreInfo);
+
+	VkRenderingAttachmentInfo RenderingAttachmentInfo(VkImageView pView, const VkClearValue* pClear, VkImageLayout pLayout);
+	VkRenderingInfo RenderingInfo(VkExtent2D pExtent, VkRenderingAttachmentInfo* pColorAttachment, VkRenderingAttachmentInfo* pDepthAttachment);
 }
 
