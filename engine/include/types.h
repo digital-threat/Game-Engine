@@ -2,9 +2,9 @@
 
 #include <cstdint>
 
-#define global static
-#define local static
-#define internal static
+//#define global static
+//#define local static
+//#define internal static
 
 #define VK_CHECK(x)                                                                     \
 do                                                                                      \

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.29)
 project(Game VERSION 0.0.1 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 add_executable(${PROJECT_NAME} src/main.cpp)
 
@@ -13,7 +13,7 @@ set(SHADER_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/assets/shaders)
 
 file(MAKE_DIRECTORY ${SHADER_BINARY_DIR})
 
-file(GLOB_RECURSE SHADER_FILES "${SHADER_SOURCE_DIR}/*.vert" "${SHADER_SOURCE_DIR}/*.frag")
+file(GLOB_RECURSE SHADER_FILES "${SHADER_SOURCE_DIR}/*.vert" "${SHADER_SOURCE_DIR}/*.frag" "${SHADER_SOURCE_DIR}/*.comp")
 
 # Shader files must not have the same name, even if they have different extensions
 foreach(SHADER ${SHADER_FILES})

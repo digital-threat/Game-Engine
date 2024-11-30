@@ -17,10 +17,12 @@
 #include <deque>
 #include <fstream>
 #include <functional>
+#include <renderer_vk_descriptors.h>
 
 #include "types.h"
 #include "vertex.h"
 #include "renderer_types.h"
+#include "utility.h"
 
 constexpr u32 WIDTH = 800;
 constexpr u32 HEIGHT = 600;
@@ -125,10 +127,20 @@ private:
 
     VulkanImage mRenderTarget{};
 
+    Renderer::DescriptorAllocator mGlobalDescriptorAllocator{};
+
+    VkDescriptorSet mRenderTargetDescriptorSet = VK_NULL_HANDLE;
+    VkDescriptorSetLayout mRenderTargetDescriptorSetLayout = VK_NULL_HANDLE;
+
+    VkPipeline mGraphicsPipeline = VK_NULL_HANDLE;
+    VkPipelineLayout mPipelineLayout = VK_NULL_HANDLE;
+
+    VkPipeline mGradientPipeline = VK_NULL_HANDLE;
+    VkPipelineLayout mGradientPipelineLayout = VK_NULL_HANDLE;
+
+    // Old
     VkRenderPass renderPass = VK_NULL_HANDLE;
     VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
-    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-    VkPipeline graphicsPipeline = VK_NULL_HANDLE;
 
     VkBuffer vertexBuffer = VK_NULL_HANDLE;
     VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
@@ -184,10 +196,17 @@ private:
         GetQueues();
         CreateAllocator();
         CreateSwapchain();
+        CreateSyncObjects();
+        InitializeCommands();
+        InitializeDescriptors();
+        InitializePipelines();
+
         //createRenderPass();
+
+        //createDescriptorPool();
+        //createDescriptorSets();
         //createDescriptorSetLayout();
-        //createGraphicsPipeline();
-        CreateCommandPoolAndAllocateBuffers();
+
         //createDepthResources();
         //createFramebuffers();
         //createTextureImage();
@@ -196,9 +215,6 @@ private:
         //createVertexBuffer();
         //createIndexBuffer();
         //createUniformBuffers();
-        //createDescriptorPool();
-        //createDescriptorSets();
-        CreateSyncObjects();
     }
 
     void mainLoop()
@@ -229,8 +245,8 @@ private:
     void CreateSwapchain();
     void createRenderPass();
     void createDescriptorSetLayout();
-    void createGraphicsPipeline();
-    void CreateCommandPoolAndAllocateBuffers();
+    void InitializePipelines();
+    void InitializeCommands();
     void createDepthResources();
     void createFramebuffers();
     void createTextureImage();
@@ -239,16 +255,16 @@ private:
     void createVertexBuffer();
     void createIndexBuffer();
     void createUniformBuffers();
-    void createDescriptorPool();
+    void InitializeDescriptors();
     void createDescriptorSets();
     void CreateSyncObjects();
 
     void Draw();
+    void RecordCommandBuffer(VkCommandBuffer pCmd, uint32_t pImageIndex);
+    void InitializeBackgroundPipeline();
 
     FrameData& GetCurrentFrame() { return mFrames[mCurrentFrame % MAX_FRAMES_IN_FLIGHT]; }
 
-    void RecordCommandBuffer(VkCommandBuffer pCmd, uint32_t pImageIndex);
-    VkShaderModule createShaderModule(const std::vector<char>& code);
     u32 findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
@@ -265,8 +281,6 @@ private:
 
     VkCommandBuffer BeginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-
-    static std::vector<char> readFile(const std::string &filename);
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
     {

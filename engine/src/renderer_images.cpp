@@ -1,5 +1,4 @@
-#include "renderer_images.h"
-
+#include "renderer_vk_images.h"
 #include <renderer_vk_structures.h>
 #include <stdexcept>
 
