@@ -45,6 +45,24 @@ struct UniformBufferObject
     alignas(16) glm::mat4 projection;
 };
 
+struct ComputePushConstants
+{
+    glm::vec4 data1;
+    glm::vec4 data2;
+    glm::vec4 data3;
+    glm::vec4 data4;
+};
+
+struct ComputeEffect
+{
+    const char* name;
+
+    VkPipeline pipeline;
+    VkPipelineLayout layout;
+
+    ComputePushConstants data;
+};
+
 const std::vector<Vertex> vertices =
 {
     {glm::vec3(-0.5f, -0.5f, -0.5f),   glm::vec3(0, 0, 0), glm::vec2(0.0f, 0.0f)},
@@ -138,12 +156,15 @@ private:
     VkPipeline mGraphicsPipeline = VK_NULL_HANDLE;
     VkPipelineLayout mPipelineLayout = VK_NULL_HANDLE;
 
-    VkPipeline mGradientPipeline = VK_NULL_HANDLE;
+    //VkPipeline mGradientPipeline = VK_NULL_HANDLE;
     VkPipelineLayout mGradientPipelineLayout = VK_NULL_HANDLE;
 
     VkFence mImmediateFence = VK_NULL_HANDLE;
     VkCommandBuffer mImmediateCommandBuffer = VK_NULL_HANDLE;
     VkCommandPool mImmediateCommandPool = VK_NULL_HANDLE;
+
+    std::vector<ComputeEffect> backgroundEffects;
+    int currentBackgroundEffect = 0;
 
     // Old
     VkRenderPass renderPass = VK_NULL_HANDLE;
@@ -237,7 +258,20 @@ private:
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
 
-            ImGui::ShowDemoWindow();
+            if (ImGui::Begin("background"))
+            {
+                ComputeEffect& selected = backgroundEffects[currentBackgroundEffect];
+
+                ImGui::Text("Selected effect: ", selected.name);
+
+                ImGui::SliderInt("Effect Index", &currentBackgroundEffect,0, backgroundEffects.size() - 1);
+
+                ImGui::InputFloat4("data1",(float*)& selected.data.data1);
+                ImGui::InputFloat4("data2",(float*)& selected.data.data2);
+                ImGui::InputFloat4("data3",(float*)& selected.data.data3);
+                ImGui::InputFloat4("data4",(float*)& selected.data.data4);
+            }
+            ImGui::End();
 
             ImGui::Render();
 

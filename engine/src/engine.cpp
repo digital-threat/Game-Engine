@@ -884,8 +884,12 @@ void Engine::Draw()
 
 void Engine::DrawBackground(const VkCommandBuffer pCmd, const u32 pImageIndex)
 {
-    vkCmdBindPipeline(pCmd, VK_PIPELINE_BIND_POINT_COMPUTE, mGradientPipeline);
+    ComputeEffect& effect = backgroundEffects[currentBackgroundEffect];
+
+    vkCmdBindPipeline(pCmd, VK_PIPELINE_BIND_POINT_COMPUTE, effect.pipeline);
     vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_COMPUTE, mGradientPipelineLayout, 0, 1, &mRenderTargetDescriptorSet, 0, nullptr);
+
+    vkCmdPushConstants(pCmd, mGradientPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.data);
 
     vkCmdDispatch(pCmd, std::ceil(mRenderTarget.extent.width / 16.0), std::ceil(mRenderTarget.extent.height / 16.0), 1);
 
@@ -960,25 +964,35 @@ void Engine::DrawImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView)
 
 void Engine::InitializeBackgroundPipeline()
 {
+    VkPushConstantRange pushConstant{};
+    pushConstant.offset = 0;
+    pushConstant.size = sizeof(ComputePushConstants);
+    pushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
     VkPipelineLayoutCreateInfo computeLayout{};
     computeLayout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     computeLayout.pNext = nullptr;
     computeLayout.pSetLayouts = &mRenderTargetDescriptorSetLayout;
     computeLayout.setLayoutCount = 1;
+    computeLayout.pPushConstantRanges = &pushConstant;
+    computeLayout.pushConstantRangeCount = 1;
 
     if (vkCreatePipelineLayout(mDevice, &computeLayout, nullptr, &mGradientPipelineLayout) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create pipeline layout.");
     }
 
-    VkShaderModule computeModule;
-    Renderer::LoadShaderModule("assets/shaders/gradient.spv", mDevice, &computeModule);
+    VkShaderModule gradientShader;
+    Renderer::LoadShaderModule("assets/shaders/gradient_color.spv", mDevice, &gradientShader);
+
+    VkShaderModule skyShader;
+    Renderer::LoadShaderModule("assets/shaders/sky.spv", mDevice, &skyShader);
 
     VkPipelineShaderStageCreateInfo stageInfo{};
     stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     stageInfo.pNext = nullptr;
     stageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-    stageInfo.module = computeModule;
+    stageInfo.module = gradientShader;
     stageInfo.pName = "main";
 
     VkComputePipelineCreateInfo computePipelineCreateInfo{};
@@ -987,12 +1001,35 @@ void Engine::InitializeBackgroundPipeline()
     computePipelineCreateInfo.layout = mGradientPipelineLayout;
     computePipelineCreateInfo.stage = stageInfo;
 
-    if (vkCreateComputePipelines(mDevice, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &mGradientPipeline) != VK_SUCCESS)
+    ComputeEffect gradient{};
+    gradient.layout = mGradientPipelineLayout;
+    gradient.name = "gradient";
+    gradient.data.data1 = glm::vec4(1, 0, 0, 1);
+    gradient.data.data2 = glm::vec4(0, 0, 1, 1);
+
+    if (vkCreateComputePipelines(mDevice, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &gradient.pipeline) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create compute pipeline.");
     }
 
-    vkDestroyShaderModule(mDevice, computeModule, nullptr);
+    computePipelineCreateInfo.stage.module = skyShader;
+
+    ComputeEffect sky{};
+    sky.layout = mGradientPipelineLayout;
+    sky.name = "sky";
+    sky.data.data1 = glm::vec4(0.1, 0.2, 0.4 ,0.97);
+
+    if (vkCreateComputePipelines(mDevice, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &sky.pipeline) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create compute pipeline.");
+    }
+
+    backgroundEffects.push_back(gradient);
+    backgroundEffects.push_back(sky);
+
+    vkDestroyShaderModule(mDevice, gradientShader, nullptr);
+    vkDestroyShaderModule(mDevice, skyShader, nullptr);
+
 }
 
 void Engine::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&pFunction)
