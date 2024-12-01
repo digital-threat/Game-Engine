@@ -169,9 +169,6 @@ private:
 
 
     // Old
-    VkRenderPass renderPass = VK_NULL_HANDLE;
-    VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
-
     VkBuffer vertexBuffer = VK_NULL_HANDLE;
     VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
     VkBuffer indexBuffer = VK_NULL_HANDLE;
@@ -180,9 +177,6 @@ private:
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
     std::vector<void*> uniformBuffersMapped;
-
-    VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
-    std::vector<VkDescriptorSet> descriptorSets;
 
     VkImage textureImage = VK_NULL_HANDLE;
     VkDeviceMemory textureImageMemory = VK_NULL_HANDLE;
@@ -232,14 +226,7 @@ private:
         InitializeDescriptors();
         InitializePipelines();
 
-        //createRenderPass();
-
-        //createDescriptorPool();
-        //createDescriptorSets();
-        //createDescriptorSetLayout();
-
         //createDepthResources();
-        //createFramebuffers();
         //createTextureImage();
         //createTextureImageView();
         //createTextureSampler();
@@ -298,20 +285,16 @@ private:
     void GetQueues();
     void CreateAllocator();
     void CreateSwapchain();
-    void createRenderPass();
-    void createDescriptorSetLayout();
     void CreateCommandObjects();
     void createDepthResources();
-    void createFramebuffers();
     void createTextureImage();
     void createTextureImageView();
     void createTextureSampler();
     void createVertexBuffer();
     void createIndexBuffer();
     void createUniformBuffers();
-    void InitializeDescriptors();
-    void createDescriptorSets();
     void CreateSyncObjects();
+    void InitializeDescriptors();
 
     // Drawing
     void Draw();

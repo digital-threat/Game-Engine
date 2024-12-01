@@ -77,7 +77,7 @@ namespace Renderer
 	// NOTE(Sergei): Linear tiling is for textures that need to be read on the CPU.
 	VkImageCreateInfo ImageCreateInfo(const VkFormat pFormat, const VkImageUsageFlags pUsageFlags, const VkExtent3D pExtent)
 	{
-		VkImageCreateInfo info = {};
+		VkImageCreateInfo info{};
 		info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		info.pNext = nullptr;
 		info.imageType = VK_IMAGE_TYPE_2D;
