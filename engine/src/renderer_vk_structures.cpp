@@ -132,6 +132,22 @@ namespace Renderer
 		return info;
 	}
 
+	VkRenderingAttachmentInfo RenderingAttachmentInfo(const VkImageView pView, const VkClearValue *pClear, const VkImageLayout pLayout)
+	{
+		VkRenderingAttachmentInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		info.pNext = nullptr;
+		info.imageView = pView;
+		info.imageLayout = pLayout;
+		info.loadOp = pClear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+		info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		if (pClear)
+		{
+			info.clearValue = *pClear;
+		}
+		return info;
+	}
+
 	VkRenderingInfo RenderingInfo(VkExtent2D pExtent, VkRenderingAttachmentInfo *pColorAttachment, VkRenderingAttachmentInfo *pDepthAttachment)
 	{
 		VkRenderingInfo info{};
@@ -146,19 +162,27 @@ namespace Renderer
 		return info;
 	}
 
-	VkRenderingAttachmentInfo RenderingAttachmentInfo(const VkImageView pView, const VkClearValue *pClear, const VkImageLayout pLayout)
+	VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo()
 	{
-		VkRenderingAttachmentInfo info{};
-		info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		VkPipelineLayoutCreateInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		info.pNext = nullptr;
-		info.imageView = pView;
-		info.imageLayout = pLayout;
-		info.loadOp = pClear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
-		info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		if (pClear)
-		{
-			info.clearValue = *pClear;
-		}
+		info.flags = 0;
+		info.setLayoutCount = 0;
+		info.pSetLayouts = nullptr;
+		info.pushConstantRangeCount = 0;
+		info.pPushConstantRanges = nullptr;
+		return info;
+	}
+
+	VkPipelineShaderStageCreateInfo PipelineShaderStageCreateInfo(VkShaderStageFlagBits pStage, VkShaderModule pShaderModule, const char *pEntry)
+	{
+		VkPipelineShaderStageCreateInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		info.pNext = nullptr;
+		info.stage = pStage;
+		info.module = pShaderModule;
+		info.pName = pEntry;
 		return info;
 	}
 }

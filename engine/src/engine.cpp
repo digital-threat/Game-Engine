@@ -341,6 +341,7 @@ void Engine::createDescriptorSetLayout()
 void Engine::InitializePipelines()
 {
     InitializeBackgroundPipeline();
+    InitializeTrianglePipeline();
 
     // VkShaderModule vertShaderModule;
     // VkShaderModule fragShaderModule;
@@ -830,8 +831,10 @@ void Engine::Draw()
     }
 
     Renderer::TransitionImageLayout(cmd, mRenderTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    DrawBackground(GetCurrentFrame().mainCommandBuffer, imageIndex);
-    Renderer::TransitionImageLayout(cmd, mRenderTarget.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    DrawBackground(cmd, imageIndex);
+    Renderer::TransitionImageLayout(cmd, mRenderTarget.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    DrawGeometry(cmd);
+    Renderer::TransitionImageLayout(cmd, mRenderTarget.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     Renderer::TransitionImageLayout(cmd, mSwapchainImages[imageIndex],VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     VkExtent2D drawExtent = {mRenderTarget.extent.width, mRenderTarget.extent.height};
@@ -887,9 +890,9 @@ void Engine::DrawBackground(const VkCommandBuffer pCmd, const u32 pImageIndex)
     ComputeEffect& effect = backgroundEffects[currentBackgroundEffect];
 
     vkCmdBindPipeline(pCmd, VK_PIPELINE_BIND_POINT_COMPUTE, effect.pipeline);
-    vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_COMPUTE, mGradientPipelineLayout, 0, 1, &mRenderTargetDescriptorSet, 0, nullptr);
+    vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_COMPUTE, mBackgroundPipelineLayout, 0, 1, &mRenderTargetDescriptorSet, 0, nullptr);
 
-    vkCmdPushConstants(pCmd, mGradientPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.data);
+    vkCmdPushConstants(pCmd, mBackgroundPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.data);
 
     vkCmdDispatch(pCmd, std::ceil(mRenderTarget.extent.width / 16.0), std::ceil(mRenderTarget.extent.height / 16.0), 1);
 
@@ -962,6 +965,39 @@ void Engine::DrawImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView)
     vkCmdEndRendering(pCmd);
 }
 
+void Engine::DrawGeometry(VkCommandBuffer pCmd)
+{
+    VkRenderingAttachmentInfo colorAttachment = Renderer::RenderingAttachmentInfo(mRenderTarget.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+    VkExtent2D drawExtent = { mRenderTarget.extent.width, mRenderTarget.extent.height };
+    VkRenderingInfo renderInfo = Renderer::RenderingInfo(drawExtent, &colorAttachment, nullptr);
+    vkCmdBeginRendering(pCmd, &renderInfo);
+
+    vkCmdBindPipeline(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mTrianglePipeline);
+
+    VkViewport viewport{};
+    viewport.x = 0;
+    viewport.y = 0;
+    viewport.width = drawExtent.width;
+    viewport.height = drawExtent.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    vkCmdSetViewport(pCmd, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+    scissor.extent.width = drawExtent.width;
+    scissor.extent.height = drawExtent.height;
+
+    vkCmdSetScissor(pCmd, 0, 1, &scissor);
+
+    vkCmdDraw(pCmd, 3, 1, 0, 0);
+
+    vkCmdEndRendering(pCmd);
+}
+
 void Engine::InitializeBackgroundPipeline()
 {
     VkPushConstantRange pushConstant{};
@@ -977,7 +1013,7 @@ void Engine::InitializeBackgroundPipeline()
     computeLayout.pPushConstantRanges = &pushConstant;
     computeLayout.pushConstantRangeCount = 1;
 
-    if (vkCreatePipelineLayout(mDevice, &computeLayout, nullptr, &mGradientPipelineLayout) != VK_SUCCESS)
+    if (vkCreatePipelineLayout(mDevice, &computeLayout, nullptr, &mBackgroundPipelineLayout) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create pipeline layout.");
     }
@@ -988,21 +1024,16 @@ void Engine::InitializeBackgroundPipeline()
     VkShaderModule skyShader;
     Renderer::LoadShaderModule("assets/shaders/sky.spv", mDevice, &skyShader);
 
-    VkPipelineShaderStageCreateInfo stageInfo{};
-    stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stageInfo.pNext = nullptr;
-    stageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-    stageInfo.module = gradientShader;
-    stageInfo.pName = "main";
+    VkPipelineShaderStageCreateInfo stageInfo = Renderer::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT, gradientShader, "main");
 
     VkComputePipelineCreateInfo computePipelineCreateInfo{};
     computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
     computePipelineCreateInfo.pNext = nullptr;
-    computePipelineCreateInfo.layout = mGradientPipelineLayout;
+    computePipelineCreateInfo.layout = mBackgroundPipelineLayout;
     computePipelineCreateInfo.stage = stageInfo;
 
     ComputeEffect gradient{};
-    gradient.layout = mGradientPipelineLayout;
+    gradient.layout = mBackgroundPipelineLayout;
     gradient.name = "gradient";
     gradient.data.data1 = glm::vec4(1, 0, 0, 1);
     gradient.data.data2 = glm::vec4(0, 0, 1, 1);
@@ -1015,7 +1046,7 @@ void Engine::InitializeBackgroundPipeline()
     computePipelineCreateInfo.stage.module = skyShader;
 
     ComputeEffect sky{};
-    sky.layout = mGradientPipelineLayout;
+    sky.layout = mBackgroundPipelineLayout;
     sky.name = "sky";
     sky.data.data1 = glm::vec4(0.1, 0.2, 0.4 ,0.97);
 
@@ -1030,6 +1061,34 @@ void Engine::InitializeBackgroundPipeline()
     vkDestroyShaderModule(mDevice, gradientShader, nullptr);
     vkDestroyShaderModule(mDevice, skyShader, nullptr);
 
+}
+
+void Engine::InitializeTrianglePipeline()
+{
+    VkShaderModule triangleVertexShader;
+    Renderer::LoadShaderModule("assets/shaders/colored_triangle_vert.spv", mDevice, &triangleVertexShader);
+
+    VkShaderModule triangleFragmentShader;
+    Renderer::LoadShaderModule("assets/shaders/colored_triangle_frag.spv", mDevice, &triangleFragmentShader);
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = Renderer::PipelineLayoutCreateInfo();
+    VK_CHECK(vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, nullptr, &mTrianglePipelineLayout));
+
+    Renderer::PipelineBuilder builder;
+    builder.mPipelineLayout = mTrianglePipelineLayout;
+    builder.SetShaders(triangleVertexShader, triangleFragmentShader);
+    builder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+    builder.SetPolygonMode(VK_POLYGON_MODE_FILL);
+    builder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+    builder.SetMultisamplingNone();
+    builder.DisableBlending();
+    builder.DisableDepthTest();
+    builder.SetColorAttachmentFormat(mRenderTarget.format);
+    builder.SetDepthFormat(VK_FORMAT_UNDEFINED);
+    mTrianglePipeline = builder.Build(mDevice);
+
+    vkDestroyShaderModule(mDevice, triangleVertexShader, nullptr);
+    vkDestroyShaderModule(mDevice, triangleFragmentShader, nullptr);
 }
 
 void Engine::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&pFunction)

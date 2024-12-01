@@ -156,15 +156,17 @@ private:
     VkPipeline mGraphicsPipeline = VK_NULL_HANDLE;
     VkPipelineLayout mPipelineLayout = VK_NULL_HANDLE;
 
-    //VkPipeline mGradientPipeline = VK_NULL_HANDLE;
-    VkPipelineLayout mGradientPipelineLayout = VK_NULL_HANDLE;
+    VkPipelineLayout mBackgroundPipelineLayout = VK_NULL_HANDLE;
+    std::vector<ComputeEffect> backgroundEffects;
+    int currentBackgroundEffect = 0;
+
+    VkPipelineLayout mTrianglePipelineLayout = VK_NULL_HANDLE;
+    VkPipeline mTrianglePipeline = VK_NULL_HANDLE;
 
     VkFence mImmediateFence = VK_NULL_HANDLE;
     VkCommandBuffer mImmediateCommandBuffer = VK_NULL_HANDLE;
     VkCommandPool mImmediateCommandPool = VK_NULL_HANDLE;
 
-    std::vector<ComputeEffect> backgroundEffects;
-    int currentBackgroundEffect = 0;
 
     // Old
     VkRenderPass renderPass = VK_NULL_HANDLE;
@@ -298,7 +300,6 @@ private:
     void CreateSwapchain();
     void createRenderPass();
     void createDescriptorSetLayout();
-    void InitializePipelines();
     void CreateCommandObjects();
     void createDepthResources();
     void createFramebuffers();
@@ -312,10 +313,16 @@ private:
     void createDescriptorSets();
     void CreateSyncObjects();
 
+    // Drawing
     void Draw();
-    void DrawBackground(VkCommandBuffer pCmd, uint32_t pImageIndex);
+    void DrawBackground(VkCommandBuffer pCmd, u32 pImageIndex);
     void DrawImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView);
+    void DrawGeometry(VkCommandBuffer pCmd);
+
+    // Pipelines
+    void InitializePipelines();
     void InitializeBackgroundPipeline();
+    void InitializeTrianglePipeline();
 
     FrameData& GetCurrentFrame() { return mFrames[mCurrentFrame % MAX_FRAMES_IN_FLIGHT]; }
 

@@ -25,5 +25,9 @@ namespace Renderer
 
 	VkRenderingAttachmentInfo RenderingAttachmentInfo(VkImageView pView, const VkClearValue* pClear, VkImageLayout pLayout);
 	VkRenderingInfo RenderingInfo(VkExtent2D pExtent, VkRenderingAttachmentInfo* pColorAttachment, VkRenderingAttachmentInfo* pDepthAttachment);
+
+	VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo();
+	VkPipelineShaderStageCreateInfo PipelineShaderStageCreateInfo(VkShaderStageFlagBits pStage, VkShaderModule pShaderModule, const char * pEntry);
+
 }
 
