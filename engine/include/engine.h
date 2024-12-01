@@ -8,7 +8,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <vk_mem_alloc.h>
 #include <vendor/stb/stb_image.h>
 #include <VkBootstrap.h>
 #include <imgui.h>
@@ -23,9 +22,12 @@
 
 #include "types.h"
 #include "vertex.h"
-#include "renderer_types.h"
+#include "renderer_vk_types.h"
 #include "renderer_vk_descriptors.h"
+#include "renderer_vk_buffers.h"
 #include "utility.h"
+
+using namespace Renderer;
 
 constexpr u32 WIDTH = 800;
 constexpr u32 HEIGHT = 600;
@@ -61,29 +63,6 @@ struct ComputeEffect
     VkPipelineLayout layout;
 
     ComputePushConstants data;
-};
-
-const std::vector<Vertex> vertices =
-{
-    {glm::vec3(-0.5f, -0.5f, -0.5f),   glm::vec3(0, 0, 0), glm::vec2(0.0f, 0.0f)},
-    {glm::vec3(0.5f, -0.5f, -0.5f),    glm::vec3(0, 0, 0), glm::vec2(1.0f, 0.0f)},
-    {glm::vec3(0.5f, 0.5f, -0.5f),    glm::vec3(0, 0, 0), glm::vec2(1.0f, 1.0f)},
-    {glm::vec3(-0.5f, 0.5f, -0.5f),   glm::vec3(0, 0, 0), glm::vec2(0.0f, 1.0f)},
-
-    {glm::vec3(-0.5f, -0.5f, 0.5f),    glm::vec3(0, 0, 0), glm::vec2(0.0f, 0.0f)},
-    {glm::vec3(0.5f, -0.5f, 0.5f),     glm::vec3(0, 0, 0), glm::vec2(1.0f, 0.0f)},
-    {glm::vec3(0.5f, 0.5f, 0.5f),     glm::vec3(0, 0, 0), glm::vec2(1.0f, 1.0f)},
-    {glm::vec3(-0.5f, 0.5f, 0.5f),    glm::vec3(0, 0, 0), glm::vec2(0.0f, 1.0f)},
-};
-
-const std::vector<u16> indices =
-{
-    4, 5, 6, 6, 7, 4, // Top
-    0, 3, 2, 2, 1, 0, // Bottom
-    0, 1, 5, 5, 4, 0, // Front
-    1, 2, 6, 6, 5, 1, // Right
-    2, 3, 7, 7, 6, 2, // Back
-    3, 0, 4, 4, 7, 3  // Left
 };
 
 // TODO(Sergei): Temporary, replace!
@@ -148,11 +127,12 @@ private:
 
     VulkanImage mRenderTarget{};
 
-    Renderer::DescriptorAllocator mGlobalDescriptorAllocator{};
+    DescriptorAllocator mGlobalDescriptorAllocator{};
 
     VkDescriptorSet mRenderTargetDescriptorSet = VK_NULL_HANDLE;
     VkDescriptorSetLayout mRenderTargetDescriptorSetLayout = VK_NULL_HANDLE;
 
+    // Pipelines
     VkPipeline mGraphicsPipeline = VK_NULL_HANDLE;
     VkPipelineLayout mPipelineLayout = VK_NULL_HANDLE;
 
@@ -160,20 +140,18 @@ private:
     std::vector<ComputeEffect> backgroundEffects;
     int currentBackgroundEffect = 0;
 
-    VkPipelineLayout mTrianglePipelineLayout = VK_NULL_HANDLE;
-    VkPipeline mTrianglePipeline = VK_NULL_HANDLE;
+    VkPipelineLayout mMeshPipelineLayout = VK_NULL_HANDLE;
+    VkPipeline mMeshPipeline = VK_NULL_HANDLE;
 
+    // Immediate
     VkFence mImmediateFence = VK_NULL_HANDLE;
     VkCommandBuffer mImmediateCommandBuffer = VK_NULL_HANDLE;
     VkCommandPool mImmediateCommandPool = VK_NULL_HANDLE;
 
+    // Other
+    GPUMeshBuffers mRectangle{};
 
     // Old
-    VkBuffer vertexBuffer = VK_NULL_HANDLE;
-    VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
-    VkBuffer indexBuffer = VK_NULL_HANDLE;
-    VkDeviceMemory indexBufferMemory = VK_NULL_HANDLE;
-
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
     std::vector<void*> uniformBuffersMapped;
@@ -190,11 +168,12 @@ private:
     bool framebufferResized = false;
 
 public:
-    void run()
+    void Run()
     {
         InitWindow();
         InitVulkan();
         InitImgui();
+        LoadData();
         MainLoop();
         Cleanup();
     }
@@ -230,8 +209,6 @@ private:
         //createTextureImage();
         //createTextureImageView();
         //createTextureSampler();
-        //createVertexBuffer();
-        //createIndexBuffer();
         //createUniformBuffers();
     }
 
@@ -275,6 +252,8 @@ private:
         glfwTerminate();
     }
 
+    void LoadData();
+
     void RecreateSwapchain();
     void CleanupSwapchain();
 
@@ -286,15 +265,15 @@ private:
     void CreateAllocator();
     void CreateSwapchain();
     void CreateCommandObjects();
+    void CreateSyncObjects();
+    void InitializeDescriptors();
+
+    // Old
     void createDepthResources();
     void createTextureImage();
     void createTextureImageView();
     void createTextureSampler();
-    void createVertexBuffer();
-    void createIndexBuffer();
     void createUniformBuffers();
-    void CreateSyncObjects();
-    void InitializeDescriptors();
 
     // Drawing
     void Draw();
@@ -305,22 +284,22 @@ private:
     // Pipelines
     void InitializePipelines();
     void InitializeBackgroundPipeline();
-    void InitializeTrianglePipeline();
+    void InitializeMeshPipeline();
 
     FrameData& GetCurrentFrame() { return mFrames[mCurrentFrame % MAX_FRAMES_IN_FLIGHT]; }
 
     void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& pFunction);
 
+    GPUMeshBuffers UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVertices);
 
     // Old
     u32 findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     void updateUniformBuffer(u32 currentImage);
-
     void copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height);
 
+    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);

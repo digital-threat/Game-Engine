@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <chrono>
 #include <cstring>
+#include <vk_mem_alloc.h>
 #include "renderer_vk_images.h"
 #include "renderer_vk_pipelines.h"
 #include "renderer_vk_structures.h"
@@ -61,6 +62,33 @@ void Engine::InitImgui()
     ImGui_ImplVulkan_Init(&initInfo);
 
     ImGui_ImplVulkan_CreateFontsTexture();
+}
+
+void Engine::LoadData()
+{
+    std::array<Vertex, 4> vertices;
+
+    vertices[0].position = {0.5,-0.5, 0};
+    vertices[1].position = {0.5,0.5, 0};
+    vertices[2].position = {-0.5,-0.5, 0};
+    vertices[3].position = {-0.5,0.5, 0};
+
+    vertices[0].color = {0,0, 0,1};
+    vertices[1].color = { 0.5,0.5,0.5 ,1};
+    vertices[2].color = { 1,0, 0,1 };
+    vertices[3].color = { 0,1, 0,1 };
+
+    std::array<uint32_t,6> indices;
+
+    indices[0] = 0;
+    indices[1] = 1;
+    indices[2] = 2;
+
+    indices[3] = 2;
+    indices[4] = 1;
+    indices[5] = 3;
+
+    mRectangle = UploadMesh(indices, vertices);
 }
 
 void Engine::RecreateSwapchain()
@@ -231,19 +259,9 @@ void Engine::CreateSwapchain()
     imageUsageFlags |= VK_IMAGE_USAGE_STORAGE_BIT;
     imageUsageFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    VkImageCreateInfo imageInfo = Renderer::ImageCreateInfo(mRenderTarget.format, imageUsageFlags, mRenderTarget.extent);
-
-    VmaAllocationCreateInfo allocationInfo{};
-    allocationInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-    allocationInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-    if (vmaCreateImage(mAllocator, &imageInfo, &allocationInfo, &mRenderTarget.image, &mRenderTarget.allocation, nullptr) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create image.");
-    }
-
-    VkImageViewCreateInfo imageViewInfo = Renderer::ImageViewCreateInfo(mRenderTarget.image, mRenderTarget.format, VK_IMAGE_ASPECT_COLOR_BIT);
-
+    VkImageCreateInfo imageInfo = ImageCreateInfo(mRenderTarget.format, imageUsageFlags, mRenderTarget.extent);
+    CreateImage(mAllocator, imageInfo, VMA_MEMORY_USAGE_GPU_ONLY, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mRenderTarget);
+    VkImageViewCreateInfo imageViewInfo = ImageViewCreateInfo(mRenderTarget.image, mRenderTarget.format, VK_IMAGE_ASPECT_COLOR_BIT);
     if (vkCreateImageView(mDevice, &imageViewInfo, nullptr, &mRenderTarget.imageView) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create image view.");
@@ -253,7 +271,7 @@ void Engine::CreateSwapchain()
 void Engine::InitializePipelines()
 {
     InitializeBackgroundPipeline();
-    InitializeTrianglePipeline();
+    InitializeMeshPipeline();
 }
 
 void Engine::CreateCommandObjects()
@@ -265,7 +283,7 @@ void Engine::CreateCommandObjects()
         throw std::runtime_error("Failed to get graphics queue family index. Error: " + graphicsQueueIndex.error().message() + "\n");
     }
 
-    VkCommandPoolCreateInfo poolInfo = Renderer::CommandPoolCreateInfo(graphicsQueueIndex.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+    VkCommandPoolCreateInfo poolInfo = CommandPoolCreateInfo(graphicsQueueIndex.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
     // Per frame
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -275,7 +293,7 @@ void Engine::CreateCommandObjects()
             throw std::runtime_error("Failed to create command pool.");
         }
 
-        VkCommandBufferAllocateInfo allocInfo = Renderer::CommandBufferAllocateInfo(mFrames[i].commandPool, 1);
+        VkCommandBufferAllocateInfo allocInfo = CommandBufferAllocateInfo(mFrames[i].commandPool, 1);
 
         if (vkAllocateCommandBuffers(mDevice, &allocInfo, &mFrames[i].mainCommandBuffer) != VK_SUCCESS)
         {
@@ -289,7 +307,7 @@ void Engine::CreateCommandObjects()
         throw std::runtime_error("Failed to create command pool.");
     }
 
-    VkCommandBufferAllocateInfo cmdAllocInfo = Renderer::CommandBufferAllocateInfo(mImmediateCommandPool, 1);
+    VkCommandBufferAllocateInfo cmdAllocInfo = CommandBufferAllocateInfo(mImmediateCommandPool, 1);
     if (vkAllocateCommandBuffers(mDevice, &cmdAllocInfo, &mImmediateCommandBuffer) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allocate command buffers.");
@@ -339,9 +357,9 @@ void Engine::createTextureImage()
     createImage(texWidth, texHeight, imageFormat, imageTiling, imageUsage, imageProperties, textureImage, textureImageMemory);
 
     VkCommandBuffer cmd = BeginSingleTimeCommands();
-    Renderer::TransitionImageLayout(cmd, textureImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    TransitionImageLayout(cmd, textureImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     copyBufferToImage(stagingBuffer, textureImage, static_cast<u32>(texWidth), static_cast<u32>(texHeight));
-    Renderer::TransitionImageLayout(cmd, textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TransitionImageLayout(cmd, textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     endSingleTimeCommands(cmd);
 
     vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
@@ -382,57 +400,6 @@ void Engine::createTextureSampler()
     }
 }
 
-void Engine::createVertexBuffer()
-{
-    const VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    constexpr VkBufferUsageFlags stagingUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    constexpr VkMemoryPropertyFlags stagingProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    createBuffer(bufferSize, stagingUsage, stagingProperties, stagingBuffer, stagingBufferMemory);
-
-    void* data;
-    vkMapMemory(mDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, vertices.data(), bufferSize);
-    vkUnmapMemory(mDevice, stagingBufferMemory);
-
-    constexpr VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    constexpr VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    createBuffer(bufferSize, usage, properties, vertexBuffer, vertexBufferMemory);
-
-    copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-    vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
-    vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
-}
-
-void Engine::createIndexBuffer()
-{
-    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    constexpr VkBufferUsageFlags stagingUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    constexpr VkMemoryPropertyFlags stagingProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    createBuffer(bufferSize, stagingUsage, stagingProperties, stagingBuffer, stagingBufferMemory);
-
-    void* data;
-    vkMapMemory(mDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, indices.data(), bufferSize);
-    vkUnmapMemory(mDevice, stagingBufferMemory);
-
-    constexpr VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    constexpr VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    createBuffer(bufferSize, usage, properties, indexBuffer, indexBufferMemory);
-
-    copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-    vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
-    vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
-}
-
 void Engine::createUniformBuffers()
 {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -453,7 +420,7 @@ void Engine::createUniformBuffers()
 
 void Engine::InitializeDescriptors()
 {
-    std::vector<Renderer::DescriptorAllocator::PoolSizeRatio> sizes =
+    std::vector<DescriptorAllocator::PoolSizeRatio> sizes =
     {
         {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}
     };
@@ -461,7 +428,7 @@ void Engine::InitializeDescriptors()
     mGlobalDescriptorAllocator.InitializePool(mDevice, 10, sizes);
 
     {
-        Renderer::DescriptorLayoutBuilder builder;
+        DescriptorLayoutBuilder builder;
         builder.AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
         mRenderTargetDescriptorSetLayout = builder.Build(mDevice, VK_SHADER_STAGE_COMPUTE_BIT);
     }
@@ -536,8 +503,8 @@ void Engine::InitializeDescriptors()
 
 void Engine::CreateSyncObjects()
 {
-    VkFenceCreateInfo fenceInfo = Renderer::FenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
-    VkSemaphoreCreateInfo semaphoreInfo = Renderer::SemaphoreCreateInfo();
+    VkFenceCreateInfo fenceInfo = FenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
+    VkSemaphoreCreateInfo semaphoreInfo = SemaphoreCreateInfo();
 
     // Per frame
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -581,39 +548,39 @@ void Engine::Draw()
 
     VkCommandBuffer cmd = GetCurrentFrame().mainCommandBuffer;
 
-    VkCommandBufferBeginInfo beginInfo = Renderer::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    VkCommandBufferBeginInfo beginInfo = CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     if (vkBeginCommandBuffer(cmd, &beginInfo) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to begin recording command buffer.");
     }
 
-    Renderer::TransitionImageLayout(cmd, mRenderTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+    TransitionImageLayout(cmd, mRenderTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     DrawBackground(cmd, imageIndex);
-    Renderer::TransitionImageLayout(cmd, mRenderTarget.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    TransitionImageLayout(cmd, mRenderTarget.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     DrawGeometry(cmd);
-    Renderer::TransitionImageLayout(cmd, mRenderTarget.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-    Renderer::TransitionImageLayout(cmd, mSwapchainImages[imageIndex],VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    TransitionImageLayout(cmd, mRenderTarget.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    TransitionImageLayout(cmd, mSwapchainImages[imageIndex],VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     VkExtent2D drawExtent = {mRenderTarget.extent.width, mRenderTarget.extent.height};
-    Renderer::CopyImage(cmd, mRenderTarget.image, mSwapchainImages[imageIndex], drawExtent, mVkbSwapchain.extent);
+    CopyImage(cmd, mRenderTarget.image, mSwapchainImages[imageIndex], drawExtent, mVkbSwapchain.extent);
 
-    Renderer::TransitionImageLayout(cmd, mSwapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    TransitionImageLayout(cmd, mSwapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     DrawImgui(cmd, mSwapchainImageViews[imageIndex]);
 
 
-    Renderer::TransitionImageLayout(cmd, mSwapchainImages[imageIndex],VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    TransitionImageLayout(cmd, mSwapchainImages[imageIndex],VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to record command buffer.");
     }
 
-    VkCommandBufferSubmitInfo cmdSubmitInfo = Renderer::CommandBufferSubmitInfo(cmd);
+    VkCommandBufferSubmitInfo cmdSubmitInfo = CommandBufferSubmitInfo(cmd);
 
-    VkSemaphoreSubmitInfo waitInfo = Renderer::SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, GetCurrentFrame().swapchainSemaphore);
-    VkSemaphoreSubmitInfo signalInfo = Renderer::SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, GetCurrentFrame().renderSemaphore);
+    VkSemaphoreSubmitInfo waitInfo = SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, GetCurrentFrame().swapchainSemaphore);
+    VkSemaphoreSubmitInfo signalInfo = SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, GetCurrentFrame().renderSemaphore);
 
-    VkSubmitInfo2 submitInfo = Renderer::SubmitInfo(&cmdSubmitInfo, &signalInfo, &waitInfo);
+    VkSubmitInfo2 submitInfo = SubmitInfo(&cmdSubmitInfo, &signalInfo, &waitInfo);
 
     if (vkQueueSubmit2(mGraphicsQueue, 1, &submitInfo, GetCurrentFrame().renderFence) != VK_SUCCESS)
     {
@@ -653,14 +620,14 @@ void Engine::DrawBackground(const VkCommandBuffer pCmd, const u32 pImageIndex)
 
     vkCmdDispatch(pCmd, std::ceil(mRenderTarget.extent.width / 16.0), std::ceil(mRenderTarget.extent.height / 16.0), 1);
 
-    // VkCommandBufferBeginInfo beginInfo = Renderer::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    // VkCommandBufferBeginInfo beginInfo = CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     //
     // if (vkBeginCommandBuffer(pCmd, &beginInfo) != VK_SUCCESS)
     // {
     //     throw std::runtime_error("Failed to begin recording command buffer.");
     // }
     //
-    // Renderer::TransitionImageLayout(pCmd, mSwapchainImages[pImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+    // TransitionImageLayout(pCmd, mSwapchainImages[pImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     //
     // VkRenderPassBeginInfo renderPassInfo{};
     // renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -712,8 +679,8 @@ void Engine::DrawBackground(const VkCommandBuffer pCmd, const u32 pImageIndex)
 
 void Engine::DrawImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView)
 {
-    VkRenderingAttachmentInfo colorAttachment = Renderer::RenderingAttachmentInfo(pTargetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    VkRenderingInfo renderInfo = Renderer::RenderingInfo(mVkbSwapchain.extent, &colorAttachment, nullptr);
+    VkRenderingAttachmentInfo colorAttachment = RenderingAttachmentInfo(pTargetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    VkRenderingInfo renderInfo = RenderingInfo(mVkbSwapchain.extent, &colorAttachment, nullptr);
 
     vkCmdBeginRendering(pCmd, &renderInfo);
 
@@ -724,13 +691,12 @@ void Engine::DrawImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView)
 
 void Engine::DrawGeometry(VkCommandBuffer pCmd)
 {
-    VkRenderingAttachmentInfo colorAttachment = Renderer::RenderingAttachmentInfo(mRenderTarget.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    VkRenderingAttachmentInfo colorAttachment = RenderingAttachmentInfo(mRenderTarget.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     VkExtent2D drawExtent = { mRenderTarget.extent.width, mRenderTarget.extent.height };
-    VkRenderingInfo renderInfo = Renderer::RenderingInfo(drawExtent, &colorAttachment, nullptr);
-    vkCmdBeginRendering(pCmd, &renderInfo);
+    VkRenderingInfo renderInfo = RenderingInfo(drawExtent, &colorAttachment, nullptr);
 
-    vkCmdBindPipeline(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mTrianglePipeline);
+    vkCmdBeginRendering(pCmd, &renderInfo);
 
     VkViewport viewport{};
     viewport.x = 0;
@@ -750,7 +716,16 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
 
     vkCmdSetScissor(pCmd, 0, 1, &scissor);
 
-    vkCmdDraw(pCmd, 3, 1, 0, 0);
+    vkCmdBindPipeline(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipeline);
+
+    GPUDrawPushConstants push_constants;
+    push_constants.worldMatrix = glm::mat4{ 1.f };
+    push_constants.vertexBuffer = mRectangle.vertexBufferAddress;
+
+    vkCmdPushConstants(pCmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+    vkCmdBindIndexBuffer(pCmd, mRectangle.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+    vkCmdDrawIndexed(pCmd, 6, 1, 0, 0, 0);
 
     vkCmdEndRendering(pCmd);
 }
@@ -776,12 +751,12 @@ void Engine::InitializeBackgroundPipeline()
     }
 
     VkShaderModule gradientShader;
-    Renderer::LoadShaderModule("assets/shaders/gradient_color.spv", mDevice, &gradientShader);
+    LoadShaderModule("assets/shaders/gradient_color.spv", mDevice, &gradientShader);
 
     VkShaderModule skyShader;
-    Renderer::LoadShaderModule("assets/shaders/sky.spv", mDevice, &skyShader);
+    LoadShaderModule("assets/shaders/sky.spv", mDevice, &skyShader);
 
-    VkPipelineShaderStageCreateInfo stageInfo = Renderer::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT, gradientShader, "main");
+    VkPipelineShaderStageCreateInfo stageInfo = PipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT, gradientShader, "main");
 
     VkComputePipelineCreateInfo computePipelineCreateInfo{};
     computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
@@ -820,20 +795,27 @@ void Engine::InitializeBackgroundPipeline()
 
 }
 
-void Engine::InitializeTrianglePipeline()
+void Engine::InitializeMeshPipeline()
 {
-    VkShaderModule triangleVertexShader;
-    Renderer::LoadShaderModule("assets/shaders/colored_triangle_vert.spv", mDevice, &triangleVertexShader);
+    VkShaderModule vertexShader;
+    LoadShaderModule("assets/shaders/colored_triangle_vert.spv", mDevice, &vertexShader);
 
-    VkShaderModule triangleFragmentShader;
-    Renderer::LoadShaderModule("assets/shaders/colored_triangle_frag.spv", mDevice, &triangleFragmentShader);
+    VkShaderModule fragmentShader;
+    LoadShaderModule("assets/shaders/colored_triangle_frag.spv", mDevice, &fragmentShader);
 
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = Renderer::PipelineLayoutCreateInfo();
-    VK_CHECK(vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, nullptr, &mTrianglePipelineLayout));
+    VkPushConstantRange pushConstantRange{};
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = sizeof(GPUDrawPushConstants);
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    Renderer::PipelineBuilder builder;
-    builder.mPipelineLayout = mTrianglePipelineLayout;
-    builder.SetShaders(triangleVertexShader, triangleFragmentShader);
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = PipelineLayoutCreateInfo();
+    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
+    VK_CHECK(vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, nullptr, &mMeshPipelineLayout));
+
+    PipelineBuilder builder;
+    builder.mPipelineLayout = mMeshPipelineLayout;
+    builder.SetShaders(vertexShader, fragmentShader);
     builder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     builder.SetPolygonMode(VK_POLYGON_MODE_FILL);
     builder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
@@ -842,10 +824,10 @@ void Engine::InitializeTrianglePipeline()
     builder.DisableDepthTest();
     builder.SetColorAttachmentFormat(mRenderTarget.format);
     builder.SetDepthFormat(VK_FORMAT_UNDEFINED);
-    mTrianglePipeline = builder.Build(mDevice);
+    mMeshPipeline = builder.Build(mDevice);
 
-    vkDestroyShaderModule(mDevice, triangleVertexShader, nullptr);
-    vkDestroyShaderModule(mDevice, triangleFragmentShader, nullptr);
+    vkDestroyShaderModule(mDevice, vertexShader, nullptr);
+    vkDestroyShaderModule(mDevice, fragmentShader, nullptr);
 }
 
 void Engine::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&pFunction)
@@ -855,7 +837,7 @@ void Engine::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&pFunctio
 
     VkCommandBuffer cmd = mImmediateCommandBuffer;
 
-    VkCommandBufferBeginInfo cmdBeginInfo = Renderer::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    VkCommandBufferBeginInfo cmdBeginInfo = CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
     VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
@@ -863,12 +845,68 @@ void Engine::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&pFunctio
 
     VK_CHECK(vkEndCommandBuffer(cmd));
 
-    VkCommandBufferSubmitInfo cmdInfo = Renderer::CommandBufferSubmitInfo(cmd);
-    VkSubmitInfo2 submit = Renderer::SubmitInfo(&cmdInfo, nullptr, nullptr);
+    VkCommandBufferSubmitInfo cmdInfo = CommandBufferSubmitInfo(cmd);
+    VkSubmitInfo2 submit = SubmitInfo(&cmdInfo, nullptr, nullptr);
 
     VK_CHECK(vkQueueSubmit2(mGraphicsQueue, 1, &submit, mImmediateFence));
 
     VK_CHECK(vkWaitForFences(mDevice, 1, &mImmediateFence, true, UINT64_MAX));
+}
+
+GPUMeshBuffers Engine::UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVertices)
+{
+    const size_t vertexBufferSize = pVertices.size() * sizeof(Vertex);
+    const size_t indexBufferSize = pIndices.size() * sizeof(u32);
+
+    GPUMeshBuffers newSurface;
+
+    VkBufferUsageFlags vertexBufferUsage{};
+    vertexBufferUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    vertexBufferUsage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    vertexBufferUsage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+    newSurface.vertexBuffer = CreateBuffer(mAllocator, vertexBufferSize, vertexBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
+
+    VkBufferDeviceAddressInfo deviceAddressInfo{};
+    deviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    deviceAddressInfo.buffer = newSurface.vertexBuffer.buffer;
+    newSurface.vertexBufferAddress = vkGetBufferDeviceAddress(mDevice, &deviceAddressInfo);
+
+    VkBufferUsageFlags indexBufferUsage{};
+    indexBufferUsage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    indexBufferUsage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+    newSurface.indexBuffer = CreateBuffer(mAllocator, indexBufferSize, indexBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
+
+    VulkanBuffer stagingBuffer = CreateBuffer(mAllocator, vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+
+    void* data = stagingBuffer.info.pMappedData;
+
+    memcpy(data, pVertices.data(), vertexBufferSize);
+    memcpy(static_cast<char *>(data) + vertexBufferSize, pIndices.data(), indexBufferSize);
+
+    auto func = [&](VkCommandBuffer pCmd)
+    {
+        VkBufferCopy vertexCopy{};
+        vertexCopy.dstOffset = 0;
+        vertexCopy.srcOffset = 0;
+        vertexCopy.size = vertexBufferSize;
+
+        vkCmdCopyBuffer(pCmd, stagingBuffer.buffer, newSurface.vertexBuffer.buffer, 1, &vertexCopy);
+
+        VkBufferCopy indexCopy{};
+        indexCopy.dstOffset = 0;
+        indexCopy.srcOffset = vertexBufferSize;
+        indexCopy.size = indexBufferSize;
+
+        vkCmdCopyBuffer(pCmd, stagingBuffer.buffer, newSurface.indexBuffer.buffer, 1, &indexCopy);
+    };
+
+    ImmediateSubmit(func);
+
+    DestroyBuffer(mAllocator, stagingBuffer);
+
+    return newSurface;
 }
 
 u32 Engine::findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties)
@@ -1007,7 +1045,7 @@ void Engine::copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 he
 
 VkImageView Engine::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
 {
-    auto viewInfo = Renderer::ImageViewCreateInfo(image, format, aspectFlags);
+    auto viewInfo = ImageViewCreateInfo(image, format, aspectFlags);
 
     VkImageView imageView;
     if (vkCreateImageView(mDevice, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
@@ -1056,10 +1094,10 @@ VkCommandBuffer Engine::BeginSingleTimeCommands()
 {
     VkCommandBuffer cmd;
 
-    VkCommandBufferAllocateInfo allocInfo = Renderer::CommandBufferAllocateInfo(GetCurrentFrame().commandPool, 1);
+    VkCommandBufferAllocateInfo allocInfo = CommandBufferAllocateInfo(GetCurrentFrame().commandPool, 1);
     vkAllocateCommandBuffers(mDevice, &allocInfo, &cmd);
 
-    VkCommandBufferBeginInfo beginInfo = Renderer::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    VkCommandBufferBeginInfo beginInfo = CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     vkBeginCommandBuffer(cmd, &beginInfo);
 
     return cmd;
