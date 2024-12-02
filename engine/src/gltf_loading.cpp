@@ -13,7 +13,7 @@
 #include <iostream>
 
 
-std::vector<std::shared_ptr<MeshAsset>> LoadGltfMeshes(Engine *pEngine, std::filesystem::path pPath)
+std::vector<MeshAsset*> LoadGltfMeshes(Engine *pEngine, std::filesystem::path pPath)
 {
     fastgltf::Parser parser;
 
@@ -33,7 +33,7 @@ std::vector<std::shared_ptr<MeshAsset>> LoadGltfMeshes(Engine *pEngine, std::fil
 	fastgltf::validate(asset.get());
 #endif
 
-    std::vector<std::shared_ptr<MeshAsset>> meshes;
+    std::vector<MeshAsset*> meshes;
 
     std::vector<u32> indices;
     std::vector<Vertex> vertices;
@@ -42,8 +42,8 @@ std::vector<std::shared_ptr<MeshAsset>> LoadGltfMeshes(Engine *pEngine, std::fil
         indices.clear();
         vertices.clear();
 
-        MeshAsset newMesh;
-        newMesh.name = mesh.name;
+        MeshAsset* newMesh = new MeshAsset();
+        newMesh->name = mesh.name;
 
         for (auto&& primitive : mesh.primitives)
         {
@@ -88,49 +88,56 @@ std::vector<std::shared_ptr<MeshAsset>> LoadGltfMeshes(Engine *pEngine, std::fil
             }
 
             // Load vertex normals
-            auto normals = primitive.findAttribute("NORMAL");
-            if (normals != primitive.attributes.end())
             {
-                auto func = [&](glm::vec3 normal, size_t index)
+                auto attribute = primitive.findAttribute("NORMAL");
+                if (attribute != primitive.attributes.end())
                 {
-                    vertices[initial_vtx + index].normal = normal;
-                };
+                    auto func = [&](glm::vec3 normal, size_t index)
+                    {
+                        vertices[initial_vtx + index].normal = normal;
+                    };
 
-                fastgltf::iterateAccessorWithIndex<glm::vec3>(asset.get(), asset->accessors[normals->accessorIndex], func);
+                    fastgltf::iterateAccessorWithIndex<glm::vec3>(asset.get(), asset->accessors[attribute->accessorIndex], func);
+                }
             }
 
-            // Load UVs
-            auto uv = primitive.findAttribute("TEXCOORD_0");
-            if (uv != primitive.attributes.end())
-            {
-                auto func = [&](glm::vec2 uv, size_t index)
-                {
-                    vertices[initial_vtx + index].uvX = uv.x;
-                    vertices[initial_vtx + index].uvY = uv.y;
-                };
 
-                fastgltf::iterateAccessorWithIndex<glm::vec2>(asset.get(), asset->accessors[uv->accessorIndex], func);
+            // Load UVs
+            {
+                auto attribute = primitive.findAttribute("TEXCOORD_0");
+                if (attribute != primitive.attributes.end())
+                {
+                    auto func = [&](glm::vec2 uv, size_t index)
+                    {
+                        vertices[initial_vtx + index].uvX = uv.x;
+                        vertices[initial_vtx + index].uvY = uv.y;
+                    };
+
+                    fastgltf::iterateAccessorWithIndex<glm::vec2>(asset.get(), asset->accessors[attribute->accessorIndex], func);
+                }
             }
 
             // Load vertex colors
-            auto colors = primitive.findAttribute("COLOR_0");
-            if (colors != primitive.attributes.end())
             {
-                auto func = [&](glm::vec4 color, size_t index)
+                auto attribute = primitive.findAttribute("COLOR_0");
+                if (attribute != primitive.attributes.end())
                 {
-                    vertices[initial_vtx + index].color = color;
-                };
+                    auto func = [&](glm::vec4 color, size_t index)
+                    {
+                        vertices[initial_vtx + index].color = color;
+                    };
 
-                fastgltf::iterateAccessorWithIndex<glm::vec4>(asset.get(), asset->accessors[colors->accessorIndex], func);
+                    fastgltf::iterateAccessorWithIndex<glm::vec4>(asset.get(), asset->accessors[attribute->accessorIndex], func);
+                }
             }
 
-            newMesh.submeshes.push_back(newSubmesh);
+            newMesh->submeshes.push_back(newSubmesh);
         }
 
 
-        newMesh.meshBuffers = pEngine->UploadMesh(indices, vertices);
+        newMesh->meshBuffers = pEngine->UploadMesh(indices, vertices);
 
-        meshes.emplace_back(std::make_shared<MeshAsset>(std::move(newMesh)));
+        meshes.emplace_back(newMesh);
     }
 
     return meshes;

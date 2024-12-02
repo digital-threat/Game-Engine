@@ -5,6 +5,7 @@
 
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_LEFT_HANDED
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -16,9 +17,6 @@
 
 #include <vector>
 #include <array>
-#include <memory>
-#include <deque>
-#include <fstream>
 #include <functional>
 
 #include "types.h"
@@ -27,6 +25,7 @@
 #include "renderer_vk_buffers.h"
 #include <gltf_loading.h>
 #include "utility.h"
+#include "entity.h"
 
 using namespace Renderer;
 
@@ -48,14 +47,6 @@ struct UniformBufferObject
     alignas(16) glm::mat4 projection;
 };
 
-struct ComputePushConstants
-{
-    glm::vec4 data1;
-    glm::vec4 data2;
-    glm::vec4 data3;
-    glm::vec4 data4;
-};
-
 struct ComputeEffect
 {
     const char* name;
@@ -64,38 +55,6 @@ struct ComputeEffect
     VkPipelineLayout layout;
 
     ComputePushConstants data;
-};
-
-// TODO(Sergei): Temporary, replace!
-struct DeletionQueue
-{
-    std::deque<std::function<void()>> deletors;
-
-    void Push(std::function<void()>&& function)
-    {
-        deletors.push_back(function);
-    }
-
-    void Flush()
-    {
-        for (auto it = deletors.rbegin(); it != deletors.rend(); it++)
-        {
-            (*it)();
-        }
-
-        deletors.clear();
-    }
-};
-
-struct FrameData
-{
-    VkSemaphore swapchainSemaphore, renderSemaphore;
-    VkFence renderFence;
-
-    VkCommandPool commandPool;
-    VkCommandBuffer mainCommandBuffer;
-
-    DeletionQueue deletionQueue;
 };
 
 class Engine
@@ -151,7 +110,8 @@ private:
     VkCommandPool mImmediateCommandPool = VK_NULL_HANDLE;
 
     // Other
-    std::vector<std::shared_ptr<MeshAsset>> testMeshes;
+    std::vector<Entity> mEntities;
+    int mCurrentEntity = 0;
 
     // Old
     std::vector<VkBuffer> uniformBuffers;
@@ -226,18 +186,28 @@ private:
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
 
-            if (ImGui::Begin("background"))
+            // if (ImGui::Begin("background"))
+            // {
+            //     ComputeEffect& selected = backgroundEffects[currentBackgroundEffect];
+            //
+            //     ImGui::Text("Selected effect: ", selected.name);
+            //
+            //     ImGui::SliderInt("Effect Index", &currentBackgroundEffect,0, backgroundEffects.size() - 1);
+            //
+            //     ImGui::InputFloat4("data1",(float*)& selected.data.data1);
+            //     ImGui::InputFloat4("data2",(float*)& selected.data.data2);
+            //     ImGui::InputFloat4("data3",(float*)& selected.data.data3);
+            //     ImGui::InputFloat4("data4",(float*)& selected.data.data4);
+            // }
+            // ImGui::End();
+
+            if (ImGui::Begin("Transform"))
             {
-                ComputeEffect& selected = backgroundEffects[currentBackgroundEffect];
+                Entity& selected = mEntities[mCurrentEntity];
 
-                ImGui::Text("Selected effect: ", selected.name);
+                ImGui::SliderInt("Entity Index", &mCurrentEntity,0, mEntities.size() - 1);
 
-                ImGui::SliderInt("Effect Index", &currentBackgroundEffect,0, backgroundEffects.size() - 1);
-
-                ImGui::InputFloat4("data1",(float*)& selected.data.data1);
-                ImGui::InputFloat4("data2",(float*)& selected.data.data2);
-                ImGui::InputFloat4("data3",(float*)& selected.data.data3);
-                ImGui::InputFloat4("data4",(float*)& selected.data.data4);
+                ImGui::InputFloat3("Position:", reinterpret_cast<float *>(&selected.position));
             }
             ImGui::End();
 
@@ -293,7 +263,7 @@ private:
     void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& pFunction);
 
 public:
-    GPUMeshBuffers UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVertices);
+    MeshBuffers UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVertices);
 
 private:
     // Old

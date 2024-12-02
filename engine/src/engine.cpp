@@ -66,7 +66,15 @@ void Engine::InitImgui()
 
 void Engine::LoadMeshes()
 {
-    testMeshes = LoadGltfMeshes(this, "assets/meshes/Box.glb");
+    std::vector<MeshAsset*> box = LoadGltfMeshes(this, "assets/meshes/Box.glb");
+    mEntities.reserve(3);
+
+    for (int i = 0; i < 3; i++)
+    {
+        mEntities.emplace_back();
+        mEntities[i].mesh = box[0];
+        mEntities[i].position = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
+    }
 }
 
 void Engine::RecreateSwapchain()
@@ -717,7 +725,7 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
     vkCmdSetScissor(pCmd, 0, 1, &scissor);
 
 
-    GPUDrawPushConstants push_constants;
+    GeometryPushConstants pushConstants;
 
     static auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -725,20 +733,20 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
     float time = std::chrono::duration<float>(currentTime - startTime).count();
 
     float aspect = static_cast<float>(mColorTarget.extent.width) / static_cast<float>(mColorTarget.extent.height);
-    glm::mat4 model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 2.0f, -3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 projection = glm::perspective(glm::radians(60.0f), aspect, 10000.0f, 0.1f);
 
-    push_constants.worldMatrix = projection * view * model;
-
-    for (int i = 0; i < testMeshes.size(); i++)
+    for (int i = 0; i < mEntities.size(); i++)
     {
-        push_constants.vertexBuffer = testMeshes[i]->meshBuffers.vertexBufferAddress;
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), mEntities[i].position);
+        model = glm::rotate(model, time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        pushConstants.worldMatrix = projection * view * model;
+        pushConstants.vertexBuffer = mEntities[i].mesh->meshBuffers.vertexBufferAddress;
 
-        vkCmdPushConstants(pCmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-        vkCmdBindIndexBuffer(pCmd, testMeshes[i]->meshBuffers.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdPushConstants(pCmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GeometryPushConstants), &pushConstants);
+        vkCmdBindIndexBuffer(pCmd, mEntities[i].mesh->meshBuffers.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdDrawIndexed(pCmd, testMeshes[i]->submeshes[0].count, 1, testMeshes[i]->submeshes[0].startIndex, 0, 0);
+        vkCmdDrawIndexed(pCmd, mEntities[i].mesh->submeshes[0].count, 1, mEntities[i].mesh->submeshes[0].startIndex, 0, 0);
     }
 
     vkCmdEndRendering(pCmd);
@@ -819,7 +827,7 @@ void Engine::InitializeMeshPipeline()
 
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(GPUDrawPushConstants);
+    pushConstantRange.size = sizeof(GeometryPushConstants);
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = PipelineLayoutCreateInfo();
@@ -867,12 +875,12 @@ void Engine::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&pFunctio
     VK_CHECK(vkWaitForFences(mDevice, 1, &mImmediateFence, true, UINT64_MAX));
 }
 
-GPUMeshBuffers Engine::UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVertices)
+MeshBuffers Engine::UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVertices)
 {
     const size_t vertexBufferSize = pVertices.size() * sizeof(Vertex);
     const size_t indexBufferSize = pIndices.size() * sizeof(u32);
 
-    GPUMeshBuffers newSurface;
+    MeshBuffers newSurface;
 
     VkBufferUsageFlags vertexBufferUsage{};
     vertexBufferUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
