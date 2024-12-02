@@ -16,15 +16,16 @@
 
 #include <vector>
 #include <array>
+#include <memory>
 #include <deque>
 #include <fstream>
 #include <functional>
 
 #include "types.h"
-#include "vertex.h"
 #include "renderer_vk_types.h"
 #include "renderer_vk_descriptors.h"
 #include "renderer_vk_buffers.h"
+#include <gltf_loading.h>
 #include "utility.h"
 
 using namespace Renderer;
@@ -125,7 +126,8 @@ private:
     std::vector<VkImageView> mSwapchainImageViews;
     std::vector<VkFramebuffer> mSwapchainFramebuffers;
 
-    VulkanImage mRenderTarget{};
+    VulkanImage mColorTarget{};
+    VulkanImage mDepthTarget{};
 
     DescriptorAllocator mGlobalDescriptorAllocator{};
 
@@ -149,7 +151,7 @@ private:
     VkCommandPool mImmediateCommandPool = VK_NULL_HANDLE;
 
     // Other
-    GPUMeshBuffers mRectangle{};
+    std::vector<std::shared_ptr<MeshAsset>> testMeshes;
 
     // Old
     std::vector<VkBuffer> uniformBuffers;
@@ -173,7 +175,7 @@ public:
         InitWindow();
         InitVulkan();
         InitImgui();
-        LoadData();
+        LoadMeshes();
         MainLoop();
         Cleanup();
     }
@@ -252,7 +254,7 @@ private:
         glfwTerminate();
     }
 
-    void LoadData();
+    void LoadMeshes();
 
     void RecreateSwapchain();
     void CleanupSwapchain();
@@ -290,8 +292,10 @@ private:
 
     void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& pFunction);
 
+public:
     GPUMeshBuffers UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVertices);
 
+private:
     // Old
     u32 findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);

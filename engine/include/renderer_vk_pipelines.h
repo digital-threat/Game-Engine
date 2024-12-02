@@ -37,6 +37,7 @@ namespace Renderer
 		void SetColorAttachmentFormat(VkFormat pFormat);
 		void SetDepthFormat(VkFormat pFormat);
 		void DisableDepthTest();
+		void EnableDepthTest(bool pDepthWriteEnable, VkCompareOp pOp);
 
 		VkPipeline Build(VkDevice pDevice);
 	};

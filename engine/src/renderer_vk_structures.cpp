@@ -132,7 +132,7 @@ namespace Renderer
 		return info;
 	}
 
-	VkRenderingAttachmentInfo RenderingAttachmentInfo(const VkImageView pView, const VkClearValue *pClear, const VkImageLayout pLayout)
+	VkRenderingAttachmentInfo ColorAttachmentInfo(const VkImageView pView, const VkClearValue *pClear, const VkImageLayout pLayout)
 	{
 		VkRenderingAttachmentInfo info{};
 		info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -145,6 +145,19 @@ namespace Renderer
 		{
 			info.clearValue = *pClear;
 		}
+		return info;
+	}
+
+	VkRenderingAttachmentInfo DepthAttachmentInfo(VkImageView pView, VkImageLayout pLayout)
+	{
+		VkRenderingAttachmentInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		info.pNext = nullptr;
+		info.imageView = pView;
+		info.imageLayout = pLayout;
+		info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		info.clearValue.depthStencil.depth = 0.0f;
 		return info;
 	}
 

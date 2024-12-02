@@ -64,31 +64,9 @@ void Engine::InitImgui()
     ImGui_ImplVulkan_CreateFontsTexture();
 }
 
-void Engine::LoadData()
+void Engine::LoadMeshes()
 {
-    std::array<Vertex, 4> vertices;
-
-    vertices[0].position = {0.5,-0.5, 0};
-    vertices[1].position = {0.5,0.5, 0};
-    vertices[2].position = {-0.5,-0.5, 0};
-    vertices[3].position = {-0.5,0.5, 0};
-
-    vertices[0].color = {0,0, 0,1};
-    vertices[1].color = { 0.5,0.5,0.5 ,1};
-    vertices[2].color = { 1,0, 0,1 };
-    vertices[3].color = { 0,1, 0,1 };
-
-    std::array<uint32_t,6> indices;
-
-    indices[0] = 0;
-    indices[1] = 1;
-    indices[2] = 2;
-
-    indices[3] = 2;
-    indices[4] = 1;
-    indices[5] = 3;
-
-    mRectangle = UploadMesh(indices, vertices);
+    testMeshes = LoadGltfMeshes(this, "assets/meshes/Box.glb");
 }
 
 void Engine::RecreateSwapchain()
@@ -250,21 +228,35 @@ void Engine::CreateSwapchain()
     mSwapchainImages = mVkbSwapchain.get_images().value();
     mSwapchainImageViews = mVkbSwapchain.get_image_views().value();
 
-    mRenderTarget.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-    mRenderTarget.extent = {mVkbSwapchain.extent.width, mVkbSwapchain.extent.height, 1};
+    mColorTarget.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+    mColorTarget.extent = {mVkbSwapchain.extent.width, mVkbSwapchain.extent.height, 1};
 
-    VkImageUsageFlags imageUsageFlags{};
-    imageUsageFlags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    imageUsageFlags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    imageUsageFlags |= VK_IMAGE_USAGE_STORAGE_BIT;
-    imageUsageFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    VkImageUsageFlags colorTargetUsage{};
+    colorTargetUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    colorTargetUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    colorTargetUsage |= VK_IMAGE_USAGE_STORAGE_BIT;
+    colorTargetUsage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    VkImageCreateInfo imageInfo = ImageCreateInfo(mRenderTarget.format, imageUsageFlags, mRenderTarget.extent);
-    CreateImage(mAllocator, imageInfo, VMA_MEMORY_USAGE_GPU_ONLY, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mRenderTarget);
-    VkImageViewCreateInfo imageViewInfo = ImageViewCreateInfo(mRenderTarget.image, mRenderTarget.format, VK_IMAGE_ASPECT_COLOR_BIT);
-    if (vkCreateImageView(mDevice, &imageViewInfo, nullptr, &mRenderTarget.imageView) != VK_SUCCESS)
+    VkImageCreateInfo colorInfo = ImageCreateInfo(mColorTarget.format, colorTargetUsage, mColorTarget.extent);
+    CreateImage(mAllocator, colorInfo, VMA_MEMORY_USAGE_GPU_ONLY, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mColorTarget);
+    VkImageViewCreateInfo colorViewInfo = ImageViewCreateInfo(mColorTarget.image, mColorTarget.format, VK_IMAGE_ASPECT_COLOR_BIT);
+    if (vkCreateImageView(mDevice, &colorViewInfo, nullptr, &mColorTarget.imageView) != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to create image view.");
+        throw std::runtime_error("Failed to create color image view.");
+    }
+
+    mDepthTarget.format = VK_FORMAT_D32_SFLOAT;
+    mDepthTarget.extent = {mVkbSwapchain.extent.width, mVkbSwapchain.extent.height, 1};
+
+    VkImageUsageFlags depthTargetUsage{};
+    depthTargetUsage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+    VkImageCreateInfo depthInfo = ImageCreateInfo(mDepthTarget.format, depthTargetUsage, mDepthTarget.extent);
+    CreateImage(mAllocator, depthInfo, VMA_MEMORY_USAGE_GPU_ONLY, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mDepthTarget);
+    VkImageViewCreateInfo depthViewInfo = ImageViewCreateInfo(mDepthTarget.image, mDepthTarget.format, VK_IMAGE_ASPECT_DEPTH_BIT);
+    if (vkCreateImageView(mDevice, &depthViewInfo, nullptr, &mDepthTarget.imageView) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create depth image view.");
     }
 }
 
@@ -437,7 +429,7 @@ void Engine::InitializeDescriptors()
 
     VkDescriptorImageInfo info{};
     info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-    info.imageView = mRenderTarget.imageView;
+    info.imageView = mColorTarget.imageView;
 
     VkWriteDescriptorSet writeDescriptorSet{};
     writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -554,15 +546,20 @@ void Engine::Draw()
         throw std::runtime_error("Failed to begin recording command buffer.");
     }
 
-    TransitionImageLayout(cmd, mRenderTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+    TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
     DrawBackground(cmd, imageIndex);
-    TransitionImageLayout(cmd, mRenderTarget.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+    TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    TransitionImageLayout(cmd, mDepthTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
     DrawGeometry(cmd);
-    TransitionImageLayout(cmd, mRenderTarget.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+    TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     TransitionImageLayout(cmd, mSwapchainImages[imageIndex],VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-    VkExtent2D drawExtent = {mRenderTarget.extent.width, mRenderTarget.extent.height};
-    CopyImage(cmd, mRenderTarget.image, mSwapchainImages[imageIndex], drawExtent, mVkbSwapchain.extent);
+    VkExtent2D drawExtent = {mColorTarget.extent.width, mColorTarget.extent.height};
+    CopyImage(cmd, mColorTarget.image, mSwapchainImages[imageIndex], drawExtent, mVkbSwapchain.extent);
 
     TransitionImageLayout(cmd, mSwapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     DrawImgui(cmd, mSwapchainImageViews[imageIndex]);
@@ -618,7 +615,7 @@ void Engine::DrawBackground(const VkCommandBuffer pCmd, const u32 pImageIndex)
 
     vkCmdPushConstants(pCmd, mBackgroundPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.data);
 
-    vkCmdDispatch(pCmd, std::ceil(mRenderTarget.extent.width / 16.0), std::ceil(mRenderTarget.extent.height / 16.0), 1);
+    vkCmdDispatch(pCmd, std::ceil(mColorTarget.extent.width / 16.0), std::ceil(mColorTarget.extent.height / 16.0), 1);
 
     // VkCommandBufferBeginInfo beginInfo = CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     //
@@ -679,7 +676,7 @@ void Engine::DrawBackground(const VkCommandBuffer pCmd, const u32 pImageIndex)
 
 void Engine::DrawImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView)
 {
-    VkRenderingAttachmentInfo colorAttachment = RenderingAttachmentInfo(pTargetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    VkRenderingAttachmentInfo colorAttachment = ColorAttachmentInfo(pTargetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingInfo renderInfo = RenderingInfo(mVkbSwapchain.extent, &colorAttachment, nullptr);
 
     vkCmdBeginRendering(pCmd, &renderInfo);
@@ -691,18 +688,21 @@ void Engine::DrawImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView)
 
 void Engine::DrawGeometry(VkCommandBuffer pCmd)
 {
-    VkRenderingAttachmentInfo colorAttachment = RenderingAttachmentInfo(mRenderTarget.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    VkRenderingAttachmentInfo colorAttachment = ColorAttachmentInfo(mColorTarget.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    VkRenderingAttachmentInfo depthAttachment = DepthAttachmentInfo(mDepthTarget.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-    VkExtent2D drawExtent = { mRenderTarget.extent.width, mRenderTarget.extent.height };
-    VkRenderingInfo renderInfo = RenderingInfo(drawExtent, &colorAttachment, nullptr);
+    VkExtent2D drawExtent = { mColorTarget.extent.width, mColorTarget.extent.height };
+    VkRenderingInfo renderInfo = RenderingInfo(drawExtent, &colorAttachment, &depthAttachment);
 
     vkCmdBeginRendering(pCmd, &renderInfo);
 
+    vkCmdBindPipeline(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipeline);
+
     VkViewport viewport{};
     viewport.x = 0;
-    viewport.y = 0;
-    viewport.width = drawExtent.width;
-    viewport.height = drawExtent.height;
+    viewport.y = static_cast<float>(drawExtent.height);
+    viewport.width = static_cast<float>(drawExtent.width);
+    viewport.height = -static_cast<float>(drawExtent.height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
@@ -716,16 +716,30 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
 
     vkCmdSetScissor(pCmd, 0, 1, &scissor);
 
-    vkCmdBindPipeline(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipeline);
 
     GPUDrawPushConstants push_constants;
-    push_constants.worldMatrix = glm::mat4{ 1.f };
-    push_constants.vertexBuffer = mRectangle.vertexBufferAddress;
 
-    vkCmdPushConstants(pCmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-    vkCmdBindIndexBuffer(pCmd, mRectangle.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    static auto startTime = std::chrono::high_resolution_clock::now();
 
-    vkCmdDrawIndexed(pCmd, 6, 1, 0, 0, 0);
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float>(currentTime - startTime).count();
+
+    float aspect = static_cast<float>(mColorTarget.extent.width) / static_cast<float>(mColorTarget.extent.height);
+    glm::mat4 model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 projection = glm::perspective(glm::radians(60.0f), aspect, 10000.0f, 0.1f);
+
+    push_constants.worldMatrix = projection * view * model;
+
+    for (int i = 0; i < testMeshes.size(); i++)
+    {
+        push_constants.vertexBuffer = testMeshes[i]->meshBuffers.vertexBufferAddress;
+
+        vkCmdPushConstants(pCmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+        vkCmdBindIndexBuffer(pCmd, testMeshes[i]->meshBuffers.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdDrawIndexed(pCmd, testMeshes[i]->submeshes[0].count, 1, testMeshes[i]->submeshes[0].startIndex, 0, 0);
+    }
 
     vkCmdEndRendering(pCmd);
 }
@@ -821,9 +835,9 @@ void Engine::InitializeMeshPipeline()
     builder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
     builder.SetMultisamplingNone();
     builder.DisableBlending();
-    builder.DisableDepthTest();
-    builder.SetColorAttachmentFormat(mRenderTarget.format);
-    builder.SetDepthFormat(VK_FORMAT_UNDEFINED);
+    builder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+    builder.SetColorAttachmentFormat(mColorTarget.format);
+    builder.SetDepthFormat(mDepthTarget.format);
     mMeshPipeline = builder.Build(mDevice);
 
     vkDestroyShaderModule(mDevice, vertexShader, nullptr);

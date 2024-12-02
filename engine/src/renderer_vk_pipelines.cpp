@@ -113,6 +113,19 @@ namespace Renderer
 		mDepthStencil.maxDepthBounds = 1.0f;
 	}
 
+	void PipelineBuilder::EnableDepthTest(bool pDepthWriteEnable, VkCompareOp pOp)
+	{
+		mDepthStencil.depthTestEnable = VK_TRUE;
+		mDepthStencil.depthWriteEnable = pDepthWriteEnable;
+		mDepthStencil.depthCompareOp = pOp;
+		mDepthStencil.depthBoundsTestEnable = VK_FALSE;
+		mDepthStencil.stencilTestEnable = VK_FALSE;
+		mDepthStencil.front = {};
+		mDepthStencil.back = {};
+		mDepthStencil.minDepthBounds = 0.0f;
+		mDepthStencil.maxDepthBounds = 1.0f;
+	}
+
 	VkPipeline PipelineBuilder::Build(VkDevice pDevice)
 	{
 		VkPipelineViewportStateCreateInfo viewportState{};

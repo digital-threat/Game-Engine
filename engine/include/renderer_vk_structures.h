@@ -23,7 +23,8 @@ namespace Renderer
 
 	VkSubmitInfo2 SubmitInfo(const VkCommandBufferSubmitInfo* pCmd, const VkSemaphoreSubmitInfo* pSignalSemaphoreInfo, const VkSemaphoreSubmitInfo* pWaitSemaphoreInfo);
 
-	VkRenderingAttachmentInfo RenderingAttachmentInfo(VkImageView pView, const VkClearValue* pClear, VkImageLayout pLayout);
+	VkRenderingAttachmentInfo ColorAttachmentInfo(VkImageView pView, const VkClearValue* pClear, VkImageLayout pLayout);
+	VkRenderingAttachmentInfo DepthAttachmentInfo(VkImageView pView, VkImageLayout pLayout);
 	VkRenderingInfo RenderingInfo(VkExtent2D pExtent, VkRenderingAttachmentInfo* pColorAttachment, VkRenderingAttachmentInfo* pDepthAttachment);
 
 	VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo();

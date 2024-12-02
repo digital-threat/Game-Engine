@@ -34,7 +34,7 @@ endforeach()
 target_sources(${PROJECT_NAME} PRIVATE ${SHADER_BINARIES})
 
 
-
+# Copy textures
 set(TEXTURES_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures")
 set(TEXTURES_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/assets/textures")
 
@@ -46,4 +46,18 @@ add_custom_command(
         "${TEXTURES_SOURCE_DIR}"
         "${TEXTURES_BINARY_DIR}"
         COMMENT "Copying textures to build directory"
+)
+
+# Copy meshes
+set(MESHES_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets/meshes")
+set(MESHES_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/assets/meshes")
+
+file(MAKE_DIRECTORY ${MESHES_BINARY_DIR})
+
+add_custom_command(
+        TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${MESHES_SOURCE_DIR}"
+        "${MESHES_BINARY_DIR}"
+        COMMENT "Copying meshes to build directory"
 )
