@@ -737,8 +737,8 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
     auto currentTime = std::chrono::high_resolution_clock::now();
 
     float aspect = static_cast<float>(mColorTarget.extent.width) / static_cast<float>(mColorTarget.extent.height);
-    glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 2.0f, -3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 projection = glm::perspective(glm::radians(60.0f), aspect, 10000.0f, 0.1f);
+    glm::mat4 view = glm::lookAt(mCamera.position, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 projection = glm::perspective(glm::radians(mCamera.fov), aspect, 10000.0f, 0.1f);
 
     for (int i = 0; i < mEntities.size(); i++)
     {

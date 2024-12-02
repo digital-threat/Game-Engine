@@ -29,6 +29,7 @@
 #include "gltf_loading.h"
 #include "utility.h"
 #include "entity.h"
+#include "camera.h"
 
 using namespace Renderer;
 
@@ -113,6 +114,7 @@ private:
     VkCommandPool mImmediateCommandPool = VK_NULL_HANDLE;
 
     // Other
+    Camera mCamera{ .position = glm::vec3{ 0.0f, 2.0f, -3.0f }, .fov = 60};
     std::vector<Entity> mEntities;
     int mCurrentEntity = 0;
 
@@ -227,6 +229,13 @@ private:
             }
             ImGui::End();
 
+            if (ImGui::Begin("Camera"))
+            {
+                ImGui::InputFloat3("Position:", reinterpret_cast<float *>(&mCamera.position));
+                ImGui::InputFloat("FOV", &mCamera.fov);
+            }
+            ImGui::End();
+            
             ImGui::Render();
 
             Draw();
