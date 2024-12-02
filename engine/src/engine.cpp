@@ -4,6 +4,8 @@
 #include <chrono>
 #include <cstring>
 #include <vk_mem_alloc.h>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 #include "renderer_vk_images.h"
 #include "renderer_vk_pipelines.h"
 #include "renderer_vk_structures.h"
@@ -72,8 +74,11 @@ void Engine::LoadMeshes()
     for (int i = 0; i < 3; i++)
     {
         mEntities.emplace_back();
+        mEntities[i].name = "Default Name";
         mEntities[i].mesh = box[0];
         mEntities[i].position = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
+        mEntities[i].rotation = glm::vec3();
+        mEntities[i].scale = 1;
     }
 }
 
@@ -730,7 +735,6 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
     static auto startTime = std::chrono::high_resolution_clock::now();
 
     auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float>(currentTime - startTime).count();
 
     float aspect = static_cast<float>(mColorTarget.extent.width) / static_cast<float>(mColorTarget.extent.height);
     glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 2.0f, -3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -739,7 +743,11 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
     for (int i = 0; i < mEntities.size(); i++)
     {
         glm::mat4 model = glm::translate(glm::mat4(1.0f), mEntities[i].position);
-        model = glm::rotate(model, time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::quat rotation = glm::quat(radians(mEntities[i].rotation));
+        model *= glm::toMat4(rotation);
+        model = glm::scale(model, glm::vec3(mEntities[i].scale));
+
+
         pushConstants.worldMatrix = projection * view * model;
         pushConstants.vertexBuffer = mEntities[i].mesh->meshBuffers.vertexBufferAddress;
 

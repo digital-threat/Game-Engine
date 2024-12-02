@@ -6,6 +6,7 @@
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_LEFT_HANDED
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -18,12 +19,14 @@
 #include <vector>
 #include <array>
 #include <functional>
+#include <cassert>
+#include <iostream>
 
 #include "types.h"
 #include "renderer_vk_types.h"
 #include "renderer_vk_descriptors.h"
 #include "renderer_vk_buffers.h"
-#include <gltf_loading.h>
+#include "gltf_loading.h"
 #include "utility.h"
 #include "entity.h"
 
@@ -207,7 +210,20 @@ private:
 
                 ImGui::SliderInt("Entity Index", &mCurrentEntity,0, mEntities.size() - 1);
 
+
+                static char buffer[64]{};
+                assert(selected.name.size() < 64);
+                selected.name.copy(buffer, selected.name.size());
+                buffer[selected.name.size()] = '\0';
+
+                if (ImGui::InputText("Name: ", buffer, IM_ARRAYSIZE(buffer)))
+                {
+                    selected.name = std::string(buffer);
+                }
+
                 ImGui::InputFloat3("Position:", reinterpret_cast<float *>(&selected.position));
+                ImGui::InputFloat3("Rotation:", reinterpret_cast<float *>(&selected.rotation));
+                ImGui::InputFloat("Scale", &selected.scale);
             }
             ImGui::End();
 
