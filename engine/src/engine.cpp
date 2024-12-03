@@ -69,16 +69,15 @@ void Engine::InitImgui()
 void Engine::LoadMeshes()
 {
     std::vector<MeshAsset*> box = LoadGltfMeshes(this, "assets/meshes/Box.glb");
-    mEntities.reserve(3);
 
     for (int i = 0; i < 3; i++)
     {
-        mEntities.emplace_back();
-        mEntities[i].name = "Default Name";
-        mEntities[i].mesh = box[0];
-        mEntities[i].position = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
-        mEntities[i].rotation = glm::vec3();
-        mEntities[i].scale = 1;
+        Entity* newEntity = mEntityManager.CreateEntity();
+        newEntity->name = "Default Name";
+        newEntity->mesh = box[0];
+        newEntity->position = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
+        newEntity->rotation = glm::vec3();
+        newEntity->scale = 1;
     }
 }
 
@@ -732,29 +731,29 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
 
     GeometryPushConstants pushConstants;
 
-    static auto startTime = std::chrono::high_resolution_clock::now();
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-
     float aspect = static_cast<float>(mColorTarget.extent.width) / static_cast<float>(mColorTarget.extent.height);
     glm::mat4 view = glm::lookAt(mCamera.position, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 projection = glm::perspective(glm::radians(mCamera.fov), aspect, 10000.0f, 0.1f);
 
-    for (int i = 0; i < mEntities.size(); i++)
+    for (auto entity : mEntityManager.All())
     {
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), mEntities[i].position);
-        glm::quat rotation = glm::quat(radians(mEntities[i].rotation));
-        model *= glm::toMat4(rotation);
-        model = glm::scale(model, glm::vec3(mEntities[i].scale));
+        if (entity->mesh == nullptr)
+        {
+            continue;
+        }
 
+        glm::mat4 model = glm::translate(glm::mat4(1.0f),entity->position);
+        glm::quat rotation = glm::quat(radians(entity->rotation));
+        model *= glm::toMat4(rotation);
+        model = glm::scale(model, glm::vec3(entity->scale));
 
         pushConstants.worldMatrix = projection * view * model;
-        pushConstants.vertexBuffer = mEntities[i].mesh->meshBuffers.vertexBufferAddress;
+        pushConstants.vertexBuffer = entity->mesh->meshBuffers.vertexBufferAddress;
 
         vkCmdPushConstants(pCmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GeometryPushConstants), &pushConstants);
-        vkCmdBindIndexBuffer(pCmd, mEntities[i].mesh->meshBuffers.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindIndexBuffer(pCmd, entity->mesh->meshBuffers.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdDrawIndexed(pCmd, mEntities[i].mesh->submeshes[0].count, 1, mEntities[i].mesh->submeshes[0].startIndex, 0, 0);
+        vkCmdDrawIndexed(pCmd, entity->mesh->submeshes[0].count, 1, entity->mesh->submeshes[0].startIndex, 0, 0);
     }
 
     vkCmdEndRendering(pCmd);

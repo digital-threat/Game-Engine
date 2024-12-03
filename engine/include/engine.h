@@ -20,6 +20,7 @@
 #include <array>
 #include <functional>
 #include <cassert>
+#include <entity_manager.h>
 #include <iostream>
 
 #include "types.h"
@@ -115,7 +116,8 @@ private:
 
     // Other
     Camera mCamera{ .position = glm::vec3{ 0.0f, 2.0f, -3.0f }, .fov = 60};
-    std::vector<Entity> mEntities;
+
+    EntityManager mEntityManager;
     int mCurrentEntity = 0;
 
     // Old
@@ -208,24 +210,42 @@ private:
 
             if (ImGui::Begin("Transform"))
             {
-                Entity& selected = mEntities[mCurrentEntity];
-
-                ImGui::SliderInt("Entity Index", &mCurrentEntity,0, mEntities.size() - 1);
-
-
-                static char buffer[64]{};
-                assert(selected.name.size() < 64);
-                selected.name.copy(buffer, selected.name.size());
-                buffer[selected.name.size()] = '\0';
-
-                if (ImGui::InputText("Name: ", buffer, IM_ARRAYSIZE(buffer)))
+                if (mEntityManager.entities.size() > 0)
                 {
-                    selected.name = std::string(buffer);
+                    Entity* selected = mEntityManager.All()[mCurrentEntity];
+
+                    ImGui::SliderInt("Entity Index", &mCurrentEntity,0, mEntityManager.entities.size() - 1);
+
+
+                    static char buffer[64]{};
+                    assert(selected->name.size() < 64);
+                    selected->name.copy(buffer, selected->name.size());
+                    buffer[selected->name.size()] = '\0';
+
+                    if (ImGui::InputText("Name: ", buffer, IM_ARRAYSIZE(buffer)))
+                    {
+                        selected->name = std::string(buffer);
+                    }
+
+                    ImGui::InputFloat3("Position:", reinterpret_cast<float *>(&selected->position));
+                    ImGui::InputFloat3("Rotation:", reinterpret_cast<float *>(&selected->rotation));
+                    ImGui::InputFloat("Scale", &selected->scale);
+
+                    if (ImGui::Button("Delete Entity"))
+                    {
+                        mEntityManager.DeleteEntity(selected);
+                        if (mEntityManager.entities.size() > 0)
+                        {
+                            mCurrentEntity %= mEntityManager.entities.size();
+                        }
+                    }
                 }
 
-                ImGui::InputFloat3("Position:", reinterpret_cast<float *>(&selected.position));
-                ImGui::InputFloat3("Rotation:", reinterpret_cast<float *>(&selected.rotation));
-                ImGui::InputFloat("Scale", &selected.scale);
+                if (ImGui::Button("Create Entity"))
+                {
+                    mEntityManager.CreateEntity();
+                }
+
             }
             ImGui::End();
 
@@ -235,7 +255,7 @@ private:
                 ImGui::InputFloat("FOV", &mCamera.fov);
             }
             ImGui::End();
-            
+
             ImGui::Render();
 
             Draw();

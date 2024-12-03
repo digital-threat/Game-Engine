@@ -6,9 +6,17 @@
 
 struct Entity
 {
-	std::string name;
+	int id;
+	std::string name = "Default Name";
 	glm::vec3 position;
 	glm::vec3 rotation;
-	float scale;
-	MeshAsset* mesh;
+	float scale = 1;
+	Renderer::MeshAsset* mesh = nullptr;
+
+	Entity() = delete;
+
+	Entity(int id)
+	{
+		this->id = id;
+	}
 };
