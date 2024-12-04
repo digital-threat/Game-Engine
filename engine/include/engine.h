@@ -89,7 +89,6 @@ private:
 
     std::vector<VkImage> mSwapchainImages;
     std::vector<VkImageView> mSwapchainImageViews;
-    std::vector<VkFramebuffer> mSwapchainFramebuffers;
 
     VulkanImage mColorTarget{};
     VulkanImage mDepthTarget{};
@@ -98,6 +97,9 @@ private:
 
     VkDescriptorSet mRenderTargetDescriptorSet = VK_NULL_HANDLE;
     VkDescriptorSetLayout mRenderTargetDescriptorSetLayout = VK_NULL_HANDLE;
+
+    VkExtent2D mRenderExtent{};
+    float mRenderScale = 0.9f;
 
     // Pipelines
     VkPipeline mGraphicsPipeline = VK_NULL_HANDLE;
@@ -121,6 +123,10 @@ private:
     EntityManager mEntityManager;
     int mCurrentEntity = 0;
 
+    // Resize window
+    bool mResizeRequested = false;
+    bool mFramebufferResized = false;
+
     // Old
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
@@ -130,12 +136,6 @@ private:
     VkDeviceMemory textureImageMemory = VK_NULL_HANDLE;
     VkImageView textureImageView = VK_NULL_HANDLE;
     VkSampler textureSampler = VK_NULL_HANDLE;
-
-    VkImage depthImage = VK_NULL_HANDLE;
-    VkDeviceMemory depthImageMemory = VK_NULL_HANDLE;
-    VkImageView depthImageView = VK_NULL_HANDLE;
-
-    bool framebufferResized = false;
 
 public:
     void Run()
@@ -158,7 +158,7 @@ private:
 
         window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
         glfwSetWindowUserPointer(window, this);
-        glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+        glfwSetFramebufferSizeCallback(window, FramebufferResizeCallback);
     }
 
     void InitVulkan()
@@ -169,15 +169,13 @@ private:
         CreateDevice();
         GetQueues();
         CreateAllocator();
-        CreateSwapchain();
+        CreateSwapchain(WIDTH, HEIGHT);
         CreateSyncObjects();
         CreateCommandObjects();
         InitializeDescriptors();
         InitializePipelines();
 
-        //createDepthResources();
         //createTextureImage();
-        //createTextureImageView();
         //createTextureSampler();
         //createUniformBuffers();
     }
@@ -189,6 +187,11 @@ private:
         while (!glfwWindowShouldClose(window))
         {
             glfwPollEvents();
+
+            if (mResizeRequested)
+            {
+                ResizeSwapchain();
+            }
 
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();
@@ -208,6 +211,12 @@ private:
             //     ImGui::InputFloat4("data4",(float*)& selected.data.data4);
             // }
             // ImGui::End();
+
+            if (ImGui::Begin("Application"))
+            {
+                ImGui::SliderFloat("Render Scale", &mRenderScale, 0.3f, 1.0f);
+            }
+            ImGui::End();
 
             if (ImGui::Begin("Transform"))
             {
@@ -296,8 +305,7 @@ private:
 
     void LoadMeshes();
 
-    void RecreateSwapchain();
-    void CleanupSwapchain();
+    void ResizeSwapchain();
 
     void CreateInstance();
     void CreateSurface();
@@ -305,21 +313,19 @@ private:
     void CreateDevice();
     void GetQueues();
     void CreateAllocator();
-    void CreateSwapchain();
+    void CreateSwapchain(u32 width, u32 height);
     void CreateCommandObjects();
     void CreateSyncObjects();
     void InitializeDescriptors();
 
     // Old
-    void createDepthResources();
     void createTextureImage();
-    void createTextureImageView();
     void createTextureSampler();
     void createUniformBuffers();
 
     // Drawing
     void Draw();
-    void DrawBackground(VkCommandBuffer pCmd, u32 pImageIndex);
+    void DrawBackground(VkCommandBuffer pCmd);
     void DrawImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView);
     void DrawGeometry(VkCommandBuffer pCmd);
 
@@ -330,32 +336,21 @@ private:
 
     FrameData& GetCurrentFrame() { return mFrames[mCurrentFrame % MAX_FRAMES_IN_FLIGHT]; }
 
-    void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& pFunction);
-
 public:
+    void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& pFunction);
     MeshBuffers UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVertices);
 
 private:
     // Old
-    u32 findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties);
-    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     void updateUniformBuffer(u32 currentImage);
     void copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height);
-
-    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
-    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
-
-    VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-    VkFormat findDepthFormat();
-    bool hasStencilComponent(VkFormat format);
 
     VkCommandBuffer BeginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 
-    static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
+    static void FramebufferResizeCallback(GLFWwindow* window, int width, int height)
     {
         auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
-        app->framebufferResized = true;
+        app->mFramebufferResized = true;
     }
 };

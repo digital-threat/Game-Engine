@@ -1,5 +1,6 @@
 #include "renderer_vk_buffers.h"
 
+#include <engine.h>
 #include <stdexcept>
 
 namespace Renderer
@@ -29,5 +30,12 @@ namespace Renderer
 	void DestroyBuffer(VmaAllocator pAllocator, const VulkanBuffer &pBuffer)
 	{
 		vmaDestroyBuffer(pAllocator, pBuffer.buffer, pBuffer.allocation);
+	}
+
+	void CopyBuffer(VkCommandBuffer pCmd, VkBuffer pSrcBuffer, VkBuffer pDstBuffer, VkDeviceSize pSize)
+	{
+		VkBufferCopy copyRegion{};
+		copyRegion.size = pSize;
+		vkCmdCopyBuffer(pCmd, pSrcBuffer, pDstBuffer, 1, &copyRegion);
 	}
 }

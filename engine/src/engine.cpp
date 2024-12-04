@@ -95,7 +95,7 @@ void Engine::LoadMeshes()
     }
 }
 
-void Engine::RecreateSwapchain()
+void Engine::ResizeSwapchain()
 {
     int width = 0, height = 0;
     glfwGetFramebufferSize(window, &width, &height);
@@ -107,24 +107,12 @@ void Engine::RecreateSwapchain()
 
     vkDeviceWaitIdle(mDevice);
 
-    CleanupSwapchain();
-
-    CreateSwapchain();
-    createDepthResources();
-}
-
-void Engine::CleanupSwapchain()
-{
-    vkDestroyImageView(mDevice, depthImageView, nullptr);
-    vkDestroyImage(mDevice, depthImage, nullptr);
-    vkFreeMemory(mDevice, depthImageMemory, nullptr);
-
-    for (auto &framebuffer : mSwapchainFramebuffers)
-    {
-        vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
-    }
-
     mVkbSwapchain.destroy_image_views(mSwapchainImageViews);
+    destroy_swapchain(mVkbSwapchain);
+
+    CreateSwapchain(width, height);
+
+    mResizeRequested = false;
 }
 
 void Engine::CreateInstance()
@@ -234,11 +222,12 @@ void Engine::CreateAllocator()
     vmaCreateAllocator(&info, &mAllocator);
 }
 
-void Engine::CreateSwapchain()
+void Engine::CreateSwapchain(u32 width, u32 height)
 {
     vkb::SwapchainBuilder builder{mVkbDevice};
     builder.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR);
-    builder.set_old_swapchain(mVkbSwapchain);
+    builder.set_desired_extent(width, height);
+    //builder.set_old_swapchain(mVkbSwapchain);
     builder.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
     auto swapchain = builder.build();
 
@@ -248,7 +237,7 @@ void Engine::CreateSwapchain()
         throw std::runtime_error("Failed to create swapchain. Error: " + swapchain.error().message() + "\n");
     }
 
-    vkb::destroy_swapchain(mVkbSwapchain);
+    //destroy_swapchain(mVkbSwapchain);
     mVkbSwapchain = swapchain.value();
 
     mSwapchainImages = mVkbSwapchain.get_images().value();
@@ -271,7 +260,11 @@ void Engine::CreateSwapchain()
         throw std::runtime_error("Failed to create color image view.");
     }
 
-    mDepthTarget.format = VK_FORMAT_D32_SFLOAT;
+    std::array<VkFormat, 3> candidates = {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
+    VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
+    VkFormatFeatureFlags features = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+    mDepthTarget.format = FindSupportedFormat(mPhysicalDevice, candidates, tiling, features);
     mDepthTarget.extent = {mVkbSwapchain.extent.width, mVkbSwapchain.extent.height, 1};
 
     VkImageUsageFlags depthTargetUsage{};
@@ -332,17 +325,6 @@ void Engine::CreateCommandObjects()
     }
 }
 
-void Engine::createDepthResources()
-{
-    VkFormat depthFormat = findDepthFormat();
-
-    VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
-    VkImageUsageFlags usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    createImage(mVkbSwapchain.extent.width, mVkbSwapchain.extent.height, depthFormat, tiling, usage, properties, depthImage, depthImageMemory);
-    depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-}
-
 void Engine::createTextureImage()
 {
     int texWidth, texHeight, texChannels;
@@ -359,7 +341,7 @@ void Engine::createTextureImage()
 
     constexpr VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     constexpr VkMemoryPropertyFlags bufferProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    createBuffer(imageSize, bufferUsage, bufferProperties, stagingBuffer, stagingBufferMemory);
+    //createBuffer(imageSize, bufferUsage, bufferProperties, stagingBuffer, stagingBufferMemory);
 
     void* data;
     vkMapMemory(mDevice, stagingBufferMemory, 0, imageSize, 0, &data);
@@ -372,7 +354,7 @@ void Engine::createTextureImage()
     constexpr VkImageTiling imageTiling = VK_IMAGE_TILING_OPTIMAL;
     constexpr VkImageUsageFlags imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     constexpr VkMemoryPropertyFlags imageProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    createImage(texWidth, texHeight, imageFormat, imageTiling, imageUsage, imageProperties, textureImage, textureImageMemory);
+    //createImage(texWidth, texHeight, imageFormat, imageTiling, imageUsage, imageProperties, textureImage, textureImageMemory);
 
     VkCommandBuffer cmd = BeginSingleTimeCommands();
     TransitionImageLayout(cmd, textureImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -382,11 +364,6 @@ void Engine::createTextureImage()
 
     vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
     vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
-}
-
-void Engine::createTextureImageView()
-{
-    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 void Engine::createTextureSampler()
@@ -430,7 +407,7 @@ void Engine::createUniformBuffers()
     {
         constexpr VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
         constexpr VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        createBuffer(bufferSize, usage, properties, uniformBuffers[i], uniformBuffersMemory[i]);
+        //createBuffer(bufferSize, usage, properties, uniformBuffers[i], uniformBuffersMemory[i]);
 
         vkMapMemory(mDevice, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
     }
@@ -551,13 +528,16 @@ void Engine::Draw()
     VkResult result = vkAcquireNextImageKHR(mDevice, mVkbSwapchain, UINT64_MAX, GetCurrentFrame().swapchainSemaphore, VK_NULL_HANDLE, &imageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
-        RecreateSwapchain();
+        mResizeRequested = true;
         return;
     }
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
         throw std::runtime_error("Failed to acquire swap chain image.");
     }
+
+    mRenderExtent.width= std::min(mVkbSwapchain.extent.width, mColorTarget.extent.width) * mRenderScale;
+    mRenderExtent.height = std::min(mVkbSwapchain.extent.height, mColorTarget.extent.height) * mRenderScale;
 
     //updateUniformBuffer(mCurrentFrame);
 
@@ -574,7 +554,7 @@ void Engine::Draw()
 
     TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-    DrawBackground(cmd, imageIndex);
+    DrawBackground(cmd);
 
     TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     TransitionImageLayout(cmd, mDepthTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
@@ -584,8 +564,7 @@ void Engine::Draw()
     TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     TransitionImageLayout(cmd, mSwapchainImages[imageIndex],VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-    VkExtent2D drawExtent = {mColorTarget.extent.width, mColorTarget.extent.height};
-    CopyImage(cmd, mColorTarget.image, mSwapchainImages[imageIndex], drawExtent, mVkbSwapchain.extent);
+    CopyImage(cmd, mColorTarget.image, mSwapchainImages[imageIndex], mRenderExtent, mVkbSwapchain.extent);
 
     TransitionImageLayout(cmd, mSwapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     DrawImgui(cmd, mSwapchainImageViews[imageIndex]);
@@ -619,10 +598,10 @@ void Engine::Draw()
     presentInfo.pImageIndices = &imageIndex;
 
     result = vkQueuePresentKHR(mPresentQueue, &presentInfo);
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized)
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || mFramebufferResized)
     {
-        framebufferResized = false;
-        RecreateSwapchain();
+        mResizeRequested = true;
+        mFramebufferResized = false;
     }
     else if (result != VK_SUCCESS)
     {
@@ -632,7 +611,7 @@ void Engine::Draw()
     mCurrentFrame++;
 }
 
-void Engine::DrawBackground(const VkCommandBuffer pCmd, const u32 pImageIndex)
+void Engine::DrawBackground(const VkCommandBuffer pCmd)
 {
     ComputeEffect& effect = backgroundEffects[currentBackgroundEffect];
 
@@ -642,62 +621,6 @@ void Engine::DrawBackground(const VkCommandBuffer pCmd, const u32 pImageIndex)
     vkCmdPushConstants(pCmd, mBackgroundPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.data);
 
     vkCmdDispatch(pCmd, std::ceil(mColorTarget.extent.width / 16.0), std::ceil(mColorTarget.extent.height / 16.0), 1);
-
-    // VkCommandBufferBeginInfo beginInfo = CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-    //
-    // if (vkBeginCommandBuffer(pCmd, &beginInfo) != VK_SUCCESS)
-    // {
-    //     throw std::runtime_error("Failed to begin recording command buffer.");
-    // }
-    //
-    // TransitionImageLayout(pCmd, mSwapchainImages[pImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    //
-    // VkRenderPassBeginInfo renderPassInfo{};
-    // renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    // renderPassInfo.renderPass = renderPass;
-    // renderPassInfo.framebuffer = mSwapchainFramebuffers[pImageIndex];
-    // renderPassInfo.renderArea.offset = {0, 0};
-    // renderPassInfo.renderArea.extent = mVkbSwapchain.extent;
-    //
-    // std::array<VkClearValue, 2> clearValues{};
-    // clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-    // clearValues[1].depthStencil = {1.0f, 0};
-    //
-    // renderPassInfo.clearValueCount = static_cast<u32>(clearValues.size());
-    // renderPassInfo.pClearValues = clearValues.data();
-    //
-    // vkCmdBeginRenderPass(pCmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    // vkCmdBindPipeline(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-    //
-    // VkViewport viewport{};
-    // viewport.x = 0.0f;
-    // viewport.y = static_cast<float>(mVkbSwapchain.extent.height);
-    // viewport.width = static_cast<float>(mVkbSwapchain.extent.width);
-    // viewport.height = -static_cast<float>(mVkbSwapchain.extent.height);
-    // viewport.minDepth = 0.0f;
-    // viewport.maxDepth = 1.0f;
-    // vkCmdSetViewport(pCmd, 0, 1, &viewport);
-    //
-    // VkRect2D scissor{};
-    // scissor.offset = {0, 0};
-    // scissor.extent = mVkbSwapchain.extent;
-    // vkCmdSetScissor(pCmd, 0, 1, &scissor);
-    //
-    // VkBuffer vertexBuffers[] = {vertexBuffer};
-    // VkDeviceSize offsets[] = {0};
-    // vkCmdBindVertexBuffers(pCmd, 0, 1, vertexBuffers, offsets);
-    //
-    // // NOTE(Sergei): Nasty hardcoded index type!
-    // vkCmdBindIndexBuffer(pCmd, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-    //
-    // vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[mCurrentFrame], 0, nullptr);
-    // vkCmdDrawIndexed(pCmd, static_cast<u32>(indices.size()), 1, 0, 0, 0);
-    // vkCmdEndRenderPass(pCmd);
-    //
-    // if (vkEndCommandBuffer(pCmd) != VK_SUCCESS)
-    // {
-    //     throw std::runtime_error("failed to record command buffer!");
-    // }
 }
 
 void Engine::DrawImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView)
@@ -717,8 +640,7 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
     VkRenderingAttachmentInfo colorAttachment = ColorAttachmentInfo(mColorTarget.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingAttachmentInfo depthAttachment = DepthAttachmentInfo(mDepthTarget.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-    VkExtent2D drawExtent = { mColorTarget.extent.width, mColorTarget.extent.height };
-    VkRenderingInfo renderInfo = RenderingInfo(drawExtent, &colorAttachment, &depthAttachment);
+    VkRenderingInfo renderInfo = RenderingInfo(mRenderExtent, &colorAttachment, &depthAttachment);
 
     vkCmdBeginRendering(pCmd, &renderInfo);
 
@@ -726,9 +648,9 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
 
     VkViewport viewport{};
     viewport.x = 0;
-    viewport.y = static_cast<float>(drawExtent.height);
-    viewport.width = static_cast<float>(drawExtent.width);
-    viewport.height = -static_cast<float>(drawExtent.height);
+    viewport.y = static_cast<float>(mRenderExtent.height);
+    viewport.width = static_cast<float>(mRenderExtent.width);
+    viewport.height = -static_cast<float>(mRenderExtent.height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
@@ -737,15 +659,15 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
     VkRect2D scissor{};
     scissor.offset.x = 0;
     scissor.offset.y = 0;
-    scissor.extent.width = drawExtent.width;
-    scissor.extent.height = drawExtent.height;
+    scissor.extent.width = mRenderExtent.width;
+    scissor.extent.height = mRenderExtent.height;
 
     vkCmdSetScissor(pCmd, 0, 1, &scissor);
 
 
     GeometryPushConstants pushConstants;
 
-    float aspect = static_cast<float>(mColorTarget.extent.width) / static_cast<float>(mColorTarget.extent.height);
+    float aspect = static_cast<float>(mRenderExtent.width) / static_cast<float>(mRenderExtent.height);
     glm::mat4 view = glm::lookAt(mCamera.position, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 projection = glm::perspective(glm::radians(mCamera.fov), aspect, 10000.0f, 0.1f);
 
@@ -952,101 +874,6 @@ MeshBuffers Engine::UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVerti
     return newSurface;
 }
 
-u32 Engine::findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties)
-{
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(mPhysicalDevice, &memProperties);
-
-    for (u32 i = 0; i < memProperties.memoryTypeCount; i++)
-    {
-        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-        {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("failed to find suitable memory type!");
-}
-
-void Engine::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
-    VkBuffer& buffer, VkDeviceMemory& bufferMemory)
-{
-    VkBufferCreateInfo bufferInfo{};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = size;
-    bufferInfo.usage = usage;
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    if (vkCreateBuffer(mDevice, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create buffer!");
-    }
-
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(mDevice, buffer, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-    if (vkAllocateMemory(mDevice, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to allocate buffer memory!");
-    }
-
-    vkBindBufferMemory(mDevice, buffer, bufferMemory, 0);
-}
-
-void Engine::createImage(u32 width, u32 height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory)
-{
-    VkImageCreateInfo imageInfo{};
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = width;
-    imageInfo.extent.height = height;
-    imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = 1;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = format;
-    imageInfo.tiling = tiling;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = usage;
-    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    if (vkCreateImage(mDevice, &imageInfo, nullptr, &image) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create image!");
-    }
-
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(mDevice, image, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-    if (vkAllocateMemory(mDevice, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to allocate image memory!");
-    }
-
-    vkBindImageMemory(mDevice, image, imageMemory, 0);
-}
-
-void Engine::copyBuffer(const VkBuffer srcBuffer, const VkBuffer dstBuffer, const VkDeviceSize size)
-{
-    VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
-
-    VkBufferCopy copyRegion{};
-    copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-    endSingleTimeCommands(commandBuffer);
-}
-
 void Engine::updateUniformBuffer(u32 currentImage)
 {
     static auto startTime = std::chrono::high_resolution_clock::now();
@@ -1084,53 +911,6 @@ void Engine::copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 he
     vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
     endSingleTimeCommands(commandBuffer);
-}
-
-VkImageView Engine::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
-{
-    auto viewInfo = ImageViewCreateInfo(image, format, aspectFlags);
-
-    VkImageView imageView;
-    if (vkCreateImageView(mDevice, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create texture image view!");
-    }
-
-    return imageView;
-}
-
-VkFormat Engine::findSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
-{
-    for (VkFormat format : candidates)
-    {
-        VkFormatProperties properties;
-        vkGetPhysicalDeviceFormatProperties(mPhysicalDevice, format, &properties);
-
-        if (tiling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & features) == features)
-        {
-            return format;
-        }
-        if (tiling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & features) == features)
-        {
-            return format;
-        }
-    }
-
-    throw std::runtime_error("failed to find supported format!");
-}
-
-VkFormat Engine::findDepthFormat()
-{
-    std::vector<VkFormat> candidates = {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
-    VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
-    VkFormatFeatureFlags features = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
-
-    return findSupportedFormat(candidates, tiling, features);
-}
-
-bool Engine::hasStencilComponent(VkFormat format)
-{
-    return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
 VkCommandBuffer Engine::BeginSingleTimeCommands()

@@ -110,4 +110,24 @@ namespace Renderer
 			throw std::runtime_error("Failed to create image.");
 		}
 	}
+
+	VkFormat FindSupportedFormat(const VkPhysicalDevice& pPhysicalDevice, const std::span<VkFormat>& pCandidates, VkImageTiling pTiling, VkFormatFeatureFlags pFeatures)
+	{
+		for (VkFormat format : pCandidates)
+		{
+			VkFormatProperties properties;
+			vkGetPhysicalDeviceFormatProperties(pPhysicalDevice, format, &properties);
+
+			if (pTiling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & pFeatures) == pFeatures)
+			{
+				return format;
+			}
+			if (pTiling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & pFeatures) == pFeatures)
+			{
+				return format;
+			}
+		}
+
+		throw std::runtime_error("Failed to find supported format.");
+	}
 }
