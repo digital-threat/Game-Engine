@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <algorithm>
 
 inline void ReadFile(const std::string &path, std::vector<char> &outBuffer)
 {
@@ -42,4 +43,15 @@ inline void ReadFile(const std::string &path, std::vector<u32> &outBuffer)
 	file.close();
 
 	outBuffer = buffer;
+}
+
+// NOTE(Sergei): Why doesn't C++ standard library have a function for trimming a string? I'm spoiled by C#. Thanks, stackoverflow.
+inline void rtrim(std::string &s)
+{
+	auto pred = [](unsigned char ch)
+	{
+		return !std::isspace(ch);
+	};
+
+	s.erase(std::find_if(s.rbegin(), s.rend(), pred).base(), s.end());
 }

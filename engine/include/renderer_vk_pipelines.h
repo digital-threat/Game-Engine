@@ -34,6 +34,8 @@ namespace Renderer
 		void SetCullMode(VkCullModeFlags pCullMode, VkFrontFace pFrontFace);
 		void SetMultisamplingNone();
 		void DisableBlending();
+		void EnableBlendingAdditive();
+		void EnableBlendingAlpha();
 		void SetColorAttachmentFormat(VkFormat pFormat);
 		void SetDepthFormat(VkFormat pFormat);
 		void DisableDepthTest();

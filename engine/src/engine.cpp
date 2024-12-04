@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <chrono>
 #include <cstring>
+#include <mesh_manager.h>
 #include <vk_mem_alloc.h>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -68,16 +69,29 @@ void Engine::InitImgui()
 
 void Engine::LoadMeshes()
 {
-    std::vector<MeshAsset*> box = LoadGltfMeshes(this, "assets/meshes/Box.glb");
+    MeshManager::Allocate();
+    MeshManager& meshManager = MeshManager::Get();
+    MeshAsset* box = meshManager.GetMesh("assets/meshes/Box.glb");
+    if (box == nullptr)
+    {
+        try
+        {
+            box = meshManager.LoadMesh(this, "assets/meshes/Box.glb");
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << e.what() << std::endl;
+        }
+    }
 
     for (int i = 0; i < 3; i++)
     {
-        Entity* newEntity = mEntityManager.CreateEntity();
-        newEntity->name = "Default Name";
-        newEntity->mesh = box[0];
-        newEntity->position = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
-        newEntity->rotation = glm::vec3();
-        newEntity->scale = 1;
+        Entity &newEntity = mEntityManager.CreateEntity();
+        newEntity.name = "Default Name";
+        newEntity.mesh = box;
+        newEntity.position = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
+        newEntity.rotation = glm::vec3();
+        newEntity.scale = 1;
     }
 }
 

@@ -1,13 +1,25 @@
 #pragma once
 
-class MeshManager
+#include <renderer_vk_types.h>
+
+class Engine;
+
+namespace Renderer
 {
-	MeshManager();
+	class MeshManager
+	{
+		MeshManager();
 
-public:
-	static void Allocate();
-	static MeshManager& Get();
+	public:
+		static void Allocate();
+		static MeshManager& Get();
+		MeshAsset* GetMesh(const char* pPath);
+		MeshAsset* LoadMesh(Engine* pEngine, const char* pPath);
 
-private:
-	static MeshManager* instance;
-};
+	private:
+		static MeshManager* mInstance;
+		std::unordered_map<const char*, MeshAsset*> mMeshes;
+	};
+}
+
+

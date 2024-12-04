@@ -22,6 +22,7 @@
 #include <cassert>
 #include <entity_manager.h>
 #include <iostream>
+#include <mesh_manager.h>
 
 #include "types.h"
 #include "renderer_vk_types.h"
@@ -210,33 +211,57 @@ private:
 
             if (ImGui::Begin("Transform"))
             {
-                if (mEntityManager.entities.size() > 0)
+                if (mEntityManager.EntityCount() > 0)
                 {
                     Entity* selected = mEntityManager.All()[mCurrentEntity];
 
-                    ImGui::SliderInt("Entity Index", &mCurrentEntity,0, mEntityManager.entities.size() - 1);
+                    ImGui::SliderInt("Entity Index", &mCurrentEntity,0, mEntityManager.EntityCount() - 1);
 
 
-                    static char buffer[64]{};
+                    static char nameBuffer[64]{};
                     assert(selected->name.size() < 64);
-                    selected->name.copy(buffer, selected->name.size());
-                    buffer[selected->name.size()] = '\0';
+                    selected->name.copy(nameBuffer, selected->name.size());
+                    nameBuffer[selected->name.size()] = '\0';
 
-                    if (ImGui::InputText("Name: ", buffer, IM_ARRAYSIZE(buffer)))
+                    if (ImGui::InputText("Name: ", nameBuffer, IM_ARRAYSIZE(nameBuffer)))
                     {
-                        selected->name = std::string(buffer);
+                        selected->name = std::string(nameBuffer);
                     }
 
                     ImGui::InputFloat3("Position:", reinterpret_cast<float *>(&selected->position));
                     ImGui::InputFloat3("Rotation:", reinterpret_cast<float *>(&selected->rotation));
                     ImGui::InputFloat("Scale", &selected->scale);
 
+                    static char meshBuffer[64]{};
+                    ImGui::InputText("Path to Mesh: ", meshBuffer, IM_ARRAYSIZE(meshBuffer));
+
+                    if (ImGui::Button("Set Mesh"))
+                    {
+                        std::string path = meshBuffer;
+                        rtrim(path);
+                        MeshManager& meshManager = MeshManager::Get();
+                        MeshAsset* mesh = meshManager.GetMesh(path.c_str());
+                        if (mesh == nullptr)
+                        {
+                            try
+                            {
+                                mesh = meshManager.LoadMesh(this, path.c_str());
+                            }
+                            catch (const std::exception& e)
+                            {
+                                std::cerr << e.what() << std::endl;
+                            }
+                        }
+
+                        selected->mesh = mesh;
+                    }
+
                     if (ImGui::Button("Delete Entity"))
                     {
                         mEntityManager.DeleteEntity(selected);
-                        if (mEntityManager.entities.size() > 0)
+                        if (mEntityManager.EntityCount() > 0)
                         {
-                            mCurrentEntity %= mEntityManager.entities.size();
+                            mCurrentEntity %= mEntityManager.EntityCount();
                         }
                     }
                 }

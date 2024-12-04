@@ -4,13 +4,13 @@
 
 class EntityManager
 {
-private:
-	int nextId = 1;
-	
 public:
-	Entity* CreateEntity();
+	Entity& CreateEntity();
 	void DeleteEntity(Entity*  pEntity);
 	std::vector<Entity*> All();
+	size_t EntityCount();
 
-	std::unordered_map<int, Entity* > entities;
+private:
+	int nextId = 1;
+	std::unordered_map<int, Entity*> mEntities;
 };
