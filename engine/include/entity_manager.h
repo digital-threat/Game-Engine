@@ -8,9 +8,9 @@ public:
 	Entity& CreateEntity();
 	void DeleteEntity(Entity*  pEntity);
 	std::vector<Entity*> All();
-	size_t EntityCount();
+	size_t Count();
 
 private:
-	int nextId = 1;
-	std::unordered_map<int, Entity*> mEntities;
+	i32 nextId = 1;
+	std::unordered_map<i32, Entity*> mEntities;
 };

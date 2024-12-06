@@ -1,6 +1,9 @@
 #include "renderer_vk_images.h"
+
+#include <renderer_vk_buffers.h>
 #include <renderer_vk_structures.h>
 #include <renderer_vk_types.h>
+#include <renderer_vk_utility.h>
 #include <stdexcept>
 
 
@@ -109,6 +112,80 @@ namespace Renderer
 		{
 			throw std::runtime_error("Failed to create image.");
 		}
+	}
+
+	VulkanImage CreateImage(VkDevice pDevice, VmaAllocator pAllocator, VkExtent3D pSize, VkFormat pFormat, VkImageUsageFlags pUsage, bool pMipmapped)
+	{
+		VulkanImage image;
+		image.format = pFormat;
+		image.extent = pSize;
+
+		VkImageCreateInfo imageInfo = ImageCreateInfo(pFormat, pUsage, pSize);
+		if (pMipmapped)
+		{
+			imageInfo.mipLevels = static_cast<u32>(std::floor(std::log2(std::max(pSize.width, pSize.height)))) + 1;
+		}
+
+		VmaAllocationCreateInfo allocationInfo{};
+		allocationInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		allocationInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		vmaCreateImage(pAllocator, &imageInfo, &allocationInfo, &image.image, &image.allocation, nullptr);
+
+		VkImageAspectFlags aspectFlag = VK_IMAGE_ASPECT_COLOR_BIT;
+		if (pFormat == VK_FORMAT_D32_SFLOAT || pFormat == VK_FORMAT_D24_UNORM_S8_UINT || pFormat == VK_FORMAT_D16_UNORM_S8_UINT)
+		{
+			aspectFlag = VK_IMAGE_ASPECT_DEPTH_BIT;
+		}
+
+		VkImageViewCreateInfo viewInfo = ImageViewCreateInfo(image.image, pFormat, aspectFlag);
+		viewInfo.subresourceRange.levelCount = imageInfo.mipLevels;
+
+		vkCreateImageView(pDevice, &viewInfo, nullptr, &image.imageView);
+
+		return image;
+	}
+
+	VulkanImage CreateImage(const VkDevice& pDevice, const VkQueue& pQueue, const ImmediateData& pImmData, const VmaAllocator& pAllocator, void *pData, VkExtent3D pSize, VkFormat pFormat, VkImageUsageFlags pUsage, bool pMipmapped)
+	{
+		size_t dataSize = pSize.depth * pSize.width * pSize.height * 4;
+		VulkanBuffer stagingBuffer = CreateBuffer(pAllocator, dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+		memcpy(stagingBuffer.info.pMappedData, pData, dataSize);
+
+		VulkanImage image = CreateImage(pDevice, pAllocator, pSize, pFormat, pUsage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, pMipmapped);
+
+		auto func = [&](VkCommandBuffer cmd)
+		{
+			TransitionImageLayout(cmd, image.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+			VkBufferImageCopy copyRegion{};
+			copyRegion.bufferOffset = 0;
+			copyRegion.bufferRowLength = 0;
+			copyRegion.bufferImageHeight = 0;
+
+			copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			copyRegion.imageSubresource.mipLevel = 0;
+			copyRegion.imageSubresource.baseArrayLayer = 0;
+			copyRegion.imageSubresource.layerCount = 1;
+			copyRegion.imageExtent = pSize;
+
+			vkCmdCopyBufferToImage(cmd, stagingBuffer.buffer, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+
+			TransitionImageLayout(cmd, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		};
+
+		ImmediateSubmit(pDevice, pQueue, pImmData, func);
+
+		DestroyBuffer(pAllocator, stagingBuffer);
+
+		return image;
+	}
+
+	void DestroyImage(const VkDevice& pDevice, const VmaAllocator& pAllocator, const VulkanImage& pImage)
+	{
+		vkDestroyImageView(pDevice, pImage.imageView, nullptr);
+		vmaDestroyImage(pAllocator, pImage.image, pImage.allocation);
 	}
 
 	VkFormat FindSupportedFormat(const VkPhysicalDevice& pPhysicalDevice, const std::span<VkFormat>& pCandidates, VkImageTiling pTiling, VkFormatFeatureFlags pFeatures)

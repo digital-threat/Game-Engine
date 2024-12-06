@@ -6,7 +6,7 @@
 
 struct Entity
 {
-	int id;
+	i32 id;
 	std::string name = "Default Name";
 	glm::vec3 position;
 	glm::vec3 rotation;
@@ -15,7 +15,7 @@ struct Entity
 
 	Entity() = delete;
 
-	Entity(int id)
+	Entity(i32 id)
 	{
 		this->id = id;
 	}

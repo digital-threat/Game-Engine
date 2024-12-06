@@ -5,11 +5,17 @@
 #include <vulkan/vulkan_core.h>
 #include <span>
 
+class Engine;
+
 namespace Renderer
 {
+	void CreateImage(VmaAllocator pAllocator, VkImageCreateInfo pInfo, VmaMemoryUsage pUsage, VkMemoryPropertyFlags pFlags, VulkanImage &outImage);
+	VulkanImage CreateImage(VkExtent3D pSize, VkFormat pFormat, VkImageUsageFlags pUsage, bool pMipmapped = false);
+	VulkanImage CreateImage(const VkDevice& pDevice, const VkQueue& pQueue, const ImmediateData& pImmData, const VmaAllocator& pAllocator, void* pData, VkExtent3D pSize, VkFormat pFormat, VkImageUsageFlags pUsage, bool pMipmapped = false);
+	void DestroyImage(const VulkanImage& pImage);
+
 	void TransitionImageLayout(VkCommandBuffer pCmd, VkImage pImage, VkImageLayout pOldLayout, VkImageLayout pNewLayout);
 	void CopyImage(VkCommandBuffer pCmd, VkImage pSource, VkImage pDestination, VkExtent2D pSrcSize, VkExtent2D pDstSize);
-	void CreateImage(VmaAllocator pAllocator, VkImageCreateInfo pInfo, VmaMemoryUsage pUsage, VkMemoryPropertyFlags pFlags, VulkanImage &outImage);
 	VkFormat FindSupportedFormat(const VkPhysicalDevice& pPhysicalDevice, const std::span<VkFormat> &pCandidates, VkImageTiling pTiling, VkFormatFeatureFlags pFeatures);
 
 	inline bool HasStencilComponent(VkFormat pFormat)

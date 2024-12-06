@@ -27,7 +27,7 @@ std::vector<Entity*> EntityManager::All()
 	return allEntities;
 }
 
-size_t EntityManager::EntityCount()
+size_t EntityManager::Count()
 {
 	return mEntities.size();
 }

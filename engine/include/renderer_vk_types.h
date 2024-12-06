@@ -1,13 +1,16 @@
 #pragma once
 
-#include <deque>
-#include <functional>
 #include <vulkan/vulkan_core.h>
 #include <vk_mem_alloc.h>
 #include <glm/glm.hpp>
+
+#include <deque>
+#include <functional>
 #include <string>
 #include <vector>
+
 #include "types.h"
+#include "renderer_vk_descriptors.h"
 
 
 namespace Renderer
@@ -31,17 +34,6 @@ namespace Renderer
 
 			deletors.clear();
 		}
-	};
-
-	struct FrameData
-	{
-		VkSemaphore swapchainSemaphore, renderSemaphore;
-		VkFence renderFence;
-
-		VkCommandPool commandPool;
-		VkCommandBuffer mainCommandBuffer;
-
-		DeletionQueue deletionQueue;
 	};
 
 	struct Vertex
@@ -101,6 +93,34 @@ namespace Renderer
 		glm::vec4 data2;
 		glm::vec4 data3;
 		glm::vec4 data4;
+	};
+
+	struct FrameData
+	{
+		VkSemaphore swapchainSemaphore, renderSemaphore;
+		VkFence renderFence;
+
+		VkCommandPool commandPool;
+		VkCommandBuffer mainCommandBuffer;
+
+		VulkanBuffer sceneDataBuffer;
+
+		DeletionQueue deletionQueue;
+		DescriptorAllocator descriptorAllocator;
+	};
+
+	struct SceneData
+	{
+		glm::mat4 matrixV;
+		glm::mat4 matrixP;
+		glm::mat4 matrixVP;
+	};
+
+	struct ImmediateData
+	{
+		VkFence fence = VK_NULL_HANDLE;
+		VkCommandBuffer cmd = VK_NULL_HANDLE;
+		VkCommandPool cmdPool = VK_NULL_HANDLE;
 	};
 }
 

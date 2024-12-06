@@ -35,8 +35,8 @@
 
 using namespace Renderer;
 
-constexpr u32 WIDTH = 800;
-constexpr u32 HEIGHT = 600;
+constexpr u32 WIDTH = 1280;
+constexpr u32 HEIGHT = 720;
 
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -66,6 +66,10 @@ struct ComputeEffect
 class Engine
 {
 private:
+    // Resize window
+    bool mResizeRequested = false;
+    bool mFramebufferResized = false;
+
     GLFWwindow *window = nullptr;
 
     VmaAllocator mAllocator{};
@@ -93,29 +97,36 @@ private:
     VulkanImage mColorTarget{};
     VulkanImage mDepthTarget{};
 
+    VkSampler mSamplerLinear;
+    VkSampler mSamplerNearest;
+
     DescriptorAllocator mGlobalDescriptorAllocator{};
 
-    VkDescriptorSet mRenderTargetDescriptorSet = VK_NULL_HANDLE;
-    VkDescriptorSetLayout mRenderTargetDescriptorSetLayout = VK_NULL_HANDLE;
+    struct BackgroundData
+    {
+        VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+        VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+        VkDescriptorSetLayout descriptorLayout = VK_NULL_HANDLE;
+        std::vector<ComputeEffect> effects;
+        int currentEffect = 0;
+    };
+
+    BackgroundData mBackground{};
+
+    SceneData mScene{};
+    VkDescriptorSetLayout mSceneDescriptorLayout;
+
+    VkDescriptorSetLayout mSingleImageDescriptorLayout;
 
     VkExtent2D mRenderExtent{};
     float mRenderScale = 0.9f;
 
     // Pipelines
-    VkPipeline mGraphicsPipeline = VK_NULL_HANDLE;
-    VkPipelineLayout mPipelineLayout = VK_NULL_HANDLE;
-
-    VkPipelineLayout mBackgroundPipelineLayout = VK_NULL_HANDLE;
-    std::vector<ComputeEffect> backgroundEffects;
-    int currentBackgroundEffect = 0;
-
     VkPipelineLayout mMeshPipelineLayout = VK_NULL_HANDLE;
     VkPipeline mMeshPipeline = VK_NULL_HANDLE;
 
     // Immediate
-    VkFence mImmediateFence = VK_NULL_HANDLE;
-    VkCommandBuffer mImmediateCommandBuffer = VK_NULL_HANDLE;
-    VkCommandPool mImmediateCommandPool = VK_NULL_HANDLE;
+    ImmediateData mImmediate{};
 
     // Other
     Camera mCamera{ .position = glm::vec3{ 0.0f, 2.0f, -3.0f }, .fov = 60};
@@ -123,19 +134,8 @@ private:
     EntityManager mEntityManager;
     int mCurrentEntity = 0;
 
-    // Resize window
-    bool mResizeRequested = false;
-    bool mFramebufferResized = false;
-
-    // Old
-    std::vector<VkBuffer> uniformBuffers;
-    std::vector<VkDeviceMemory> uniformBuffersMemory;
-    std::vector<void*> uniformBuffersMapped;
-
-    VkImage textureImage = VK_NULL_HANDLE;
-    VkDeviceMemory textureImageMemory = VK_NULL_HANDLE;
-    VkImageView textureImageView = VK_NULL_HANDLE;
-    VkSampler textureSampler = VK_NULL_HANDLE;
+    // Temp
+    VulkanImage mDefaultTexture{};
 
 public:
     void Run()
@@ -143,7 +143,8 @@ public:
         InitWindow();
         InitVulkan();
         InitImgui();
-        LoadMeshes();
+        LoadDefaultMeshes();
+        LoadDefaultTextures();
         MainLoop();
         Cleanup();
     }
@@ -170,14 +171,12 @@ private:
         GetQueues();
         CreateAllocator();
         CreateSwapchain(WIDTH, HEIGHT);
-        CreateSyncObjects();
+        InitSyncObjects();
         CreateCommandObjects();
-        InitializeDescriptors();
+        InitDescriptors();
+        InitBuffers();
+        InitTextureSamplers();
         InitializePipelines();
-
-        //createTextureImage();
-        //createTextureSampler();
-        //createUniformBuffers();
     }
 
     void InitImgui();
@@ -220,11 +219,11 @@ private:
 
             if (ImGui::Begin("Transform"))
             {
-                if (mEntityManager.EntityCount() > 0)
+                if (mEntityManager.Count() > 0)
                 {
                     Entity* selected = mEntityManager.All()[mCurrentEntity];
 
-                    ImGui::SliderInt("Entity Index", &mCurrentEntity,0, mEntityManager.EntityCount() - 1);
+                    ImGui::SliderInt("Entity Index", &mCurrentEntity,0, mEntityManager.Count() - 1);
 
 
                     static char nameBuffer[64]{};
@@ -268,9 +267,9 @@ private:
                     if (ImGui::Button("Delete Entity"))
                     {
                         mEntityManager.DeleteEntity(selected);
-                        if (mEntityManager.EntityCount() > 0)
+                        if (mEntityManager.Count() > 0)
                         {
-                            mCurrentEntity %= mEntityManager.EntityCount();
+                            mCurrentEntity %= mEntityManager.Count();
                         }
                     }
                 }
@@ -303,7 +302,8 @@ private:
         glfwTerminate();
     }
 
-    void LoadMeshes();
+    void LoadDefaultMeshes();
+    void LoadDefaultTextures();
 
     void ResizeSwapchain();
 
@@ -315,13 +315,19 @@ private:
     void CreateAllocator();
     void CreateSwapchain(u32 width, u32 height);
     void CreateCommandObjects();
-    void CreateSyncObjects();
-    void InitializeDescriptors();
+    void InitSyncObjects();
+    void InitTextureSamplers();
 
-    // Old
-    void createTextureImage();
-    void createTextureSampler();
-    void createUniformBuffers();
+    // Descriptors
+    void InitDescriptors();
+    void InitGlobalDescriptorAllocator();
+    void InitFrameDescriptorAllocators();
+    void InitBackgroundDescriptorLayout();
+    void InitSceneDescriptorLayout();
+    void InitSingleImageDescriptorLayout();
+
+    // Buffers
+    void InitBuffers();
 
     // Drawing
     void Draw();
@@ -336,21 +342,18 @@ private:
 
     FrameData& GetCurrentFrame() { return mFrames[mCurrentFrame % MAX_FRAMES_IN_FLIGHT]; }
 
-public:
-    void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& pFunction);
-    MeshBuffers UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVertices);
-
-private:
-    // Old
-    void updateUniformBuffer(u32 currentImage);
-    void copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height);
-
-    VkCommandBuffer BeginSingleTimeCommands();
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-
     static void FramebufferResizeCallback(GLFWwindow* window, int width, int height)
     {
         auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
         app->mFramebufferResized = true;
     }
+
+public:
+    MeshBuffers UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVertices);
+
+private:
+    // Old
+    void copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height);
+    VkCommandBuffer BeginSingleTimeCommands();
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 };

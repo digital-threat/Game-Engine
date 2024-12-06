@@ -29,10 +29,6 @@ std::vector<MeshAsset*> LoadGltfMeshes(Engine *pEngine, std::filesystem::path pP
         throw std::runtime_error("Failed to load glTF asset: " + static_cast<int>(error));
     }
 
-#ifndef NDEBUG
-	fastgltf::validate(asset.get());
-#endif
-
     std::vector<MeshAsset*> meshes;
 
     std::vector<u32> indices;
