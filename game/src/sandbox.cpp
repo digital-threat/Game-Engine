@@ -16,7 +16,7 @@ void MySandbox::Awake()
 
 void MySandbox::Update()
 {
-
+    ProcessMessages();
 }
 
 void MySandbox::Render()
@@ -69,6 +69,9 @@ void MySandbox::ImGuiEntity()
             static char meshBuffer[64]{};
             ImGui::InputText("Path to Mesh: ", meshBuffer, IM_ARRAYSIZE(meshBuffer));
 
+            static char textureBuffer[64]{};
+            ImGui::InputText("Path to Texture: ", textureBuffer, IM_ARRAYSIZE(textureBuffer));
+
             if (ImGui::Button("Set Mesh"))
             {
                 std::string path = meshBuffer;
@@ -88,6 +91,27 @@ void MySandbox::ImGuiEntity()
                 }
 
                 selected->mesh = mesh;
+            }
+
+            if (ImGui::Button("Set Texture"))
+            {
+                std::string path = textureBuffer;
+                rtrim(path);
+                TextureManager& textureManager = TextureManager::Get();
+                VulkanImage* texture = textureManager.GetTexture(path.c_str());
+                if (texture == nullptr)
+                {
+                    try
+                    {
+                        texture = textureManager.LoadTexture(path.c_str());
+                    }
+                    catch (const std::exception& e)
+                    {
+                        std::cerr << e.what() << std::endl;
+                    }
+                }
+
+                selected->texture = texture;
             }
 
             if (ImGui::Button("Delete Entity"))
@@ -120,42 +144,52 @@ void MySandbox::ImGuiApplication()
 
 void MySandbox::LoadDefaultScene()
 {
+    StringMessage* message = new StringMessage("LoadMesh", "assets/meshes/Box.glb", this);
+
     MeshManager& meshManager = MeshManager::Get();
-    MeshAsset* box = meshManager.GetMesh("assets/meshes/Box.glb");
-    if (box == nullptr)
-    {
-        try
-        {
-            box = meshManager.LoadMesh("assets/meshes/Box.glb");
-        }
-        catch (const std::exception& e)
-        {
-            std::cerr << e.what() << std::endl;
-        }
-    }
+    meshManager.QueueMessage(message);
+}
 
-    TextureManager& textureManager = TextureManager::Get();
-    VulkanImage* defaultTexture = textureManager.GetTexture("assets/textures/texture.jpg");
-    if (defaultTexture == nullptr)
+void MySandbox::ProcessMessage(Message *pMessage)
+{
+    std::string& message = pMessage->message;
+    switch(pMessage->type)
     {
-        try
+        case MessageType::MESH:
         {
-            defaultTexture = textureManager.LoadTexture("assets/textures/texture.jpg");
-        }
-        catch (const std::exception& e)
-        {
-            std::cerr << e.what() << std::endl;
-        }
-    }
+            if (message == "MeshLoaded")
+            {
+                auto meshMessage = static_cast<MeshMessage *>(pMessage);
 
-    for (int i = 0; i < 3; i++)
-    {
-        Entity &newEntity = mEntityManager.CreateEntity();
-        newEntity.name = "Default Name";
-        newEntity.mesh = box;
-        newEntity.texture = defaultTexture;
-        newEntity.position = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
-        newEntity.rotation = glm::vec3();
-        newEntity.scale = 1;
+                TextureManager& textureManager = TextureManager::Get();
+                VulkanImage* defaultTexture = textureManager.GetTexture("assets/textures/brick.png");
+                if (defaultTexture == nullptr)
+                {
+                    try
+                    {
+                        defaultTexture = textureManager.LoadTexture("assets/textures/brick.png");
+                    }
+                    catch (const std::exception& e)
+                    {
+                        std::cerr << e.what() << std::endl;
+                    }
+                }
+
+                for (int i = 0; i < 3; i++)
+                {
+                    Entity &newEntity = mEntityManager.CreateEntity();
+                    newEntity.name = "Default Name";
+                    newEntity.mesh = meshMessage->param;
+                    newEntity.texture = defaultTexture;
+                    newEntity.position = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
+                    newEntity.rotation = glm::vec3();
+                    newEntity.scale = 1;
+                }
+            }
+        } break;
+        default:
+        {
+
+        } break;
     }
 }

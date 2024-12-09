@@ -1,12 +1,13 @@
 #pragma once
 
+#include <message_queue.h>
 #include <renderer_vk_types.h>
 
 class Engine;
 
 namespace Renderer
 {
-	class MeshManager
+	class MeshManager : public MessageQueue
 	{
 	public:
 		MeshManager() = delete;
@@ -23,6 +24,9 @@ namespace Renderer
 		static MeshManager& Get();
 		MeshAsset* GetMesh(const char* pPath);
 		MeshAsset* LoadMesh(const char* pPath);
+
+	private:
+		void ProcessMessage(Message *pMessage) override;
 
 	private:
 		Engine& mEngine;

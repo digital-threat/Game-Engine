@@ -181,6 +181,10 @@ private:
                 ResizeSwapchain();
             }
 
+            mApplication->Update();
+            MeshManager &meshManger = MeshManager::Get();
+            meshManger.ProcessMessages();
+
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
@@ -188,8 +192,6 @@ private:
             mApplication->Render();
             ImGui::Render();
             Draw();
-
-            mApplication->Update();
         }
 
         vkDeviceWaitIdle(mDevice);
