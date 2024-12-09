@@ -7,6 +7,7 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_LEFT_HANDED
 #define GLM_ENABLE_EXPERIMENTAL
+#include <application.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -23,15 +24,14 @@
 #include <entity_manager.h>
 #include <iostream>
 #include <mesh_manager.h>
+#include <renderer_vk_images.h>
+#include <texture_manager.h>
 
 #include "types.h"
 #include "renderer_vk_types.h"
 #include "renderer_vk_descriptors.h"
 #include "renderer_vk_buffers.h"
-#include "gltf_loading.h"
 #include "utility.h"
-#include "entity.h"
-#include "camera.h"
 
 using namespace Renderer;
 
@@ -46,13 +46,6 @@ constexpr bool enableValidationLayers = false;
 constexpr bool enableValidationLayers = true;
 #endif
 
-struct UniformBufferObject
-{
-    alignas(16) glm::mat4 model;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 projection;
-};
-
 struct ComputeEffect
 {
     const char* name;
@@ -65,7 +58,7 @@ struct ComputeEffect
 
 class Engine
 {
-private:
+public:
     // Resize window
     bool mResizeRequested = false;
     bool mFramebufferResized = false;
@@ -119,7 +112,6 @@ private:
     VkDescriptorSetLayout mSingleImageDescriptorLayout;
 
     VkExtent2D mRenderExtent{};
-    float mRenderScale = 0.9f;
 
     // Pipelines
     VkPipelineLayout mMeshPipelineLayout = VK_NULL_HANDLE;
@@ -128,23 +120,20 @@ private:
     // Immediate
     ImmediateData mImmediate{};
 
-    // Other
-    Camera mCamera{ .position = glm::vec3{ 0.0f, 2.0f, -3.0f }, .fov = 60};
-
-    EntityManager mEntityManager;
-    int mCurrentEntity = 0;
-
-    // Temp
-    VulkanImage mDefaultTexture{};
+    Application* mApplication;
 
 public:
+    Engine(Application* application) : mApplication(application)
+    {
+        MeshManager::Allocate(*this);
+        TextureManager::Allocate(*this);
+    }
+
     void Run()
     {
         InitWindow();
         InitVulkan();
-        InitImgui();
-        LoadDefaultMeshes();
-        LoadDefaultTextures();
+        InitImGui();
         MainLoop();
         Cleanup();
     }
@@ -179,10 +168,10 @@ private:
         InitializePipelines();
     }
 
-    void InitImgui();
-
     void MainLoop()
     {
+        mApplication->Awake();
+
         while (!glfwWindowShouldClose(window))
         {
             glfwPollEvents();
@@ -196,114 +185,22 @@ private:
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
 
-            // if (ImGui::Begin("background"))
-            // {
-            //     ComputeEffect& selected = backgroundEffects[currentBackgroundEffect];
-            //
-            //     ImGui::Text("Selected effect: ", selected.name);
-            //
-            //     ImGui::SliderInt("Effect Index", &currentBackgroundEffect,0, backgroundEffects.size() - 1);
-            //
-            //     ImGui::InputFloat4("data1",(float*)& selected.data.data1);
-            //     ImGui::InputFloat4("data2",(float*)& selected.data.data2);
-            //     ImGui::InputFloat4("data3",(float*)& selected.data.data3);
-            //     ImGui::InputFloat4("data4",(float*)& selected.data.data4);
-            // }
-            // ImGui::End();
-
-            if (ImGui::Begin("Application"))
-            {
-                ImGui::SliderFloat("Render Scale", &mRenderScale, 0.3f, 1.0f);
-            }
-            ImGui::End();
-
-            if (ImGui::Begin("Transform"))
-            {
-                if (mEntityManager.Count() > 0)
-                {
-                    Entity* selected = mEntityManager.All()[mCurrentEntity];
-
-                    ImGui::SliderInt("Entity Index", &mCurrentEntity,0, mEntityManager.Count() - 1);
-
-
-                    static char nameBuffer[64]{};
-                    assert(selected->name.size() < 64);
-                    selected->name.copy(nameBuffer, selected->name.size());
-                    nameBuffer[selected->name.size()] = '\0';
-
-                    if (ImGui::InputText("Name: ", nameBuffer, IM_ARRAYSIZE(nameBuffer)))
-                    {
-                        selected->name = std::string(nameBuffer);
-                    }
-
-                    ImGui::InputFloat3("Position:", reinterpret_cast<float *>(&selected->position));
-                    ImGui::InputFloat3("Rotation:", reinterpret_cast<float *>(&selected->rotation));
-                    ImGui::InputFloat("Scale", &selected->scale);
-
-                    static char meshBuffer[64]{};
-                    ImGui::InputText("Path to Mesh: ", meshBuffer, IM_ARRAYSIZE(meshBuffer));
-
-                    if (ImGui::Button("Set Mesh"))
-                    {
-                        std::string path = meshBuffer;
-                        rtrim(path);
-                        MeshManager& meshManager = MeshManager::Get();
-                        MeshAsset* mesh = meshManager.GetMesh(path.c_str());
-                        if (mesh == nullptr)
-                        {
-                            try
-                            {
-                                mesh = meshManager.LoadMesh(this, path.c_str());
-                            }
-                            catch (const std::exception& e)
-                            {
-                                std::cerr << e.what() << std::endl;
-                            }
-                        }
-
-                        selected->mesh = mesh;
-                    }
-
-                    if (ImGui::Button("Delete Entity"))
-                    {
-                        mEntityManager.DeleteEntity(selected);
-                        if (mEntityManager.Count() > 0)
-                        {
-                            mCurrentEntity %= mEntityManager.Count();
-                        }
-                    }
-                }
-
-                if (ImGui::Button("Create Entity"))
-                {
-                    mEntityManager.CreateEntity();
-                }
-
-            }
-            ImGui::End();
-
-            if (ImGui::Begin("Camera"))
-            {
-                ImGui::InputFloat3("Position:", reinterpret_cast<float *>(&mCamera.position));
-                ImGui::InputFloat("FOV", &mCamera.fov);
-            }
-            ImGui::End();
-
+            mApplication->Render();
             ImGui::Render();
-
             Draw();
+
+            mApplication->Update();
         }
 
         vkDeviceWaitIdle(mDevice);
+
+        mApplication->Destroy();
     }
 
     void Cleanup()
     {
         glfwTerminate();
     }
-
-    void LoadDefaultMeshes();
-    void LoadDefaultTextures();
 
     void ResizeSwapchain();
 
@@ -339,6 +236,9 @@ private:
     void InitializePipelines();
     void InitializeBackgroundPipeline();
     void InitializeMeshPipeline();
+
+    // ImGui
+    void InitImGui();
 
     FrameData& GetCurrentFrame() { return mFrames[mCurrentFrame % MAX_FRAMES_IN_FLIGHT]; }
 

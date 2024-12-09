@@ -12,7 +12,7 @@
 #include "renderer_vk_pipelines.h"
 #include "renderer_vk_structures.h"
 
-void Engine::InitImgui()
+void Engine::InitImGui()
 {
     VkDescriptorPoolSize poolSizes[] =
     {
@@ -66,34 +66,6 @@ void Engine::InitImgui()
     ImGui_ImplVulkan_Init(&initInfo);
 
     ImGui_ImplVulkan_CreateFontsTexture();
-}
-
-void Engine::LoadDefaultMeshes()
-{
-    MeshManager::Allocate();
-    MeshManager& meshManager = MeshManager::Get();
-    MeshAsset* box = meshManager.GetMesh("assets/meshes/Box.glb");
-    if (box == nullptr)
-    {
-        try
-        {
-            box = meshManager.LoadMesh(this, "assets/meshes/Box.glb");
-        }
-        catch (const std::exception& e)
-        {
-            std::cerr << e.what() << std::endl;
-        }
-    }
-
-    for (int i = 0; i < 3; i++)
-    {
-        Entity &newEntity = mEntityManager.CreateEntity();
-        newEntity.name = "Default Name";
-        newEntity.mesh = box;
-        newEntity.position = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
-        newEntity.rotation = glm::vec3();
-        newEntity.scale = 1;
-    }
 }
 
 void Engine::ResizeSwapchain()
@@ -328,24 +300,6 @@ void Engine::CreateCommandObjects()
     }
 }
 
-void Engine::LoadDefaultTextures()
-{
-    i32 texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load("assets/textures/texture.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-
-    if (!pixels)
-    {
-        throw std::runtime_error("Failed to load texture.");
-    }
-
-    VkExtent3D extent = { static_cast<u32>(texWidth), static_cast<u32>(texHeight), 1};
-    VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
-    VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    mDefaultTexture = CreateImage(mDevice, mGraphicsQueue, mImmediate, mAllocator, pixels, extent, format, usage);
-
-    stbi_image_free(pixels);
-}
-
 void Engine::InitTextureSamplers()
 {
     VkPhysicalDeviceProperties properties{};
@@ -490,8 +444,8 @@ void Engine::Draw()
         throw std::runtime_error("Failed to acquire swap chain image.");
     }
 
-    mRenderExtent.width = std::min(mVkbSwapchain.extent.width, mColorTarget.extent.width) * mRenderScale;
-    mRenderExtent.height = std::min(mVkbSwapchain.extent.height, mColorTarget.extent.height) * mRenderScale;
+    mRenderExtent.width = std::min(mVkbSwapchain.extent.width, mColorTarget.extent.width) * mApplication->mRenderScale;
+    mRenderExtent.height = std::min(mVkbSwapchain.extent.height, mColorTarget.extent.height) * mApplication->mRenderScale;
 
     vkResetFences(mDevice, 1, &GetCurrentFrame().renderFence);
     vkResetCommandBuffer(GetCurrentFrame().mainCommandBuffer, 0);
@@ -617,22 +571,10 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
     vkCmdSetScissor(pCmd, 0, 1, &scissor);
 
 
-    VkDescriptorSet imageSet = GetCurrentFrame().descriptorAllocator.Allocate(mDevice, mSingleImageDescriptorLayout);
-
-    {
-        DescriptorWriter writer;
-        writer.WriteImage(0, mDefaultTexture.imageView, mSamplerNearest, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-        writer.UpdateSet(mDevice, imageSet);
-    }
-
-    vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 0, 1, &imageSet, 0, nullptr);
-
-
     float aspect = static_cast<float>(mRenderExtent.width) / static_cast<float>(mRenderExtent.height);
-    mScene.matrixV = glm::lookAt(mCamera.position, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    mScene.matrixP = glm::perspective(glm::radians(mCamera.fov), aspect, 10000.0f, 0.1f);
+    mScene.matrixV = glm::lookAt(mApplication->mCamera.position, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    mScene.matrixP = glm::perspective(glm::radians(mApplication->mCamera.fov), aspect, 10000.0f, 0.1f);
     mScene.matrixVP = mScene.matrixP * mScene.matrixV;
-
 
     SceneData* sceneUniformData = static_cast<SceneData*>(GetCurrentFrame().sceneDataBuffer.info.pMappedData);
     *sceneUniformData = mScene;
@@ -645,7 +587,7 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
 
     GeometryPushConstants pushConstants;
 
-    for (auto entity : mEntityManager.All())
+    for (auto entity : mApplication->mEntityManager.All())
     {
         if (entity->mesh == nullptr)
         {
@@ -659,6 +601,15 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
 
         pushConstants.worldMatrix = mScene.matrixVP * model;
         pushConstants.vertexBuffer = entity->mesh->meshBuffers.vertexBufferAddress;
+
+        VkDescriptorSet imageSet = GetCurrentFrame().descriptorAllocator.Allocate(mDevice, mSingleImageDescriptorLayout);
+        {
+            DescriptorWriter writer;
+            writer.WriteImage(0, entity->texture->imageView, mSamplerNearest, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            writer.UpdateSet(mDevice, imageSet);
+        }
+
+        vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 0, 1, &imageSet, 0, nullptr);
 
         vkCmdPushConstants(pCmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GeometryPushConstants), &pushConstants);
         vkCmdBindIndexBuffer(pCmd, entity->mesh->meshBuffers.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);

@@ -11,7 +11,7 @@ namespace Renderer
 {
 	void CreateImage(VmaAllocator pAllocator, VkImageCreateInfo pInfo, VmaMemoryUsage pUsage, VkMemoryPropertyFlags pFlags, VulkanImage &outImage);
 	VulkanImage CreateImage(VkExtent3D pSize, VkFormat pFormat, VkImageUsageFlags pUsage, bool pMipmapped = false);
-	VulkanImage CreateImage(const VkDevice& pDevice, const VkQueue& pQueue, const ImmediateData& pImmData, const VmaAllocator& pAllocator, void* pData, VkExtent3D pSize, VkFormat pFormat, VkImageUsageFlags pUsage, bool pMipmapped = false);
+	VulkanImage CreateImage(const Engine& pEngine, void* pData, VkExtent3D pSize, VkFormat pFormat, VkImageUsageFlags pUsage, bool pMipmapped = false);
 	void DestroyImage(const VulkanImage& pImage);
 
 	void TransitionImageLayout(VkCommandBuffer pCmd, VkImage pImage, VkImageLayout pOldLayout, VkImageLayout pNewLayout);

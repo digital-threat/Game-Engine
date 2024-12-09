@@ -1,5 +1,6 @@
 #include "renderer_vk_images.h"
 
+#include <engine.h>
 #include <renderer_vk_buffers.h>
 #include <renderer_vk_structures.h>
 #include <renderer_vk_types.h>
@@ -146,14 +147,14 @@ namespace Renderer
 		return image;
 	}
 
-	VulkanImage CreateImage(const VkDevice& pDevice, const VkQueue& pQueue, const ImmediateData& pImmData, const VmaAllocator& pAllocator, void *pData, VkExtent3D pSize, VkFormat pFormat, VkImageUsageFlags pUsage, bool pMipmapped)
+	VulkanImage CreateImage(const Engine& pEngine, void *pData, VkExtent3D pSize, VkFormat pFormat, VkImageUsageFlags pUsage, bool pMipmapped)
 	{
 		size_t dataSize = pSize.depth * pSize.width * pSize.height * 4;
-		VulkanBuffer stagingBuffer = CreateBuffer(pAllocator, dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+		VulkanBuffer stagingBuffer = CreateBuffer(pEngine.mAllocator, dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
 		memcpy(stagingBuffer.info.pMappedData, pData, dataSize);
 
-		VulkanImage image = CreateImage(pDevice, pAllocator, pSize, pFormat, pUsage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, pMipmapped);
+		VulkanImage image = CreateImage(pEngine.mDevice, pEngine.mAllocator, pSize, pFormat, pUsage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, pMipmapped);
 
 		auto func = [&](VkCommandBuffer cmd)
 		{
@@ -175,9 +176,9 @@ namespace Renderer
 			TransitionImageLayout(cmd, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		};
 
-		ImmediateSubmit(pDevice, pQueue, pImmData, func);
+		ImmediateSubmit(pEngine.mDevice, pEngine.mGraphicsQueue, pEngine.mImmediate, func);
 
-		DestroyBuffer(pAllocator, stagingBuffer);
+		DestroyBuffer(pEngine.mAllocator, stagingBuffer);
 
 		return image;
 	}

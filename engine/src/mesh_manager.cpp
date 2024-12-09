@@ -7,14 +7,17 @@ namespace Renderer
 {
 	MeshManager* MeshManager::mInstance = nullptr;
 
-	MeshManager::MeshManager()
+
+	MeshManager::MeshManager(Engine &engine)
+		: mEngine(engine)
 	{
 	}
 
-	void MeshManager::Allocate()
+	MeshManager& MeshManager::Allocate(Engine &engine)
 	{
 		assert(mInstance == nullptr);
-		mInstance = new MeshManager();
+		mInstance = new MeshManager(engine);
+		return *mInstance;
 	}
 
 	MeshManager& MeshManager::Get()
@@ -33,9 +36,9 @@ namespace Renderer
 		return nullptr;
 	}
 
-	MeshAsset* MeshManager::LoadMesh(Engine* pEngine, const char* pPath)
+	MeshAsset* MeshManager::LoadMesh(const char* pPath)
 	{
-		MeshAsset* mesh = LoadGltfMeshes(pEngine, pPath)[0];
+		MeshAsset* mesh = LoadGltfMeshes(&mEngine, pPath)[0];
 		mMeshes[pPath] = mesh;
 		return mesh;
 	}

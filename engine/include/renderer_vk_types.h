@@ -111,6 +111,7 @@ namespace Renderer
 
 	struct SceneData
 	{
+		glm::mat4 matrixM;
 		glm::mat4 matrixV;
 		glm::mat4 matrixP;
 		glm::mat4 matrixVP;
