@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <message_queue.h>
 #include <renderer_vk_types.h>
 
@@ -20,13 +21,16 @@ namespace Renderer
 		explicit MeshManager(Engine& engine);
 
 	public:
+		void Update(std::atomic_bool& pCancellationToken);
+
 		static MeshManager& Allocate(Engine &engine);
 		static MeshManager& Get();
-		MeshAsset* GetMesh(const char* pPath);
-		MeshAsset* LoadMesh(const char* pPath);
 
 	private:
 		void ProcessMessage(Message *pMessage) override;
+
+		MeshAsset* GetMesh(const char* pPath);
+		MeshAsset* LoadMesh(const char* pPath);
 
 	private:
 		Engine& mEngine;

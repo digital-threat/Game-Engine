@@ -572,7 +572,7 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
 
 
     float aspect = static_cast<float>(mRenderExtent.width) / static_cast<float>(mRenderExtent.height);
-    mScene.matrixV = glm::lookAt(mApplication->mCamera.position, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    mScene.matrixV = glm::lookAt(mApplication->mCamera.position, mApplication->mCamera.lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
     mScene.matrixP = glm::perspective(glm::radians(mApplication->mCamera.fov), aspect, 10000.0f, 0.1f);
     mScene.matrixVP = mScene.matrixP * mScene.matrixV;
 
@@ -602,14 +602,18 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
         pushConstants.worldMatrix = mScene.matrixVP * model;
         pushConstants.vertexBuffer = entity->mesh->meshBuffers.vertexBufferAddress;
 
-        VkDescriptorSet imageSet = GetCurrentFrame().descriptorAllocator.Allocate(mDevice, mSingleImageDescriptorLayout);
+        if (entity->texture != nullptr)
         {
-            DescriptorWriter writer;
-            writer.WriteImage(0, entity->texture->imageView, mSamplerNearest, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            writer.UpdateSet(mDevice, imageSet);
+            VkDescriptorSet imageSet = GetCurrentFrame().descriptorAllocator.Allocate(mDevice, mSingleImageDescriptorLayout);
+            {
+                DescriptorWriter writer;
+                writer.WriteImage(0, entity->texture->imageView, mSamplerNearest, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                writer.UpdateSet(mDevice, imageSet);
+            }
+
+            vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 0, 1, &imageSet, 0, nullptr);
         }
 
-        vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 0, 1, &imageSet, 0, nullptr);
 
         vkCmdPushConstants(pCmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GeometryPushConstants), &pushConstants);
         vkCmdBindIndexBuffer(pCmd, entity->mesh->meshBuffers.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);

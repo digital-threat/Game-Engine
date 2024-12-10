@@ -31,3 +31,14 @@ size_t EntityManager::Count()
 {
 	return mEntities.size();
 }
+
+Entity * EntityManager::GetById(i32 pId)
+{
+	auto it = mEntities.find(pId);
+	if (it != mEntities.end())
+	{
+		return it->second;
+	}
+
+	return nullptr;
+}

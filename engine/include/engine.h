@@ -26,6 +26,7 @@
 #include <mesh_manager.h>
 #include <renderer_vk_images.h>
 #include <texture_manager.h>
+#include <thread>
 
 #include "types.h"
 #include "renderer_vk_types.h"
@@ -170,6 +171,10 @@ private:
 
     void MainLoop()
     {
+        MeshManager &meshManger = MeshManager::Get();
+        std::atomic<bool> cancellationToken;
+        std::thread meshManagerThread(&MeshManager::Update, &meshManger, std::ref(cancellationToken));
+
         mApplication->Awake();
 
         while (!glfwWindowShouldClose(window))
@@ -182,8 +187,6 @@ private:
             }
 
             mApplication->Update();
-            MeshManager &meshManger = MeshManager::Get();
-            meshManger.ProcessMessages();
 
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();
@@ -193,6 +196,9 @@ private:
             ImGui::Render();
             Draw();
         }
+
+        cancellationToken = true;
+        meshManagerThread.join();
 
         vkDeviceWaitIdle(mDevice);
 

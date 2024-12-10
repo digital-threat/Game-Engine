@@ -45,6 +45,14 @@ namespace Renderer
 		return mesh;
 	}
 
+	void MeshManager::Update(std::atomic_bool &pCancellationToken)
+	{
+		while(!pCancellationToken)
+		{
+			ProcessMessages();
+		}
+	}
+
 	void MeshManager::ProcessMessage(Message *pMessage)
 	{
 		std::string& message = pMessage->message;
@@ -72,7 +80,7 @@ namespace Renderer
 
 					if (stringMsg->instigator != nullptr)
 					{
-						MeshMessage* reply = new MeshMessage("MeshLoaded", mesh);
+						MeshMessage* reply = new MeshMessage("MeshLoaded", *mesh, stringMsg->entityId);
 						stringMsg->instigator->QueueMessage(reply);
 					}
 				}

@@ -9,12 +9,12 @@ Message::~Message()
 {
 }
 
-StringMessage::StringMessage(std::string pMessage, std::string param, MessageQueue *instigator)
-	: Message(MessageType::STRING, pMessage), instigator(instigator), param(param)
+StringMessage::StringMessage(std::string pMessage, std::string param, int entityId, MessageQueue *instigator)
+	: Message(MessageType::STRING, pMessage), instigator(instigator), param(param), entityId(entityId)
 {
 }
 
-MeshMessage::MeshMessage(std::string pMessage, Renderer::MeshAsset *param, MessageQueue *instigator)
-	: Message(MessageType::MESH, pMessage), instigator(instigator), param(param)
+MeshMessage::MeshMessage(std::string pMessage, Renderer::MeshAsset param, int entityId, MessageQueue *instigator)
+	: Message(MessageType::MESH, pMessage), instigator(instigator), param(param), entityId(entityId)
 {
 }

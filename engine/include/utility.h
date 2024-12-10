@@ -4,6 +4,33 @@
 #include <vector>
 #include <fstream>
 #include <algorithm>
+#include <windows.h>
+#include <iostream>
+
+inline void PrintMemoryStatus()
+{
+	MEMORYSTATUSEX statex; statex.dwLength = sizeof(statex);
+	GlobalMemoryStatusEx(&statex);
+	std::cout << "There is " << statex.ullAvailPhys / (1024 * 1024) << " MB of physical memory available.\n";
+	std::cout << "There is " << statex.ullAvailVirtual / (1024 * 1024) << " MB of virtual memory available.\n";
+}
+
+inline bool HasEnoughMemory(u64 pRequiredBytes)
+{
+	MEMORYSTATUSEX statex;
+	statex.dwLength = sizeof(statex);
+	GlobalMemoryStatusEx(&statex);
+
+	std::cout << "There is " << statex.ullAvailPhys / (1024 * 1024) << " MB of physical memory available.\n";
+	std::cout << "There is " << statex.ullAvailVirtual / (1024 * 1024) << " MB of virtual memory available.\n";
+
+	if (statex.ullAvailPhys >= pRequiredBytes && statex.ullAvailVirtual >= pRequiredBytes)
+	{
+		return true;
+	}
+
+	return false;
+}
 
 inline void ReadFile(const std::string &path, std::vector<char> &outBuffer)
 {
