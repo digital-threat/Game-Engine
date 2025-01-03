@@ -159,7 +159,7 @@ void MySandbox::LoadDefaultScene()
         newEntity.rotation = glm::vec3();
         newEntity.scale = 1;
 
-        StringMessage* message = new StringMessage("LoadMesh", "assets/meshes/Box.glb", newEntity.id, this);
+        StringMessage* message = new StringMessage("LoadMesh", "assets/meshes/cube.obj", newEntity.id, this);
         meshManager.QueueMessage(message);
     }
 }

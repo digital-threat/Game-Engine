@@ -1,7 +1,8 @@
 #include "mesh_manager.h"
 
 #include <cassert>
-#include <gltf_loading.h>
+#include <engine.h>
+#include <obj_loading.h>
 #include <iostream>
 #include <windows.h>
 
@@ -27,7 +28,7 @@ namespace Renderer
 		return *mInstance;
 	}
 
-	MeshAsset* MeshManager::GetMesh(const char* pPath)
+	MeshAsset MeshManager::GetMesh(const char* pPath)
 	{
 		auto it = mMeshes.find(pPath);
 		if (it != mMeshes.end())
@@ -35,14 +36,21 @@ namespace Renderer
 			return it->second;
 		}
 
-		return nullptr;
+		return MeshAsset();
 	}
 
-	MeshAsset* MeshManager::LoadMesh(const char* pPath)
+	MeshAsset MeshManager::LoadMesh(const char* pPath)
 	{
-		MeshAsset* mesh = LoadGltfMeshes(&mEngine, pPath)[0];
-		mMeshes[pPath] = mesh;
-		return mesh;
+		MeshData mesh = ParseOBJ(pPath);
+
+		MeshBuffers meshBuffers = mEngine.UploadMesh(mesh.indices, mesh.vertices);
+
+		MeshAsset meshAsset;
+		meshAsset.meshBuffers = meshBuffers;
+		meshAsset.indexCount = mesh.indices.size();
+		//MeshAsset* mesh = LoadMeshFromGltf(&mEngine, pPath)[0];
+		mMeshes[pPath] = meshAsset;
+		return meshAsset;
 	}
 
 	void MeshManager::Update(std::atomic_bool &pCancellationToken)
@@ -65,8 +73,8 @@ namespace Renderer
 					auto stringMsg = static_cast<StringMessage*>(pMessage);
 					std::string& path = stringMsg->param;
 
-					MeshAsset* mesh = GetMesh(path.c_str());
-					if (mesh == nullptr)
+					MeshAsset mesh = GetMesh(path.c_str());
+					if (mesh.indexCount == 0)
 					{
 						try
 						{
@@ -80,7 +88,7 @@ namespace Renderer
 
 					if (stringMsg->instigator != nullptr)
 					{
-						MeshMessage* reply = new MeshMessage("MeshLoaded", *mesh, stringMsg->entityId);
+						MeshMessage* reply = new MeshMessage("MeshLoaded", mesh, stringMsg->entityId);
 						stringMsg->instigator->QueueMessage(reply);
 					}
 				}

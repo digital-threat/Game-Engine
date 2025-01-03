@@ -39,10 +39,18 @@ namespace Renderer
 	struct Vertex
 	{
 		glm::vec3 position;
-		float uvX;
+		float u;
 		glm::vec3 normal;
-		float uvY;
+		float v;
 		glm::vec4 color;
+
+		bool operator==(const Vertex& other) const
+		{
+			return position == other.position &&
+				   u == other.u &&
+				   v == other.v &&
+				   normal == other.normal;
+		}
 	};
 
 	struct VulkanImage
@@ -74,10 +82,18 @@ namespace Renderer
 		size_t count;
 	};
 
+	struct MeshData
+	{
+		std::string name;
+		std::vector<Vertex> vertices;
+		std::vector<u32> indices;
+	};
+
 	struct MeshAsset
 	{
 		std::string name;
-		std::vector<Submesh> submeshes;
+		u32 indexCount;
+		//std::vector<Submesh> submeshes;
 		MeshBuffers meshBuffers;
 	};
 

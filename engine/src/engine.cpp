@@ -618,7 +618,7 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
         vkCmdPushConstants(pCmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GeometryPushConstants), &pushConstants);
         vkCmdBindIndexBuffer(pCmd, entity->mesh->meshBuffers.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdDrawIndexed(pCmd, entity->mesh->submeshes[0].count, 1, entity->mesh->submeshes[0].startIndex, 0, 0);
+        vkCmdDrawIndexed(pCmd, entity->mesh->indexCount, 1, 0, 0, 0);
     }
 
     vkCmdEndRendering(pCmd);

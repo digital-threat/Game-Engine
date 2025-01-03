@@ -8,4 +8,4 @@ using namespace Renderer;
 
 class Engine;
 
-std::vector<MeshAsset*> LoadGltfMeshes(Engine* pEngine, std::filesystem::path pPath);
+std::vector<MeshAsset*> LoadMeshFromGltf(Engine* pEngine, std::filesystem::path pPath);

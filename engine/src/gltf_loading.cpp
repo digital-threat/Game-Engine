@@ -13,7 +13,7 @@
 #include <iostream>
 
 
-std::vector<MeshAsset*> LoadGltfMeshes(Engine *pEngine, std::filesystem::path pPath)
+std::vector<MeshAsset*> LoadMeshFromGltf(Engine *pEngine, std::filesystem::path pPath)
 {
     fastgltf::Parser parser;
 
@@ -75,8 +75,8 @@ std::vector<MeshAsset*> LoadGltfMeshes(Engine *pEngine, std::filesystem::path pP
                     newVertex.position = position;
                     newVertex.normal = { 1, 0, 0 };
                     newVertex.color = glm::vec4 { 1.f };
-                    newVertex.uvX = 0;
-                    newVertex.uvY = 0;
+                    newVertex.u = 0;
+                    newVertex.v = 0;
                     vertices[initial_vtx + index] = newVertex;
                 };
 
@@ -105,8 +105,8 @@ std::vector<MeshAsset*> LoadGltfMeshes(Engine *pEngine, std::filesystem::path pP
                 {
                     auto func = [&](glm::vec2 uv, size_t index)
                     {
-                        vertices[initial_vtx + index].uvX = uv.x;
-                        vertices[initial_vtx + index].uvY = uv.y;
+                        vertices[initial_vtx + index].u = uv.x;
+                        vertices[initial_vtx + index].v = uv.y;
                     };
 
                     fastgltf::iterateAccessorWithIndex<glm::vec2>(asset.get(), asset->accessors[attribute->accessorIndex], func);
@@ -127,7 +127,7 @@ std::vector<MeshAsset*> LoadGltfMeshes(Engine *pEngine, std::filesystem::path pP
                 }
             }
 
-            newMesh->submeshes.push_back(newSubmesh);
+            //newMesh->submeshes.push_back(newSubmesh);
         }
 
 

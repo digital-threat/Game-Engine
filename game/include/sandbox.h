@@ -4,7 +4,7 @@
 
 using namespace Renderer;
 
-struct MySandbox : Application, MessageQueue
+struct MySandbox : Application, public MessageQueue
 {
 	void Awake() override;
 	void Update() override;

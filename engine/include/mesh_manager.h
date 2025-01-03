@@ -29,13 +29,13 @@ namespace Renderer
 	private:
 		void ProcessMessage(Message *pMessage) override;
 
-		MeshAsset* GetMesh(const char* pPath);
-		MeshAsset* LoadMesh(const char* pPath);
+		MeshAsset GetMesh(const char* pPath);
+		MeshAsset LoadMesh(const char* pPath);
 
 	private:
 		Engine& mEngine;
 		static MeshManager* mInstance;
-		std::unordered_map<const char*, MeshAsset*> mMeshes;
+		std::unordered_map<const char*, MeshAsset> mMeshes;
 	};
 }
 
