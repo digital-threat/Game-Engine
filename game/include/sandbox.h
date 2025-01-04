@@ -2,8 +2,6 @@
 #include <application.h>
 #include <message_queue.h>
 
-using namespace Renderer;
-
 struct MySandbox : Application, public MessageQueue
 {
 	void Awake() override;

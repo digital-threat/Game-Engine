@@ -11,8 +11,8 @@ struct Entity
 	glm::vec3 position;
 	glm::vec3 rotation;
 	float scale = 1;
-	Renderer::MeshAsset* mesh = nullptr;
-	Renderer::VulkanImage* texture = nullptr;
+	MeshAsset* mesh = nullptr;
+	VulkanImage* texture = nullptr;
 
 	Entity() = delete;
 

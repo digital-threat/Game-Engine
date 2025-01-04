@@ -14,7 +14,7 @@ StringMessage::StringMessage(std::string pMessage, std::string param, int entity
 {
 }
 
-MeshMessage::MeshMessage(std::string pMessage, Renderer::MeshAsset param, int entityId, MessageQueue *instigator)
+MeshMessage::MeshMessage(std::string pMessage, MeshAsset param, int entityId, MessageQueue *instigator)
 	: Message(MessageType::MESH, pMessage), instigator(instigator), param(param), entityId(entityId)
 {
 }

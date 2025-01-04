@@ -13,9 +13,7 @@
 #include "renderer_vk_descriptors.h"
 
 
-namespace Renderer
-{
-	// TODO(Sergei): Temporary, replace!
+// TODO(Sergei): Temporary, replace!
 	struct DeletionQueue
 	{
 		std::deque<std::function<void()>> deletors;
@@ -139,5 +137,4 @@ namespace Renderer
 		VkCommandBuffer cmd = VK_NULL_HANDLE;
 		VkCommandPool cmdPool = VK_NULL_HANDLE;
 	};
-}
 

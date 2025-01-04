@@ -34,8 +34,6 @@
 #include "renderer_vk_buffers.h"
 #include "utility.h"
 
-using namespace Renderer;
-
 constexpr u32 WIDTH = 1280;
 constexpr u32 HEIGHT = 720;
 

@@ -4,13 +4,26 @@
 #include <iostream>
 #include <mesh_manager.h>
 #include <ostream>
+#include <filesystem>
 #include <renderer_vk_images.h>
 #include <texture_manager.h>
 #include <utility.h>
 #include <vendor/stb/stb_image.h>
+#include <mesh_serialization.h>
+#include <obj_loading.h>
 
 void MySandbox::Awake()
 {
+    // for (const auto &entry : std::filesystem::directory_iterator(path))
+    // {
+    //
+    // }
+
+    std::filesystem::path path = "assets/meshes/cube.obj";
+    MeshData meshData = ParseOBJ(path);
+    path = "assets/meshes/" + meshData.name + ".bin";
+    SerializeMesh(meshData, path);
+
     LoadDefaultScene();
 }
 
@@ -159,7 +172,7 @@ void MySandbox::LoadDefaultScene()
         newEntity.rotation = glm::vec3();
         newEntity.scale = 1;
 
-        StringMessage* message = new StringMessage("LoadMesh", "assets/meshes/cube.obj", newEntity.id, this);
+        StringMessage* message = new StringMessage("LoadMesh", "assets/meshes/cube.bin", newEntity.id, this);
         meshManager.QueueMessage(message);
     }
 }

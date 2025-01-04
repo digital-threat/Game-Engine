@@ -7,9 +7,6 @@
 
 class Engine;
 
-namespace Renderer
-{
-	VulkanBuffer CreateBuffer(VmaAllocator pAllocator, size_t pAllocSize, VkBufferUsageFlags pUsage, VmaMemoryUsage pMemoryUsage);
-	void DestroyBuffer(VmaAllocator pAllocator, const VulkanBuffer& pBuffer);
-	void CopyBuffer(const Engine& pEngine, VkBuffer pSrcBuffer, VkBuffer pDstBuffer, VkDeviceSize pSize);
-}
+VulkanBuffer CreateBuffer(VmaAllocator pAllocator, size_t pAllocSize, VkBufferUsageFlags pUsage, VmaMemoryUsage pMemoryUsage);
+void DestroyBuffer(VmaAllocator pAllocator, const VulkanBuffer& pBuffer);
+void CopyBuffer(const Engine& pEngine, VkBuffer pSrcBuffer, VkBuffer pDstBuffer, VkDeviceSize pSize);

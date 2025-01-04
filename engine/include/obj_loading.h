@@ -1,8 +1,8 @@
 #pragma once
-#include <fstream>
 #include <iostream>
 #include <filesystem>
 #include <unordered_map>
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
 template <>
@@ -18,7 +18,7 @@ struct std::hash<Vertex>
 	}
 };
 
-MeshData ParseOBJ(std::filesystem::path path)
+inline MeshData ParseOBJ(std::filesystem::path path)
 {
 	MeshData mesh;
 

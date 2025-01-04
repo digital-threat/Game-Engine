@@ -2,7 +2,6 @@
 #include <renderer_vk_types.h>
 
 class Engine;
-using namespace Renderer;
 
 class TextureManager
 {

@@ -27,9 +27,9 @@ struct StringMessage : Message
 
 struct MeshMessage : Message
 {
-	MeshMessage(std::string pMessage, Renderer::MeshAsset param, int entityId, MessageQueue *instigator = nullptr);
+	MeshMessage(std::string pMessage, MeshAsset param, int entityId, MessageQueue *instigator = nullptr);
 
 	MessageQueue *instigator;
 	i32 entityId;
-	Renderer::MeshAsset param;
+	MeshAsset param;
 };
