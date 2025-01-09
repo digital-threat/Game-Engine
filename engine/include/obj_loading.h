@@ -68,25 +68,53 @@ inline MeshData ParseOBJ(std::filesystem::path path)
 		}
 		else if (prefix == "f")
 		{
-			std::string face;
-			for (int i = 0; i < 3; i++)
+			std::vector<std::string> vertexStrings;
+			std::string firstVertex, prevVertex, currVertex;
+			if (iss >> firstVertex)
 			{
-				iss >> face;
+				if (iss >> prevVertex)
+				{
+					while (iss >> currVertex)
+					{
+						vertexStrings.insert(vertexStrings.end(), { firstVertex, prevVertex, currVertex });
+						prevVertex = currVertex;
+					}
+				}
+			}
 
-				std::replace(face.begin(), face.end(), '/', ' ');
-				std::istringstream iss2(face);
-				int pIndex, tIndex, nIndex;
-				iss2 >> pIndex >> tIndex >> nIndex;
+			for (auto& vertexString : vertexStrings)
+			{
+				std::replace(vertexString.begin(), vertexString.end(), '/', ' ');
+				std::istringstream iss2(vertexString);
+				int pIndex = 0, tIndex = 0, nIndex = 0;
 
-				pIndex = (pIndex > 0) ? pIndex - 1 : positions.size() + pIndex;
-				tIndex = (tIndex > 0) ? tIndex - 1 : uvs.size() + tIndex;
-				nIndex = (nIndex > 0) ? nIndex - 1 : normals.size() + nIndex;
+				iss2 >> pIndex;
+				if (vertexString.find("  ") != std::string::npos)
+				{
+					iss >> nIndex;
+				}
+				else
+				{
+					iss2 >> tIndex >> nIndex;
+				}
 
-				Vertex vertex;
-				vertex.position = positions[pIndex];
-				vertex.normal = normals[nIndex];
-				vertex.u = uvs[tIndex].x;
-				vertex.v = uvs[tIndex].y;
+				Vertex vertex{};
+				if (pIndex != 0)
+				{
+					pIndex = (pIndex > 0) ? pIndex - 1 : positions.size() + pIndex;
+					vertex.position = positions[pIndex];
+				}
+				if (tIndex != 0)
+				{
+					tIndex = (tIndex > 0) ? tIndex - 1 : uvs.size() + tIndex;
+					vertex.u = uvs[tIndex].x;
+					vertex.v = uvs[tIndex].y;
+				}
+				if (nIndex != 0)
+				{
+					nIndex = (nIndex > 0) ? nIndex - 1 : normals.size() + nIndex;
+					vertex.normal = normals[nIndex];
+				}
 
 				if (!uniqueVertices.contains(vertex))
 				{

@@ -40,7 +40,6 @@
 		float u;
 		glm::vec3 normal;
 		float v;
-		glm::vec4 color;
 
 		bool operator==(const Vertex& other) const
 		{

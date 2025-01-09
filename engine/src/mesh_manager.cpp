@@ -49,7 +49,6 @@ MeshAsset MeshManager::LoadMesh(const char* pPath)
 	MeshAsset meshAsset;
 	meshAsset.meshBuffers = meshBuffers;
 	meshAsset.indexCount = meshData.indices.size();
-	//MeshAsset* mesh = LoadMeshFromGltf(&mEngine, pPath)[0];
 	mMeshes[pPath] = meshAsset;
 	return meshAsset;
 }

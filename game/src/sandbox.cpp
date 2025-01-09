@@ -14,15 +14,16 @@
 
 void MySandbox::Awake()
 {
-    // for (const auto &entry : std::filesystem::directory_iterator(path))
-    // {
-    //
-    // }
-
-    std::filesystem::path path = "assets/meshes/cube.obj";
-    MeshData meshData = ParseOBJ(path);
-    path = "assets/meshes/" + meshData.name + ".bin";
-    SerializeMesh(meshData, path);
+    std::filesystem::path path = "assets/meshes/";
+    for (const auto &entry : std::filesystem::directory_iterator(path))
+    {
+        if (entry.path().extension() == ".obj")
+        {
+            MeshData meshData = ParseOBJ(entry.path());
+            std::filesystem::path path2 = "assets/meshes/" + meshData.name + ".bin";
+            SerializeMesh(meshData, path2);
+        }
+    }
 
     LoadDefaultScene();
 }
