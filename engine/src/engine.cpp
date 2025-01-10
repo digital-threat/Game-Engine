@@ -575,6 +575,9 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
     mScene.matrixV = glm::lookAt(mApplication->mCamera.position, mApplication->mCamera.lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
     mScene.matrixP = glm::perspective(glm::radians(mApplication->mCamera.fov), aspect, 10000.0f, 0.1f);
     mScene.matrixVP = mScene.matrixP * mScene.matrixV;
+    mScene.ambientColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    mScene.mainLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    mScene.mainLightDir = glm::normalize(glm::vec4(-1.0f, -0.2f, 0.5f, 1.0f));
 
     SceneData* sceneUniformData = static_cast<SceneData*>(GetCurrentFrame().sceneDataBuffer.info.pMappedData);
     *sceneUniformData = mScene;

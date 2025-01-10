@@ -14,126 +14,157 @@
 
 
 // TODO(Sergei): Temporary, replace!
-	struct DeletionQueue
-	{
-		std::deque<std::function<void()>> deletors;
+struct DeletionQueue
+{
+	std::deque<std::function<void()>> deletors;
 
-		void Push(std::function<void()>&& function)
+	void Push(std::function<void()>&& function)
+	{
+		deletors.push_back(function);
+	}
+
+	void Flush()
+	{
+		for (auto it = deletors.rbegin(); it != deletors.rend(); it++)
 		{
-			deletors.push_back(function);
+			(*it)();
 		}
 
-		void Flush()
-		{
-			for (auto it = deletors.rbegin(); it != deletors.rend(); it++)
-			{
-				(*it)();
-			}
+		deletors.clear();
+	}
+};
 
-			deletors.clear();
-		}
-	};
+struct Vertex
+{
+	glm::vec3 position;
+	float u;
+	glm::vec3 normal;
+	float v;
 
-	struct Vertex
+	bool operator==(const Vertex& other) const
 	{
-		glm::vec3 position;
-		float u;
-		glm::vec3 normal;
-		float v;
+		return position == other.position &&
+			   u == other.u &&
+			   v == other.v &&
+			   normal == other.normal;
+	}
+};
 
-		bool operator==(const Vertex& other) const
-		{
-			return position == other.position &&
-				   u == other.u &&
-				   v == other.v &&
-				   normal == other.normal;
-		}
-	};
+struct VulkanImage
+{
+	VkImage image;
+	VkImageView imageView;
+	VmaAllocation allocation;
+	VkExtent3D extent;
+	VkFormat format;
+};
 
-	struct VulkanImage
-	{
-		VkImage image;
-		VkImageView imageView;
-		VmaAllocation allocation;
-		VkExtent3D extent;
-		VkFormat format;
-	};
+struct VulkanBuffer
+{
+    VkBuffer buffer;
+    VmaAllocation allocation;
+    VmaAllocationInfo info;
+};
 
-	struct VulkanBuffer
-	{
-    	VkBuffer buffer;
-    	VmaAllocation allocation;
-    	VmaAllocationInfo info;
-	};
+struct MeshBuffers
+{
+	VulkanBuffer indexBuffer;
+	VulkanBuffer vertexBuffer;
+	VkDeviceAddress vertexBufferAddress;
+};
 
-	struct MeshBuffers
-	{
-		VulkanBuffer indexBuffer;
-		VulkanBuffer vertexBuffer;
-		VkDeviceAddress vertexBufferAddress;
-	};
+struct Submesh
+{
+	u32 startIndex;
+	size_t count;
+};
 
-	struct Submesh
-	{
-		u32 startIndex;
-		size_t count;
-	};
+struct MeshData
+{
+	std::string name;
+	std::vector<Vertex> vertices;
+	std::vector<u32> indices;
+};
 
-	struct MeshData
-	{
-		std::string name;
-		std::vector<Vertex> vertices;
-		std::vector<u32> indices;
-	};
+struct MeshAsset
+{
+	std::string name;
+	u32 indexCount;
+	//std::vector<Submesh> submeshes;
+	MeshBuffers meshBuffers;
+};
 
-	struct MeshAsset
-	{
-		std::string name;
-		u32 indexCount;
-		//std::vector<Submesh> submeshes;
-		MeshBuffers meshBuffers;
-	};
+enum class RenderQueue : u8
+{
+	OPAQUE,
+	TRANSPARENT,
+};
 
-	struct GeometryPushConstants
-	{
-		glm::mat4 worldMatrix;
-		VkDeviceAddress vertexBuffer;
-	};
+struct MaterialPipeline
+{
+	VkPipeline pipeline;
+	VkPipelineLayout layout;
+};
 
-	struct ComputePushConstants
-	{
-		glm::vec4 data1;
-		glm::vec4 data2;
-		glm::vec4 data3;
-		glm::vec4 data4;
-	};
+struct MaterialInstance
+{
+	MaterialPipeline* pipeline;
+	VkDescriptorSet materialSet;
+	RenderQueue renderQueue;
+};
 
-	struct FrameData
-	{
-		VkSemaphore swapchainSemaphore, renderSemaphore;
-		VkFence renderFence;
+struct MeshRenderData
+{
+	std::string name;
+	u32 indexCount;
+	VulkanBuffer indexBuffer;
+	VulkanBuffer vertexBuffer;
+	glm::mat4 transform;
+	VkDeviceAddress vertexBufferAddress;
+};
 
-		VkCommandPool commandPool;
-		VkCommandBuffer mainCommandBuffer;
+struct GeometryPushConstants
+{
+	glm::mat4 worldMatrix;
+	VkDeviceAddress vertexBuffer;
+};
 
-		VulkanBuffer sceneDataBuffer;
+struct ComputePushConstants
+{
+	glm::vec4 data1;
+	glm::vec4 data2;
+	glm::vec4 data3;
+	glm::vec4 data4;
+};
 
-		DeletionQueue deletionQueue;
-		DescriptorAllocator descriptorAllocator;
-	};
+struct FrameData
+{
+	VkSemaphore swapchainSemaphore, renderSemaphore;
+	VkFence renderFence;
 
-	struct SceneData
-	{
-		glm::mat4 matrixM;
-		glm::mat4 matrixV;
-		glm::mat4 matrixP;
-		glm::mat4 matrixVP;
-	};
+	VkCommandPool commandPool;
+	VkCommandBuffer mainCommandBuffer;
 
-	struct ImmediateData
-	{
-		VkFence fence = VK_NULL_HANDLE;
-		VkCommandBuffer cmd = VK_NULL_HANDLE;
-		VkCommandPool cmdPool = VK_NULL_HANDLE;
-	};
+	VulkanBuffer sceneDataBuffer;
 
+	DeletionQueue deletionQueue;
+	DescriptorAllocator descriptorAllocator;
+};
+
+struct SceneData
+{
+	glm::mat4 matrixM;
+	glm::mat4 matrixV;
+	glm::mat4 matrixP;
+	glm::mat4 matrixVP;
+	glm::vec4 ambientColor;
+	glm::vec4 mainLightDir;
+	glm::vec4 mainLightColor;
+};
+
+struct ImmediateData
+{
+	VkFence fence = VK_NULL_HANDLE;
+	VkCommandBuffer cmd = VK_NULL_HANDLE;
+	VkCommandPool cmdPool = VK_NULL_HANDLE;
+};
