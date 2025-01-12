@@ -572,21 +572,25 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
 
 
     float aspect = static_cast<float>(mRenderExtent.width) / static_cast<float>(mRenderExtent.height);
+
     mScene.matrixV = glm::lookAt(mApplication->mCamera.position, mApplication->mCamera.lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
     mScene.matrixP = glm::perspective(glm::radians(mApplication->mCamera.fov), aspect, 10000.0f, 0.1f);
     mScene.matrixVP = mScene.matrixP * mScene.matrixV;
-    mScene.ambientColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    mScene.ambientColor = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
     mScene.mainLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    mScene.mainLightDir = glm::normalize(glm::vec4(-1.0f, -0.2f, 0.5f, 1.0f));
+    mScene.mainLightDir = glm::normalize(glm::vec4(0.2f, 1.0f, 0.3f, 0.0f));
+    mScene.cameraPos = glm::vec4(mApplication->mCamera.position, 0.0f);
 
     SceneData* sceneUniformData = static_cast<SceneData*>(GetCurrentFrame().sceneDataBuffer.info.pMappedData);
     *sceneUniformData = mScene;
 
-    VkDescriptorSet globalDescriptor = GetCurrentFrame().descriptorAllocator.Allocate(mDevice, mSceneDescriptorLayout);
+    VkDescriptorSet sceneSet = GetCurrentFrame().descriptorAllocator.Allocate(mDevice, mSceneDescriptorLayout);
 
     DescriptorWriter writer;
     writer.WriteBuffer(0, GetCurrentFrame().sceneDataBuffer.buffer, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    writer.UpdateSet(mDevice, globalDescriptor);
+    writer.UpdateSet(mDevice, sceneSet);
+
+    vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 0, 1, &sceneSet, 0, nullptr);
 
     GeometryPushConstants pushConstants;
 
@@ -597,12 +601,14 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
             continue;
         }
 
-        glm::mat4 model = glm::translate(glm::mat4(1.0f),entity->position);
+        glm::mat4 matrixM = glm::translate(glm::mat4(1.0f),entity->position);
         glm::quat rotation = glm::quat(radians(entity->rotation));
-        model *= glm::toMat4(rotation);
-        model = glm::scale(model, glm::vec3(entity->scale));
+        matrixM *= glm::toMat4(rotation);
+        matrixM = glm::scale(matrixM, glm::vec3(entity->scale));
+        glm::mat4 matrixITM = glm::transpose(glm::inverse(matrixM));
 
-        pushConstants.worldMatrix = mScene.matrixVP * model;
+        pushConstants.matrixM = matrixM;
+        pushConstants.matrixITM = matrixITM;
         pushConstants.vertexBuffer = entity->mesh->meshBuffers.vertexBufferAddress;
 
         if (entity->texture != nullptr)
@@ -614,7 +620,7 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
                 writer.UpdateSet(mDevice, imageSet);
             }
 
-            vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 0, 1, &imageSet, 0, nullptr);
+            vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 1, 1, &imageSet, 0, nullptr);
         }
 
 
@@ -664,8 +670,8 @@ void Engine::InitializeBackgroundPipeline()
     ComputeEffect gradient{};
     gradient.layout = mBackground.pipelineLayout;
     gradient.name = "gradient";
-    gradient.data.data1 = glm::vec4(1, 0, 0, 1);
-    gradient.data.data2 = glm::vec4(0, 0, 1, 1);
+    gradient.data.data1 = glm::vec4(0, 0, 0, 1);
+    gradient.data.data2 = glm::vec4(0, 0, 0, 1);
 
     if (vkCreateComputePipelines(mDevice, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &gradient.pipeline) != VK_SUCCESS)
     {
@@ -694,21 +700,23 @@ void Engine::InitializeBackgroundPipeline()
 void Engine::InitializeMeshPipeline()
 {
     VkShaderModule vertexShader;
-    LoadShaderModule("assets/shaders/colored_triangle_vert.spv", mDevice, &vertexShader);
+    LoadShaderModule("assets/shaders/lit_phong_vert.spv", mDevice, &vertexShader);
 
     VkShaderModule fragmentShader;
-    LoadShaderModule("assets/shaders/colored_triangle_frag.spv", mDevice, &fragmentShader);
+    LoadShaderModule("assets/shaders/lit_phong_frag.spv", mDevice, &fragmentShader);
 
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.offset = 0;
     pushConstantRange.size = sizeof(GeometryPushConstants);
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+    std::array<VkDescriptorSetLayout, 2> descriptorSets = { mSceneDescriptorLayout, mSingleImageDescriptorLayout };
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = PipelineLayoutCreateInfo();
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
     pipelineLayoutInfo.pushConstantRangeCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &mSingleImageDescriptorLayout;
-    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = descriptorSets.data();
+    pipelineLayoutInfo.setLayoutCount = 2;
     VK_CHECK(vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, nullptr, &mMeshPipelineLayout));
 
     PipelineBuilder builder;

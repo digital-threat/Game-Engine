@@ -125,7 +125,8 @@ struct MeshRenderData
 
 struct GeometryPushConstants
 {
-	glm::mat4 worldMatrix;
+	glm::mat4 matrixM;
+	glm::mat4 matrixITM;
 	VkDeviceAddress vertexBuffer;
 };
 
@@ -153,13 +154,13 @@ struct FrameData
 
 struct SceneData
 {
-	glm::mat4 matrixM;
 	glm::mat4 matrixV;
 	glm::mat4 matrixP;
 	glm::mat4 matrixVP;
 	glm::vec4 ambientColor;
 	glm::vec4 mainLightDir;
 	glm::vec4 mainLightColor;
+	glm::vec4 cameraPos;
 };
 
 struct ImmediateData

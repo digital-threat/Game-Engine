@@ -9,7 +9,7 @@ struct Application
 	EntityManager mEntityManager;
 	int mCurrentEntity = 0;
 
-	float mRenderScale = 0.9f;
+	float mRenderScale = 1.0f;
 
 	virtual void Awake() = 0;
 	virtual void Update() = 0;
