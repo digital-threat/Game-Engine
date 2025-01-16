@@ -40,16 +40,18 @@ MeshAsset MeshManager::GetMesh(const char* pPath)
 
 MeshAsset MeshManager::LoadMesh(const char* pPath)
 {
-	MeshData meshData; // = ParseOBJ(pPath);
+	MeshData meshData{};
+	MeshAsset meshAsset{};
+
 	std::filesystem::path path = pPath;
-	DeserializeMesh(path, meshData);
+	if (DeserializeMesh(path, meshData))
+	{
+		MeshBuffers meshBuffers = mEngine.UploadMesh(meshData.indices, meshData.vertices);
+		meshAsset.meshBuffers = meshBuffers;
+		meshAsset.indexCount = meshData.indices.size();
+		mMeshes[pPath] = meshAsset;
+	}
 
-	MeshBuffers meshBuffers = mEngine.UploadMesh(meshData.indices, meshData.vertices);
-
-	MeshAsset meshAsset;
-	meshAsset.meshBuffers = meshBuffers;
-	meshAsset.indexCount = meshData.indices.size();
-	mMeshes[pPath] = meshAsset;
 	return meshAsset;
 }
 
@@ -76,20 +78,18 @@ void MeshManager::ProcessMessage(Message *pMessage)
 				MeshAsset mesh = GetMesh(path.c_str());
 				if (mesh.indexCount == 0)
 				{
-					try
+					mesh = LoadMesh(path.c_str());
+					if (mesh.indexCount == 0)
 					{
-						mesh = LoadMesh(path.c_str());
-					}
-					catch (const std::exception& e)
-					{
-						std::cerr << e.what() << std::endl;
+						std::cerr << "Failed to load mesh from path: " << path << std::endl;
+						return;
 					}
 				}
 
-				if (stringMsg->instigator != nullptr)
+				if (stringMsg->sender != nullptr)
 				{
 					MeshMessage* reply = new MeshMessage("MeshLoaded", mesh, stringMsg->entityId);
-					stringMsg->instigator->QueueMessage(reply);
+					stringMsg->sender->QueueMessage(reply);
 				}
 			}
 		} break;

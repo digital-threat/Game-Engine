@@ -192,7 +192,7 @@ private:
 
             mApplication->Render();
             ImGui::Render();
-            Draw();
+            Render();
         }
 
         cancellationToken = true;
@@ -233,10 +233,10 @@ private:
     void InitBuffers();
 
     // Drawing
-    void Draw();
-    void DrawBackground(VkCommandBuffer pCmd);
-    void DrawImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView);
-    void DrawGeometry(VkCommandBuffer pCmd);
+    void Render();
+    void RenderBackground(VkCommandBuffer pCmd);
+    void RenderImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView);
+    void RenderGeometry(VkCommandBuffer pCmd);
 
     // Pipelines
     void InitializePipelines();

@@ -11,6 +11,10 @@
 #include <vendor/stb/stb_image.h>
 #include <mesh_serialization.h>
 #include <obj_loading.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 void MySandbox::Awake()
 {
@@ -38,6 +42,39 @@ void MySandbox::Render()
 	ImGuiApplication();
     ImGuiCamera();
     ImGuiEntity();
+
+    SceneRenderData sceneData{};
+    sceneData.cameraPos = mCamera.position;
+    sceneData.cameraLookAt = mCamera.lookAt;
+    sceneData.cameraFOV = mCamera.fov;
+    sceneData.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
+    sceneData.mainLightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    sceneData.mainLightDir = glm::normalize(glm::vec3(0.2f, 1.0f, 0.3f));
+    mRenderContext.sceneData = sceneData;
+
+    mRenderContext.meshData.clear();
+    for (const auto entity : mEntityManager.All())
+    {
+        if (entity->mesh == nullptr)
+        {
+            continue;
+        }
+
+        glm::mat4 matrixM = glm::translate(glm::mat4(1.0f),entity->position);
+        glm::quat rotation = glm::quat(radians(entity->rotation));
+        matrixM *= glm::toMat4(rotation);
+        matrixM = glm::scale(matrixM, glm::vec3(entity->scale));
+
+        MeshRenderData meshRenderData{};
+        meshRenderData.name = entity->name;
+        meshRenderData.transform = matrixM;
+        meshRenderData.indexBuffer = entity->mesh->meshBuffers.indexBuffer;
+        meshRenderData.indexCount = entity->mesh->indexCount;
+        meshRenderData.vertexBuffer = entity->mesh->meshBuffers.vertexBuffer;
+        meshRenderData.vertexBufferAddress = entity->mesh->meshBuffers.vertexBufferAddress;
+        meshRenderData.texture = entity->texture;
+        mRenderContext.meshData.push_back(meshRenderData);
+    }
 }
 
 void MySandbox::Destroy()
@@ -140,7 +177,7 @@ void MySandbox::ImGuiApplication()
 {
     if (ImGui::Begin("Application"))
     {
-        ImGui::SliderFloat("Render Scale", &mRenderScale, 0.3f, 1.0f);
+        ImGui::SliderFloat("Render Scale", &mRenderContext.renderScale, 0.3f, 1.0f);
     }
     ImGui::End();
 }

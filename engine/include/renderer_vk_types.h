@@ -1,5 +1,6 @@
 #pragma once
 
+#include <camera.h>
 #include <vulkan/vulkan_core.h>
 #include <vk_mem_alloc.h>
 #include <glm/glm.hpp>
@@ -121,6 +122,7 @@ struct MeshRenderData
 	VulkanBuffer vertexBuffer;
 	glm::mat4 transform;
 	VkDeviceAddress vertexBufferAddress;
+	VulkanImage* texture;
 };
 
 struct GeometryPushConstants
@@ -163,9 +165,26 @@ struct SceneData
 	glm::vec4 cameraPos;
 };
 
+struct SceneRenderData
+{
+	glm::vec3 ambientColor;
+	glm::vec3 mainLightDir;
+	glm::vec3 mainLightColor;
+	glm::vec3 cameraPos;
+	glm::vec3 cameraLookAt;
+	float cameraFOV;
+};
+
 struct ImmediateData
 {
 	VkFence fence = VK_NULL_HANDLE;
 	VkCommandBuffer cmd = VK_NULL_HANDLE;
 	VkCommandPool cmdPool = VK_NULL_HANDLE;
+};
+
+struct RenderContext
+{
+	std::vector<MeshRenderData> meshData;
+	SceneRenderData sceneData;
+	float renderScale = 1.0f;
 };

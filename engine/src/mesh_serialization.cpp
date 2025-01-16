@@ -7,6 +7,11 @@ bool SerializeMesh(const MeshData &meshData, std::filesystem::path &path)
 {
 	std::ofstream file;
 	file.open(path, std::ios::out | std::ios::binary);
+	if (!file.is_open())
+	{
+		std::cerr << "Failed to serialize mesh at path: " << path << std::endl;
+		return false;
+	}
 
 	size_t numVertices = meshData.vertices.size();
 	size_t numIndices = meshData.indices.size();
@@ -37,6 +42,11 @@ bool DeserializeMesh(std::filesystem::path &path, MeshData &outMeshData)
 {
 	std::ifstream file;
 	file.open(path, std::ios::in | std::ios::binary);
+	if (!file.is_open())
+	{
+		std::cerr << "Failed to deserialize mesh at path: " << path << std::endl;
+		return false;
+	}
 
 	size_t numVertices, numIndices;
 

@@ -426,7 +426,7 @@ void Engine::InitSyncObjects()
     }
 }
 
-void Engine::Draw()
+void Engine::Render()
 {
     vkWaitForFences(mDevice, 1, &GetCurrentFrame().renderFence, VK_TRUE, UINT64_MAX);
     GetCurrentFrame().deletionQueue.Flush();
@@ -444,8 +444,8 @@ void Engine::Draw()
         throw std::runtime_error("Failed to acquire swap chain image.");
     }
 
-    mRenderExtent.width = std::min(mVkbSwapchain.extent.width, mColorTarget.extent.width) * mApplication->mRenderScale;
-    mRenderExtent.height = std::min(mVkbSwapchain.extent.height, mColorTarget.extent.height) * mApplication->mRenderScale;
+    mRenderExtent.width = std::min(mVkbSwapchain.extent.width, mColorTarget.extent.width) * mApplication->mRenderContext.renderScale;
+    mRenderExtent.height = std::min(mVkbSwapchain.extent.height, mColorTarget.extent.height) * mApplication->mRenderContext.renderScale;
 
     vkResetFences(mDevice, 1, &GetCurrentFrame().renderFence);
     vkResetCommandBuffer(GetCurrentFrame().mainCommandBuffer, 0);
@@ -460,12 +460,12 @@ void Engine::Draw()
 
     TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-    DrawBackground(cmd);
+    RenderBackground(cmd);
 
     TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     TransitionImageLayout(cmd, mDepthTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-    DrawGeometry(cmd);
+    RenderGeometry(cmd);
 
     TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     TransitionImageLayout(cmd, mSwapchainImages[imageIndex],VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -473,7 +473,7 @@ void Engine::Draw()
     CopyImage(cmd, mColorTarget.image, mSwapchainImages[imageIndex], mRenderExtent, mVkbSwapchain.extent);
 
     TransitionImageLayout(cmd, mSwapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    DrawImgui(cmd, mSwapchainImageViews[imageIndex]);
+    RenderImgui(cmd, mSwapchainImageViews[imageIndex]);
 
 
     TransitionImageLayout(cmd, mSwapchainImages[imageIndex],VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -517,7 +517,7 @@ void Engine::Draw()
     mCurrentFrame++;
 }
 
-void Engine::DrawBackground(VkCommandBuffer pCmd)
+void Engine::RenderBackground(VkCommandBuffer pCmd)
 {
     ComputeEffect& effect = mBackground.effects[mBackground.currentEffect];
 
@@ -529,7 +529,7 @@ void Engine::DrawBackground(VkCommandBuffer pCmd)
     vkCmdDispatch(pCmd, std::ceil(mRenderExtent.width / 16.0), std::ceil(mRenderExtent.height / 16.0), 1);
 }
 
-void Engine::DrawImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView)
+void Engine::RenderImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView)
 {
     VkRenderingAttachmentInfo colorAttachment = ColorAttachmentInfo(pTargetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingInfo renderInfo = RenderingInfo(mVkbSwapchain.extent, &colorAttachment, nullptr);
@@ -541,7 +541,7 @@ void Engine::DrawImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView)
     vkCmdEndRendering(pCmd);
 }
 
-void Engine::DrawGeometry(VkCommandBuffer pCmd)
+void Engine::RenderGeometry(VkCommandBuffer pCmd)
 {
     VkRenderingAttachmentInfo colorAttachment = ColorAttachmentInfo(mColorTarget.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingAttachmentInfo depthAttachment = DepthAttachmentInfo(mDepthTarget.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
@@ -573,13 +573,14 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
 
     float aspect = static_cast<float>(mRenderExtent.width) / static_cast<float>(mRenderExtent.height);
 
-    mScene.matrixV = glm::lookAt(mApplication->mCamera.position, mApplication->mCamera.lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
-    mScene.matrixP = glm::perspective(glm::radians(mApplication->mCamera.fov), aspect, 10000.0f, 0.1f);
+    SceneRenderData sceneRenderData = mApplication->mRenderContext.sceneData;
+    mScene.matrixV = glm::lookAt(sceneRenderData.cameraPos, sceneRenderData.cameraLookAt, glm::vec3(0.0f, 1.0f, 0.0f));
+    mScene.matrixP = glm::perspective(glm::radians(sceneRenderData.cameraFOV), aspect, 10000.0f, 0.1f);
     mScene.matrixVP = mScene.matrixP * mScene.matrixV;
-    mScene.ambientColor = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
-    mScene.mainLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    mScene.mainLightDir = glm::normalize(glm::vec4(0.2f, 1.0f, 0.3f, 0.0f));
-    mScene.cameraPos = glm::vec4(mApplication->mCamera.position, 0.0f);
+    mScene.ambientColor = glm::vec4(sceneRenderData.ambientColor, 1.0f);
+    mScene.mainLightColor = glm::vec4(sceneRenderData.mainLightColor, 1.0f);
+    mScene.mainLightDir = glm::vec4(sceneRenderData.mainLightDir, 0.0f);
+    mScene.cameraPos = glm::vec4(sceneRenderData.cameraPos, 0.0f);
 
     SceneData* sceneUniformData = static_cast<SceneData*>(GetCurrentFrame().sceneDataBuffer.info.pMappedData);
     *sceneUniformData = mScene;
@@ -594,40 +595,30 @@ void Engine::DrawGeometry(VkCommandBuffer pCmd)
 
     GeometryPushConstants pushConstants;
 
-    for (auto entity : mApplication->mEntityManager.All())
+    for (auto mesh : mApplication->mRenderContext.meshData)
     {
-        if (entity->mesh == nullptr)
-        {
-            continue;
-        }
+        glm::mat4 matrixITM = glm::transpose(glm::inverse(mesh.transform));
 
-        glm::mat4 matrixM = glm::translate(glm::mat4(1.0f),entity->position);
-        glm::quat rotation = glm::quat(radians(entity->rotation));
-        matrixM *= glm::toMat4(rotation);
-        matrixM = glm::scale(matrixM, glm::vec3(entity->scale));
-        glm::mat4 matrixITM = glm::transpose(glm::inverse(matrixM));
-
-        pushConstants.matrixM = matrixM;
+        pushConstants.matrixM = mesh.transform;
         pushConstants.matrixITM = matrixITM;
-        pushConstants.vertexBuffer = entity->mesh->meshBuffers.vertexBufferAddress;
+        pushConstants.vertexBuffer = mesh.vertexBufferAddress;
 
-        if (entity->texture != nullptr)
+        if (mesh.texture != nullptr)
         {
             VkDescriptorSet imageSet = GetCurrentFrame().descriptorAllocator.Allocate(mDevice, mSingleImageDescriptorLayout);
             {
                 DescriptorWriter writer;
-                writer.WriteImage(0, entity->texture->imageView, mSamplerNearest, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                writer.WriteImage(0, mesh.texture->imageView, mSamplerNearest, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                 writer.UpdateSet(mDevice, imageSet);
             }
 
             vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 1, 1, &imageSet, 0, nullptr);
         }
 
-
         vkCmdPushConstants(pCmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GeometryPushConstants), &pushConstants);
-        vkCmdBindIndexBuffer(pCmd, entity->mesh->meshBuffers.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindIndexBuffer(pCmd, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdDrawIndexed(pCmd, entity->mesh->indexCount, 1, 0, 0, 0);
+        vkCmdDrawIndexed(pCmd, mesh.indexCount, 1, 0, 0, 0);
     }
 
     vkCmdEndRendering(pCmd);

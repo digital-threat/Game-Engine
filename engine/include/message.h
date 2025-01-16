@@ -18,18 +18,18 @@ struct Message
 
 struct StringMessage : Message
 {
-	StringMessage(std::string pMessage, std::string param, int entityId, MessageQueue *instigator = nullptr);
+	StringMessage(std::string pMessage, std::string param, int entityId, MessageQueue *sender = nullptr);
 
-	MessageQueue *instigator;
+	MessageQueue *sender;
 	i32 entityId;
 	std::string param;
 };
 
 struct MeshMessage : Message
 {
-	MeshMessage(std::string pMessage, MeshAsset param, int entityId, MessageQueue *instigator = nullptr);
+	MeshMessage(std::string pMessage, MeshAsset param, int entityId, MessageQueue *sender = nullptr);
 
-	MessageQueue *instigator;
+	MessageQueue *sender;
 	i32 entityId;
 	MeshAsset param;
 };

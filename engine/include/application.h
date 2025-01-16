@@ -1,16 +1,13 @@
 #pragma once
-#include <camera.h>
-#include <entity_manager.h>
 
-struct Application
+#include <renderer_vk_types.h>
+
+class Application
 {
-	Camera mCamera{ .position = glm::vec3{ 0.0f, 2.0f, -3.0f }, .fov = 60};
+public:
+	RenderContext mRenderContext{};
 
-	EntityManager mEntityManager;
-	int mCurrentEntity = 0;
-
-	float mRenderScale = 1.0f;
-
+public:
 	virtual void Awake() = 0;
 	virtual void Update() = 0;
 	virtual void Render() = 0;
