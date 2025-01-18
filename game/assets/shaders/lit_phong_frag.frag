@@ -8,11 +8,9 @@ layout (location = 2) in vec2 inUV;
 
 layout (location = 0) out vec4 outColor;
 
-layout(set = 1, binding = 0) uniform sampler2D albedoMap;
-
 void main()
 {
-    vec3 color = texture(albedoMap, inUV).xyz;
+    vec3 color = texture(albedoMap, vec2(inUV.x, 1-inUV.y)).xyz;
     vec3 normal = normalize(inNormal);
     float NdotL = max(dot(normal, mainLightDir), 0.0f);
 

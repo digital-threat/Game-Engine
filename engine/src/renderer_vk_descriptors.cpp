@@ -89,7 +89,7 @@ VkDescriptorSet DescriptorAllocator::Allocate(const VkDevice pDevice, const VkDe
 }
 
 void
-DescriptorWriter::WriteImage(int pBinding, VkImageView pImage, VkSampler pSampler, VkImageLayout pLayout, VkDescriptorType pType)
+DescriptorWriter::WriteImage(u32 pBinding, VkImageView pImage, VkSampler pSampler, VkImageLayout pLayout, VkDescriptorType pType)
 {
 	VkDescriptorImageInfo imageInfo{};
 	imageInfo.sampler = pSampler;
@@ -110,7 +110,7 @@ DescriptorWriter::WriteImage(int pBinding, VkImageView pImage, VkSampler pSample
 }
 
 void
-DescriptorWriter::WriteBuffer(int pBinding, VkBuffer pBuffer, size_t pSize, size_t pOffset, VkDescriptorType pType)
+DescriptorWriter::WriteBuffer(u32 pBinding, VkBuffer pBuffer, size_t pSize, size_t pOffset, VkDescriptorType pType)
 {
 	VkDescriptorBufferInfo bufferInfo{};
 	bufferInfo.buffer = pBuffer;

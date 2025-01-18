@@ -5,6 +5,7 @@
 #include <mesh_manager.h>
 #include <ostream>
 #include <filesystem>
+#include <material_manager.h>
 #include <renderer_vk_images.h>
 #include <texture_manager.h>
 #include <utility.h>
@@ -52,8 +53,8 @@ void MySandbox::Render()
     sceneData.mainLightDir = glm::normalize(glm::vec3(0.2f, 1.0f, 0.3f));
     mRenderContext.sceneData = sceneData;
 
-    mRenderContext.meshData.clear();
-    for (const auto entity : mEntityManager.All())
+    mRenderContext.modelData.clear();
+    for (auto entity : mEntityManager.All())
     {
         if (entity->mesh == nullptr)
         {
@@ -65,15 +66,15 @@ void MySandbox::Render()
         matrixM *= glm::toMat4(rotation);
         matrixM = glm::scale(matrixM, glm::vec3(entity->scale));
 
-        MeshRenderData meshRenderData{};
+        ModelRenderData meshRenderData{};
         meshRenderData.name = entity->name;
         meshRenderData.transform = matrixM;
         meshRenderData.indexBuffer = entity->mesh->meshBuffers.indexBuffer;
         meshRenderData.indexCount = entity->mesh->indexCount;
         meshRenderData.vertexBuffer = entity->mesh->meshBuffers.vertexBuffer;
         meshRenderData.vertexBufferAddress = entity->mesh->meshBuffers.vertexBufferAddress;
-        meshRenderData.texture = entity->texture;
-        mRenderContext.meshData.push_back(meshRenderData);
+        meshRenderData.materialSet = MaterialManager::Get().GetDescriptorSet(entity->material);
+        mRenderContext.modelData.push_back(meshRenderData);
     }
 }
 
@@ -133,26 +134,26 @@ void MySandbox::ImGuiEntity()
                 meshManager.QueueMessage(message);
             }
 
-            if (ImGui::Button("Set Texture"))
-            {
-                std::string path = textureBuffer;
-                rtrim(path);
-                TextureManager& textureManager = TextureManager::Get();
-                VulkanImage* texture = textureManager.GetTexture(path.c_str());
-                if (texture == nullptr)
-                {
-                    try
-                    {
-                        texture = textureManager.LoadTexture(path.c_str());
-                    }
-                    catch (const std::exception& e)
-                    {
-                        std::cerr << e.what() << std::endl;
-                    }
-                }
-
-                selected->texture = texture;
-            }
+            // if (ImGui::Button("Set Texture"))
+            // {
+            //     std::string path = textureBuffer;
+            //     rtrim(path);
+            //     TextureManager& textureManager = TextureManager::Get();
+            //     VulkanImage* texture = textureManager.GetTexture(path.c_str());
+            //     if (texture == nullptr)
+            //     {
+            //         try
+            //         {
+            //             texture = textureManager.LoadTexture(path.c_str());
+            //         }
+            //         catch (const std::exception& e)
+            //         {
+            //             std::cerr << e.what() << std::endl;
+            //         }
+            //     }
+            //
+            //     selected->texture = texture;
+            // }
 
             if (ImGui::Button("Delete Entity"))
             {
@@ -185,18 +186,24 @@ void MySandbox::ImGuiApplication()
 void MySandbox::LoadDefaultScene()
 {
     TextureManager& textureManager = TextureManager::Get();
-    VulkanImage* defaultTexture = textureManager.GetTexture("assets/textures/brick.png");
-    if (defaultTexture == nullptr)
+    VulkanImage* brickImage = textureManager.GetTexture("assets/textures/brick.png");
+    if (brickImage == nullptr)
     {
         try
         {
-            defaultTexture = textureManager.LoadTexture("assets/textures/brick.png");
+            brickImage = textureManager.LoadTexture("assets/textures/brick.png");
         }
         catch (const std::exception& e)
         {
             std::cerr << e.what() << std::endl;
         }
     }
+
+    Texture brickTexture = { brickImage->imageView, nullptr };
+
+    MaterialManager& materialManager = MaterialManager::Get();
+    auto handle = materialManager.CreateMaterial();
+    materialManager.SetTexture(handle, brickTexture, 0);
 
     MeshManager& meshManager = MeshManager::Get();
 
@@ -205,7 +212,7 @@ void MySandbox::LoadDefaultScene()
         Entity &newEntity = mEntityManager.CreateEntity();
         newEntity.name = "Default Name";
         newEntity.mesh = nullptr;
-        newEntity.texture = defaultTexture;
+        newEntity.material = handle;
         newEntity.position = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
         newEntity.rotation = glm::vec3();
         newEntity.scale = 1;

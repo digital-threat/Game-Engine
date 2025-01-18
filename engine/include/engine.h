@@ -7,7 +7,6 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_LEFT_HANDED
 #define GLM_ENABLE_EXPERIMENTAL
-#include <application.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -21,12 +20,14 @@
 #include <array>
 #include <functional>
 #include <cassert>
-#include <entity_manager.h>
 #include <iostream>
+#include <thread>
+
+#include <application.h>
+#include <material_manager.h>
 #include <mesh_manager.h>
 #include <renderer_vk_images.h>
 #include <texture_manager.h>
-#include <thread>
 
 #include "types.h"
 #include "renderer_vk_types.h"
@@ -108,7 +109,7 @@ public:
     SceneData mScene{};
     VkDescriptorSetLayout mSceneDescriptorLayout;
 
-    VkDescriptorSetLayout mSingleImageDescriptorLayout;
+    VkDescriptorSetLayout mMaterialDescriptorLayout;
 
     VkExtent2D mRenderExtent{};
 
@@ -126,6 +127,7 @@ public:
     {
         MeshManager::Allocate(*this);
         TextureManager::Allocate(*this);
+        MaterialManager::Allocate(*this);
     }
 
     void Run()
@@ -227,7 +229,7 @@ private:
     void InitFrameDescriptorAllocators();
     void InitBackgroundDescriptorLayout();
     void InitSceneDescriptorLayout();
-    void InitSingleImageDescriptorLayout();
+    void InitMaterialDescriptorLayout();
 
     // Buffers
     void InitBuffers();

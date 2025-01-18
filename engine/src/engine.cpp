@@ -372,11 +372,13 @@ void Engine::InitSceneDescriptorLayout()
     mSceneDescriptorLayout = builder.Build(mDevice, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 }
 
-void Engine::InitSingleImageDescriptorLayout()
+void Engine::InitMaterialDescriptorLayout()
 {
     DescriptorLayoutBuilder builder;
+    //builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     builder.AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-    mSingleImageDescriptorLayout = builder.Build(mDevice, VK_SHADER_STAGE_FRAGMENT_BIT);
+    builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    mMaterialDescriptorLayout = builder.Build(mDevice, VK_SHADER_STAGE_FRAGMENT_BIT);
 }
 
 void Engine::InitDescriptors()
@@ -386,7 +388,7 @@ void Engine::InitDescriptors()
 
     InitBackgroundDescriptorLayout();
     InitSceneDescriptorLayout();
-    InitSingleImageDescriptorLayout();
+    InitMaterialDescriptorLayout();
 
     mBackground.descriptorSet = mGlobalDescriptorAllocator.Allocate(mDevice, mBackground.descriptorLayout);
 
@@ -593,32 +595,18 @@ void Engine::RenderGeometry(VkCommandBuffer pCmd)
 
     vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 0, 1, &sceneSet, 0, nullptr);
 
-    GeometryPushConstants pushConstants;
-
-    for (auto mesh : mApplication->mRenderContext.meshData)
+    for (auto& model : mApplication->mRenderContext.modelData)
     {
-        glm::mat4 matrixITM = glm::transpose(glm::inverse(mesh.transform));
-
-        pushConstants.matrixM = mesh.transform;
-        pushConstants.matrixITM = matrixITM;
-        pushConstants.vertexBuffer = mesh.vertexBufferAddress;
-
-        if (mesh.texture != nullptr)
-        {
-            VkDescriptorSet imageSet = GetCurrentFrame().descriptorAllocator.Allocate(mDevice, mSingleImageDescriptorLayout);
-            {
-                DescriptorWriter writer;
-                writer.WriteImage(0, mesh.texture->imageView, mSamplerNearest, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                writer.UpdateSet(mDevice, imageSet);
-            }
-
-            vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 1, 1, &imageSet, 0, nullptr);
-        }
+        GeometryPushConstants pushConstants;
+        pushConstants.matrixM = model.transform;
+        pushConstants.matrixITM = glm::transpose(glm::inverse(model.transform));
+        pushConstants.vertexBuffer = model.vertexBufferAddress;
 
         vkCmdPushConstants(pCmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GeometryPushConstants), &pushConstants);
-        vkCmdBindIndexBuffer(pCmd, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 1, 1, &model.materialSet, 0, nullptr);
+        vkCmdBindIndexBuffer(pCmd, model.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdDrawIndexed(pCmd, mesh.indexCount, 1, 0, 0, 0);
+        vkCmdDrawIndexed(pCmd, model.indexCount, 1, 0, 0, 0);
     }
 
     vkCmdEndRendering(pCmd);
@@ -701,7 +689,7 @@ void Engine::InitializeMeshPipeline()
     pushConstantRange.size = sizeof(GeometryPushConstants);
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    std::array<VkDescriptorSetLayout, 2> descriptorSets = { mSceneDescriptorLayout, mSingleImageDescriptorLayout };
+    std::array<VkDescriptorSetLayout, 2> descriptorSets = { mSceneDescriptorLayout, mMaterialDescriptorLayout };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = PipelineLayoutCreateInfo();
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;

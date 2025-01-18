@@ -101,30 +101,6 @@ enum class RenderQueue : u8
 	TRANSPARENT,
 };
 
-struct MaterialPipeline
-{
-	VkPipeline pipeline;
-	VkPipelineLayout layout;
-};
-
-struct MaterialInstance
-{
-	MaterialPipeline* pipeline;
-	VkDescriptorSet materialSet;
-	RenderQueue renderQueue;
-};
-
-struct MeshRenderData
-{
-	std::string name;
-	u32 indexCount;
-	VulkanBuffer indexBuffer;
-	VulkanBuffer vertexBuffer;
-	glm::mat4 transform;
-	VkDeviceAddress vertexBufferAddress;
-	VulkanImage* texture;
-};
-
 struct GeometryPushConstants
 {
 	glm::mat4 matrixM;
@@ -165,6 +141,30 @@ struct SceneData
 	glm::vec4 cameraPos;
 };
 
+struct Texture
+{
+	VkImageView view;
+	VkSampler sampler;
+};
+
+struct MaterialInstance
+{
+	VkBuffer dataBuffer;
+	float shininess;
+	VkDescriptorSet materialSet;
+};
+
+struct ModelRenderData
+{
+	std::string name;
+	u32 indexCount;
+	VulkanBuffer indexBuffer;
+	VulkanBuffer vertexBuffer;
+	VkDeviceAddress vertexBufferAddress;
+	glm::mat4 transform;
+	VkDescriptorSet materialSet;
+};
+
 struct SceneRenderData
 {
 	glm::vec3 ambientColor;
@@ -184,7 +184,7 @@ struct ImmediateData
 
 struct RenderContext
 {
-	std::vector<MeshRenderData> meshData;
+	std::vector<ModelRenderData> modelData;
 	SceneRenderData sceneData;
 	float renderScale = 1.0f;
 };

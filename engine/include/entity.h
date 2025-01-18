@@ -1,5 +1,6 @@
 #pragma once
 
+#include <handles.h>
 #include <glm/vec3.hpp>
 #include "renderer_vk_types.h"
 #include <string>
@@ -12,7 +13,7 @@ struct Entity
 	glm::vec3 rotation;
 	float scale = 1;
 	MeshAsset* mesh = nullptr;
-	VulkanImage* texture = nullptr;
+	MaterialHandle material;
 
 	Entity() = delete;
 

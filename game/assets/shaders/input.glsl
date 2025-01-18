@@ -1,4 +1,4 @@
-layout(set = 0, binding = 0) uniform SceneData
+layout(set = 0, binding = 0) uniform Scene
 {
     mat4 matrixV;
     mat4 matrixP;
@@ -8,3 +8,11 @@ layout(set = 0, binding = 0) uniform SceneData
     vec3 mainLightColor;
     vec3 cameraPos;
 };
+
+//layout(set = 1, binding = 0) uniform Material
+//{
+//    float shininess;
+//};
+
+layout(set = 1, binding = 0) uniform sampler2D albedoMap;
+layout(set = 1, binding = 1) uniform sampler2D specularMap;
