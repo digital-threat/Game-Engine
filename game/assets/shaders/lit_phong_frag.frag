@@ -20,7 +20,7 @@ void main()
     vec3 viewDir = normalize(cameraPos - inPosition);
     vec3 halfVector = normalize(mainLightDir + viewDir);
     float brightness = max(dot(normal, halfVector), 0.0);
-    vec3 specular = pow(brightness, 16.0f) * mainLightColor;
+    vec3 specular = pow(brightness, 16.0f) * mainLightColor * texture(specularMap, vec2(inUV.x, 1-inUV.y)).xyz;
 
     outColor = vec4(color * (ambient + diffuse + specular), 1.0f);
 }

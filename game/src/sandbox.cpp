@@ -186,12 +186,12 @@ void MySandbox::ImGuiApplication()
 void MySandbox::LoadDefaultScene()
 {
     TextureManager& textureManager = TextureManager::Get();
-    VulkanImage* brickImage = textureManager.GetTexture("assets/textures/brick.png");
-    if (brickImage == nullptr)
+    VulkanImage* boxAlbedo = textureManager.GetTexture("assets/textures/container2.png");
+    if (boxAlbedo == nullptr)
     {
         try
         {
-            brickImage = textureManager.LoadTexture("assets/textures/brick.png");
+            boxAlbedo = textureManager.LoadTexture("assets/textures/container2.png");
         }
         catch (const std::exception& e)
         {
@@ -199,11 +199,27 @@ void MySandbox::LoadDefaultScene()
         }
     }
 
-    Texture brickTexture = { brickImage->imageView, nullptr };
+    VulkanImage* boxSpecular = textureManager.GetTexture("assets/textures/container2_specular.png");
+    if (boxSpecular == nullptr)
+    {
+        try
+        {
+            boxSpecular = textureManager.LoadTexture("assets/textures/container2_specular.png");
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << e.what() << std::endl;
+        }
+    }
+
+    Texture albedoTexture = { boxAlbedo->imageView, nullptr };
+    Texture specularTexture = { boxSpecular->imageView, nullptr };
 
     MaterialManager& materialManager = MaterialManager::Get();
     auto handle = materialManager.CreateMaterial();
-    materialManager.SetTexture(handle, brickTexture, 0);
+    materialManager.SetTexture(handle, albedoTexture, 0);
+    materialManager.SetTexture(handle, specularTexture, 1);
+
 
     MeshManager& meshManager = MeshManager::Get();
 
