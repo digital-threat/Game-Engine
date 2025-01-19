@@ -7,6 +7,7 @@
 
 #include <deque>
 #include <functional>
+#include <handles.h>
 #include <string>
 #include <vector>
 
@@ -147,8 +148,10 @@ struct Texture
 	VkSampler sampler;
 };
 
-struct MaterialInstance
+struct Material
 {
+	std::string name;
+	MaterialHandle handle;
 	VkBuffer dataBuffer;
 	float shininess;
 	VkDescriptorSet materialSet;

@@ -43,6 +43,7 @@ void MySandbox::Render()
 	ImGuiApplication();
     ImGuiCamera();
     ImGuiEntity();
+    ImGuiMaterials();
 
     SceneRenderData sceneData{};
     sceneData.cameraPos = mCamera.position;
@@ -96,7 +97,7 @@ void MySandbox::ImGuiCamera()
 
 void MySandbox::ImGuiEntity()
 {
-    if (ImGui::Begin("Transform"))
+    if (ImGui::Begin("Entities"))
     {
         if (mEntityManager.Count() > 0)
         {
@@ -119,41 +120,54 @@ void MySandbox::ImGuiEntity()
             ImGui::InputFloat3("Rotation:", reinterpret_cast<float *>(&selected->rotation));
             ImGui::InputFloat("Scale", &selected->scale);
 
-            static char meshBuffer[64]{};
-            ImGui::InputText("Path to Mesh: ", meshBuffer, IM_ARRAYSIZE(meshBuffer));
-
-            static char textureBuffer[64]{};
-            ImGui::InputText("Path to Texture: ", textureBuffer, IM_ARRAYSIZE(textureBuffer));
-
-            if (ImGui::Button("Set Mesh"))
+            if (ImGui::Button("Select Mesh"))
             {
-                std::string path = meshBuffer;
-                rtrim(path);
-                MeshManager& meshManager = MeshManager::Get();
-                StringMessage* message = new StringMessage("LoadMesh", path.c_str(), selected->id, this);
-                meshManager.QueueMessage(message);
+                ImGui::OpenPopup("Mesh Selector");
             }
 
-            // if (ImGui::Button("Set Texture"))
-            // {
-            //     std::string path = textureBuffer;
-            //     rtrim(path);
-            //     TextureManager& textureManager = TextureManager::Get();
-            //     VulkanImage* texture = textureManager.GetTexture(path.c_str());
-            //     if (texture == nullptr)
-            //     {
-            //         try
-            //         {
-            //             texture = textureManager.LoadTexture(path.c_str());
-            //         }
-            //         catch (const std::exception& e)
-            //         {
-            //             std::cerr << e.what() << std::endl;
-            //         }
-            //     }
-            //
-            //     selected->texture = texture;
-            // }
+            if (ImGui::BeginPopup("Mesh Selector"))
+            {
+                ImGui::Text("MESHES:");
+                ImGui::Separator();
+
+                for (const auto& file : std::filesystem::directory_iterator("assets/meshes/"))
+                {
+                    if (file.path().extension() == ".bin")
+                    {
+                        if (ImGui::Selectable(file.path().filename().string().c_str()))
+                        {
+                            MeshManager& meshManager = MeshManager::Get();
+                            StringMessage* message = new StringMessage("LoadMesh", file.path().string().c_str(), selected->id, this);
+                            meshManager.QueueMessage(message);
+                            ImGui::CloseCurrentPopup();
+                        }
+                    }
+                }
+
+                ImGui::EndPopup();
+            }
+
+            if (ImGui::Button("Select Material"))
+            {
+                ImGui::OpenPopup("Material Selector");
+            }
+
+            if (ImGui::BeginPopup("Material Selector"))
+            {
+                ImGui::Text("MATERIALS:");
+                ImGui::Separator();
+
+                for (const Material& material : MaterialManager::Get().GetAll())
+                {
+                    if (ImGui::Selectable(material.name.c_str()))
+                    {
+                        selected->material = material.handle;
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+
+                ImGui::EndPopup();
+            }
 
             if (ImGui::Button("Delete Entity"))
             {
@@ -170,6 +184,94 @@ void MySandbox::ImGuiEntity()
             mEntityManager.CreateEntity();
         }
 
+    }
+    ImGui::End();
+}
+
+void MySandbox::ImGuiMaterials()
+{
+    static int currentMaterial = 0;
+    if (ImGui::Begin("Materials"))
+    {
+        auto& materialManager = MaterialManager::Get();
+        const std::vector<Material>& materials = materialManager.GetAll();
+
+        ImGui::SliderInt("Index", &currentMaterial,0, materials.size() - 1);
+        ImGui::Text(materials[currentMaterial].name.c_str());
+
+        if (ImGui::Button("Select Albedo"))
+        {
+            ImGui::OpenPopup("Albedo Selector");
+        }
+
+        if (ImGui::BeginPopup("Albedo Selector"))
+        {
+            ImGui::Text("TEXTURES:");
+            ImGui::Separator();
+
+            for (const auto& file : std::filesystem::directory_iterator("assets/textures/"))
+            {
+                if (ImGui::Selectable(file.path().filename().string().c_str()))
+                {
+                    TextureManager& textureManager = TextureManager::Get();
+                    VulkanImage* texture = textureManager.GetTexture(file.path().string().c_str());
+                    if (texture == nullptr)
+                    {
+                        try
+                        {
+                            texture = textureManager.LoadTexture(file.path().string().c_str());
+                            Texture albedoTexture = { texture->imageView, nullptr };
+                            materialManager.SetTexture(materials[currentMaterial].handle, albedoTexture, 0);
+
+                        }
+                        catch (const std::exception& e)
+                        {
+                            std::cerr << e.what() << std::endl;
+                        }
+                    }
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+
+            ImGui::EndPopup();
+        }
+
+        if (ImGui::Button("Select Specular"))
+        {
+            ImGui::OpenPopup("Specular Selector");
+        }
+
+        if (ImGui::BeginPopup("Specular Selector"))
+        {
+            ImGui::Text("TEXTURES:");
+            ImGui::Separator();
+
+            for (const auto& file : std::filesystem::directory_iterator("assets/textures/"))
+            {
+                if (ImGui::Selectable(file.path().filename().string().c_str()))
+                {
+                    TextureManager& textureManager = TextureManager::Get();
+                    VulkanImage* texture = textureManager.GetTexture(file.path().string().c_str());
+                    if (texture == nullptr)
+                    {
+                        try
+                        {
+                            texture = textureManager.LoadTexture(file.path().string().c_str());
+                            Texture specularTexture = { texture->imageView, nullptr };
+                            materialManager.SetTexture(materials[currentMaterial].handle, specularTexture, 1);
+
+                        }
+                        catch (const std::exception& e)
+                        {
+                            std::cerr << e.what() << std::endl;
+                        }
+                    }
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+
+            ImGui::EndPopup();
+        }
     }
     ImGui::End();
 }
@@ -216,9 +318,11 @@ void MySandbox::LoadDefaultScene()
     Texture specularTexture = { boxSpecular->imageView, nullptr };
 
     MaterialManager& materialManager = MaterialManager::Get();
-    auto handle = materialManager.CreateMaterial();
+    auto handle = materialManager.CreateMaterial("Crate");
     materialManager.SetTexture(handle, albedoTexture, 0);
     materialManager.SetTexture(handle, specularTexture, 1);
+
+    materialManager.CreateMaterial("Nothing");
 
 
     MeshManager& meshManager = MeshManager::Get();

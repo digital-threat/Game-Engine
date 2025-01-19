@@ -21,6 +21,7 @@ private:
 	void ImGuiApplication();
 	void ImGuiCamera();
 	void ImGuiEntity();
+	void ImGuiMaterials();
 
 	void LoadDefaultScene();
 

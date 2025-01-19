@@ -21,7 +21,8 @@ public:
 	static MaterialManager& Get();
 
 public:
-	MaterialHandle CreateMaterial();
+	MaterialHandle CreateMaterial(const std::string &name);
+	const std::vector<Material>& GetAll();
 
 	void SetTexture(MaterialHandle handle, Texture texture, u32 slot);
 	VkDescriptorSet GetDescriptorSet(MaterialHandle handle);
@@ -30,6 +31,6 @@ private:
 	Engine& mEngine;
 	static MaterialManager* mInstance;
 
-	std::vector<MaterialInstance> mMaterials;
+	std::vector<Material> mMaterials;
 	const u16 MAX_MATERIALS = 256;
 };
