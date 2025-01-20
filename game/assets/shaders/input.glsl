@@ -1,3 +1,5 @@
+#include "lighting.glsl"
+
 layout(set = 0, binding = 0) uniform Scene
 {
     mat4 matrixV;
@@ -7,6 +9,8 @@ layout(set = 0, binding = 0) uniform Scene
     vec3 mainLightDir;
     vec3 mainLightColor;
     vec3 cameraPos;
+    Light lights[MAX_LIGHTS];
+    uint lightCount;
 };
 
 //layout(set = 1, binding = 0) uniform Material

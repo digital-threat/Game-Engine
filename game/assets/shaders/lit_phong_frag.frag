@@ -1,6 +1,7 @@
 #version 460
 
 #include "input.glsl"
+#include "lighting.glsl"
 
 layout (location = 0) in vec3 inPosition;
 layout (location = 1) in vec3 inNormal;
@@ -12,15 +13,16 @@ void main()
 {
     vec3 color = texture(albedoMap, vec2(inUV.x, 1-inUV.y)).xyz;
     vec3 normal = normalize(inNormal);
-    float NdotL = max(dot(normal, mainLightDir), 0.0f);
-
-    vec3 ambient = ambientColor;
-    vec3 diffuse = NdotL * mainLightColor;
-
     vec3 viewDir = normalize(cameraPos - inPosition);
-    vec3 halfVector = normalize(mainLightDir + viewDir);
-    float brightness = max(dot(normal, halfVector), 0.0);
-    vec3 specular = pow(brightness, 16.0f) * mainLightColor * texture(specularMap, vec2(inUV.x, 1-inUV.y)).xyz;
+    float specularIntensity = texture(specularMap, vec2(inUV.x, 1-inUV.y)).r;
 
-    outColor = vec4(color * (ambient + diffuse + specular), 1.0f);
+    vec3 lightingColor = vec3(0);
+    for (uint i = 0; i < min(lightCount, MAX_LIGHTS); i++)
+    {
+       Light light = lights[i];
+       light.attenuation = 1;
+       lightingColor += CalculateLighting(light, normal, viewDir, 16.0f, specularIntensity);
+    }
+
+    outColor = vec4(color * (ambientColor + lightingColor), 1.0f);
 }

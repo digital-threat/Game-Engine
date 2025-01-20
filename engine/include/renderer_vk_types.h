@@ -52,6 +52,13 @@ struct Vertex
 	}
 };
 
+struct Light
+{
+	glm::vec3 direction;
+	float attenuation;
+	glm::vec3 color;
+};
+
 struct VulkanImage
 {
 	VkImage image;
