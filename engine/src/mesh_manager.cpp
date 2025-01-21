@@ -88,7 +88,7 @@ void MeshManager::ProcessMessage(Message *pMessage)
 
 				if (stringMsg->sender != nullptr)
 				{
-					MeshMessage* reply = new MeshMessage("MeshLoaded", mesh, stringMsg->entityId);
+					MeshMessage* reply = new MeshMessage("MeshLoaded", mesh);
 					stringMsg->sender->QueueMessage(reply);
 				}
 			}

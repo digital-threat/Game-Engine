@@ -20,8 +20,10 @@ public:
 private:
 	void ImGuiApplication();
 	void ImGuiCamera();
-	void ImGuiEntity();
+	void ImGuiEntities();
 	void ImGuiMaterials();
+	void ImGuiLights();
+
 
 	void LoadDefaultScene();
 

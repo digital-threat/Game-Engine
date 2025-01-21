@@ -52,6 +52,13 @@ struct Vertex
 	}
 };
 
+enum class LightType : u8
+{
+	DIRECTIONAL,
+	POINT,
+	SPOT,
+};
+
 struct Light
 {
 	glm::vec3 direction;

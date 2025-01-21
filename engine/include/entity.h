@@ -1,24 +1,25 @@
 #pragma once
 
-#include <handles.h>
-#include <glm/vec3.hpp>
 #include "renderer_vk_types.h"
+#include "component.h"
 #include <string>
 
-struct Entity
+class Entity
 {
-	i32 id;
-	std::string name = "Default Name";
-	glm::vec3 position;
-	glm::vec3 rotation;
-	float scale = 1;
-	MeshAsset* mesh = nullptr;
-	MaterialHandle material;
-
+public:
 	Entity() = delete;
+	Entity(i32 id);
 
-	Entity(i32 id)
-	{
-		this->id = id;
-	}
+	void Update();
+	void Render(RenderContext &renderContext);
+	void OnGUI();
+
+	void AddComponent(Component* component);
+
+public:
+	std::string mName = "Default Name";
+	i32 id;
+
+private:
+	std::vector<Component*> mComponents;
 };

@@ -4,5 +4,5 @@
 
 struct MaterialHandle
 {
-	u16 index;
+	u16 index = -1;
 };

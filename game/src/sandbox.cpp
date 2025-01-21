@@ -1,5 +1,6 @@
 #include "sandbox.h"
 
+#include <components.h>
 #include <imgui.h>
 #include <iostream>
 #include <mesh_manager.h>
@@ -13,7 +14,6 @@
 #include <mesh_serialization.h>
 #include <obj_loading.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
@@ -36,13 +36,18 @@ void MySandbox::Awake()
 void MySandbox::Update()
 {
     ProcessMessages();
+
+    for (auto entity : mEntityManager.All())
+    {
+        entity->Update();
+    }
 }
 
 void MySandbox::Render()
 {
 	ImGuiApplication();
     ImGuiCamera();
-    ImGuiEntity();
+    ImGuiEntities();
     ImGuiMaterials();
 
     SceneRenderData sceneData{};
@@ -53,29 +58,10 @@ void MySandbox::Render()
     sceneData.mainLightColor = glm::vec3(1.0f, 1.0f, 1.0f);
     sceneData.mainLightDir = glm::normalize(glm::vec3(0.2f, 1.0f, 0.3f));
     mRenderContext.sceneData = sceneData;
-
     mRenderContext.modelData.clear();
     for (auto entity : mEntityManager.All())
     {
-        if (entity->mesh == nullptr)
-        {
-            continue;
-        }
-
-        glm::mat4 matrixM = glm::translate(glm::mat4(1.0f),entity->position);
-        glm::quat rotation = glm::quat(radians(entity->rotation));
-        matrixM *= glm::toMat4(rotation);
-        matrixM = glm::scale(matrixM, glm::vec3(entity->scale));
-
-        ModelRenderData meshRenderData{};
-        meshRenderData.name = entity->name;
-        meshRenderData.transform = matrixM;
-        meshRenderData.indexBuffer = entity->mesh->meshBuffers.indexBuffer;
-        meshRenderData.indexCount = entity->mesh->indexCount;
-        meshRenderData.vertexBuffer = entity->mesh->meshBuffers.vertexBuffer;
-        meshRenderData.vertexBufferAddress = entity->mesh->meshBuffers.vertexBufferAddress;
-        meshRenderData.materialSet = MaterialManager::Get().GetDescriptorSet(entity->material);
-        mRenderContext.modelData.push_back(meshRenderData);
+        entity->Render(mRenderContext);
     }
 }
 
@@ -95,7 +81,7 @@ void MySandbox::ImGuiCamera()
     ImGui::End();
 }
 
-void MySandbox::ImGuiEntity()
+void MySandbox::ImGuiEntities()
 {
     if (ImGui::Begin("Entities"))
     {
@@ -105,69 +91,7 @@ void MySandbox::ImGuiEntity()
 
             ImGui::SliderInt("Entity Index", &mCurrentEntity,0, mEntityManager.Count() - 1);
 
-
-            static char nameBuffer[64]{};
-            assert(selected->name.size() < 64);
-            selected->name.copy(nameBuffer, selected->name.size());
-            nameBuffer[selected->name.size()] = '\0';
-
-            if (ImGui::InputText("Name: ", nameBuffer, IM_ARRAYSIZE(nameBuffer)))
-            {
-                selected->name = std::string(nameBuffer);
-            }
-
-            ImGui::InputFloat3("Position:", reinterpret_cast<float *>(&selected->position));
-            ImGui::InputFloat3("Rotation:", reinterpret_cast<float *>(&selected->rotation));
-            ImGui::InputFloat("Scale", &selected->scale);
-
-            if (ImGui::Button("Select Mesh"))
-            {
-                ImGui::OpenPopup("Mesh Selector");
-            }
-
-            if (ImGui::BeginPopup("Mesh Selector"))
-            {
-                ImGui::Text("MESHES:");
-                ImGui::Separator();
-
-                for (const auto& file : std::filesystem::directory_iterator("assets/meshes/"))
-                {
-                    if (file.path().extension() == ".bin")
-                    {
-                        if (ImGui::Selectable(file.path().filename().string().c_str()))
-                        {
-                            MeshManager& meshManager = MeshManager::Get();
-                            StringMessage* message = new StringMessage("LoadMesh", file.path().string().c_str(), selected->id, this);
-                            meshManager.QueueMessage(message);
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                }
-
-                ImGui::EndPopup();
-            }
-
-            if (ImGui::Button("Select Material"))
-            {
-                ImGui::OpenPopup("Material Selector");
-            }
-
-            if (ImGui::BeginPopup("Material Selector"))
-            {
-                ImGui::Text("MATERIALS:");
-                ImGui::Separator();
-
-                for (const Material& material : MaterialManager::Get().GetAll())
-                {
-                    if (ImGui::Selectable(material.name.c_str()))
-                    {
-                        selected->material = material.handle;
-                        ImGui::CloseCurrentPopup();
-                    }
-                }
-
-                ImGui::EndPopup();
-            }
+            selected->OnGUI();
 
             if (ImGui::Button("Delete Entity"))
             {
@@ -276,6 +200,23 @@ void MySandbox::ImGuiMaterials()
     ImGui::End();
 }
 
+void MySandbox::ImGuiLights()
+{
+    // if (ImGui::Button("Create Light"))
+    // {
+    //     mEntityManager.CreateEntity();
+    // }
+    //
+    // if (ImGui::Button("Delete Light"))
+    // {
+    //     mEntityManager.DeleteEntity(selected);
+    //     if (mEntityManager.Count() > 0)
+    //     {
+    //         mCurrentEntity %= mEntityManager.Count();
+    //     }
+    // }
+}
+
 void MySandbox::ImGuiApplication()
 {
     if (ImGui::Begin("Application"))
@@ -330,14 +271,19 @@ void MySandbox::LoadDefaultScene()
     for (i32 i = 0; i < 3; ++i)
     {
         Entity &newEntity = mEntityManager.CreateEntity();
-        newEntity.name = "Default Name";
-        newEntity.mesh = nullptr;
-        newEntity.material = handle;
-        newEntity.position = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
-        newEntity.rotation = glm::vec3();
-        newEntity.scale = 1;
+        newEntity.mName = "Default Name";
 
-        StringMessage* message = new StringMessage("LoadMesh", "assets/meshes/cube.bin", newEntity.id, this);
+        TransformComponent* transformComponent = new TransformComponent();
+        transformComponent->mPosition = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
+        transformComponent->mRotation = glm::vec3();
+        transformComponent->mScale = 1;
+        newEntity.AddComponent(transformComponent);
+
+        MeshComponent* meshComponent = new MeshComponent();
+        meshComponent->mMaterial = handle;
+        newEntity.AddComponent(meshComponent);
+
+        StringMessage* message = new StringMessage("LoadMesh", "assets/meshes/cube.bin", static_cast<MessageQueue *>(meshComponent));
         meshManager.QueueMessage(message);
     }
 }
@@ -347,22 +293,6 @@ void MySandbox::ProcessMessage(Message *pMessage)
     std::string& message = pMessage->message;
     switch(pMessage->type)
     {
-        case MessageType::MESH:
-        {
-            if (message == "MeshLoaded")
-            {
-                auto meshMessage = static_cast<MeshMessage *>(pMessage);
 
-                Entity *entity = mEntityManager.GetById(meshMessage->entityId);
-                if (entity != nullptr)
-                {
-                    entity->mesh = new MeshAsset(meshMessage->param);
-                }
-            }
-        } break;
-        default:
-        {
-
-        } break;
     }
 }
