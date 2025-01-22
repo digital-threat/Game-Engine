@@ -580,8 +580,8 @@ void Engine::RenderGeometry(VkCommandBuffer pCmd)
     mScene.matrixP = glm::perspective(glm::radians(sceneRenderData.cameraFOV), aspect, 10000.0f, 0.1f);
     mScene.matrixVP = mScene.matrixP * mScene.matrixV;
     mScene.ambientColor = glm::vec4(sceneRenderData.ambientColor, 1.0f);
-    mScene.mainLightColor = glm::vec4(sceneRenderData.mainLightColor, 1.0f);
-    mScene.mainLightDir = glm::vec4(sceneRenderData.mainLightDir, 0.0f);
+    mScene.lightBuffer = mApplication->mRenderContext.lightData.lightBuffer;
+    mScene.lightCount =  mApplication->mRenderContext.lightData.lightCount;
     mScene.cameraPos = glm::vec4(sceneRenderData.cameraPos, 0.0f);
 
     SceneData* sceneUniformData = static_cast<SceneData*>(GetCurrentFrame().sceneDataBuffer.info.pMappedData);

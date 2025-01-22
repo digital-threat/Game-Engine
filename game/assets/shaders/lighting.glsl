@@ -1,5 +1,3 @@
-#define MAX_LIGHTS 8
-
 struct Light
 {
     vec3 direction;

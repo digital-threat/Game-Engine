@@ -1,5 +1,6 @@
 #include "entity.h"
 
+#include <components.h>
 #include <imgui.h>
 
 Entity::Entity(i32 id) : id(id)
@@ -21,7 +22,7 @@ void Entity::Render(RenderContext &renderContext)
 
 	for (Component *component: mComponents)
 	{
-		component->Render(renderData);
+		component->Render(renderContext, renderData);
 	}
 
 	if (renderData.indexCount == 0 || renderData.materialSet == nullptr)
@@ -39,7 +40,7 @@ void Entity::OnGUI()
 	mName.copy(nameBuffer, mName.size());
 	nameBuffer[mName.size()] = '\0';
 
-	if (ImGui::InputText("Name: ", nameBuffer, IM_ARRAYSIZE(nameBuffer)))
+	if (ImGui::InputText("Name", nameBuffer, IM_ARRAYSIZE(nameBuffer)))
 	{
 		mName = std::string(nameBuffer);
 	}
@@ -48,9 +49,48 @@ void Entity::OnGUI()
 	{
 		component->OnGUI();
 	}
+
+	static ComponentType selectedType = ComponentType::TRANSFORM;
+	const char* typeNames[] = { "Transform", "Mesh", "Light" };
+
+	if (ImGui::Combo("Add Component", reinterpret_cast<int *>(&selectedType), typeNames, IM_ARRAYSIZE(typeNames)))
+	{
+		switch (selectedType)
+		{
+			case ComponentType::TRANSFORM:
+			{
+				TransformComponent* transformComponent = new TransformComponent();
+				AddComponent(transformComponent);
+			} break;
+			case ComponentType::MESH:
+			{
+				MeshComponent* meshComponent = new MeshComponent();
+				AddComponent(meshComponent);
+			} break;
+			case ComponentType::LIGHT:
+			{
+				LightComponent* lightComponent = new LightComponent();
+				AddComponent(lightComponent);
+			} break;
+		}
+	}
+
+	static int index = 0;
+	ImGui::SliderInt("Index", &index,0, mComponents.size() - 1);
+	ImGui::SameLine();
+	if (ImGui::Button("Remove Component"))
+	{
+		RemoveComponent(index);
+	}
 }
 
 void Entity::AddComponent(Component *component)
 {
 	mComponents.push_back(component);
+}
+
+void Entity::RemoveComponent(u32 index)
+{
+	if (index < mComponents.size() && index >= 0)
+	mComponents.erase(mComponents.begin() + index);
 }

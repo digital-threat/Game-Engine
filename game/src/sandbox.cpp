@@ -55,10 +55,9 @@ void MySandbox::Render()
     sceneData.cameraLookAt = mCamera.lookAt;
     sceneData.cameraFOV = mCamera.fov;
     sceneData.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
-    sceneData.mainLightColor = glm::vec3(1.0f, 1.0f, 1.0f);
-    sceneData.mainLightDir = glm::normalize(glm::vec3(0.2f, 1.0f, 0.3f));
     mRenderContext.sceneData = sceneData;
     mRenderContext.modelData.clear();
+    mRenderContext.lightData.lightCount = 0;
     for (auto entity : mEntityManager.All())
     {
         entity->Render(mRenderContext);
@@ -93,6 +92,8 @@ void MySandbox::ImGuiEntities()
 
             selected->OnGUI();
 
+            ImGui::Separator();
+
             if (ImGui::Button("Delete Entity"))
             {
                 mEntityManager.DeleteEntity(selected);
@@ -102,6 +103,8 @@ void MySandbox::ImGuiEntities()
                 }
             }
         }
+
+        ImGui::SameLine();
 
         if (ImGui::Button("Create Entity"))
         {
@@ -200,23 +203,6 @@ void MySandbox::ImGuiMaterials()
     ImGui::End();
 }
 
-void MySandbox::ImGuiLights()
-{
-    // if (ImGui::Button("Create Light"))
-    // {
-    //     mEntityManager.CreateEntity();
-    // }
-    //
-    // if (ImGui::Button("Delete Light"))
-    // {
-    //     mEntityManager.DeleteEntity(selected);
-    //     if (mEntityManager.Count() > 0)
-    //     {
-    //         mCurrentEntity %= mEntityManager.Count();
-    //     }
-    // }
-}
-
 void MySandbox::ImGuiApplication()
 {
     if (ImGui::Begin("Application"))
@@ -286,6 +272,12 @@ void MySandbox::LoadDefaultScene()
         StringMessage* message = new StringMessage("LoadMesh", "assets/meshes/cube.bin", static_cast<MessageQueue *>(meshComponent));
         meshManager.QueueMessage(message);
     }
+
+    Entity &newEntity = mEntityManager.CreateEntity();
+    newEntity.mName = "Light";
+
+    LightComponent* lightComponent = new LightComponent();
+    newEntity.AddComponent(lightComponent);
 }
 
 void MySandbox::ProcessMessage(Message *pMessage)

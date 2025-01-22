@@ -22,8 +22,6 @@ private:
 	void ImGuiCamera();
 	void ImGuiEntities();
 	void ImGuiMaterials();
-	void ImGuiLights();
-
 
 	void LoadDefaultScene();
 

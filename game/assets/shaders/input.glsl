@@ -1,16 +1,22 @@
-//#include "lighting.glsl"
+#define MAX_LIGHTS 8
+
+struct LightData
+{
+    vec4 position;
+    vec4 color;
+    vec4 attenuation;
+    vec4 spotDirection;
+};
 
 layout(set = 0, binding = 0) uniform Scene
 {
     mat4 matrixV;
     mat4 matrixP;
     mat4 matrixVP;
-    vec3 ambientColor;
-    vec3 mainLightDir;
-    vec3 mainLightColor;
-    vec3 cameraPos;
-    //Light lights[MAX_LIGHTS];
-    //uint lightCount;
+    vec4 ambientColor;
+    vec4 cameraPos;
+    LightData lightBuffer[MAX_LIGHTS];
+    uint lightCount;
 };
 
 //layout(set = 1, binding = 0) uniform Material

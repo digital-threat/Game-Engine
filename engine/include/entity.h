@@ -15,6 +15,7 @@ public:
 	void OnGUI();
 
 	void AddComponent(Component* component);
+	void RemoveComponent(u32 index);
 
 public:
 	std::string mName = "Default Name";

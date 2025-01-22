@@ -14,6 +14,7 @@
 #include "types.h"
 #include "renderer_vk_descriptors.h"
 
+#define MAX_LIGHTS 8
 
 // TODO(Sergei): Temporary, replace!
 struct DeletionQueue
@@ -59,11 +60,12 @@ enum class LightType : u8
 	SPOT,
 };
 
-struct Light
+struct LightData
 {
-	glm::vec3 direction;
-	float attenuation;
-	glm::vec3 color;
+	glm::vec4 position;
+	glm::vec4 color;
+	glm::vec4 attenuation;
+	glm::vec4 spotDirection;
 };
 
 struct VulkanImage
@@ -151,9 +153,9 @@ struct SceneData
 	glm::mat4 matrixP;
 	glm::mat4 matrixVP;
 	glm::vec4 ambientColor;
-	glm::vec4 mainLightDir;
-	glm::vec4 mainLightColor;
 	glm::vec4 cameraPos;
+	std::array<LightData, MAX_LIGHTS> lightBuffer;
+	u32 lightCount;
 };
 
 struct Texture
@@ -185,11 +187,15 @@ struct ModelRenderData
 struct SceneRenderData
 {
 	glm::vec3 ambientColor;
-	glm::vec3 mainLightDir;
-	glm::vec3 mainLightColor;
 	glm::vec3 cameraPos;
 	glm::vec3 cameraLookAt;
 	float cameraFOV;
+};
+
+struct LightRenderData
+{
+	std::array<LightData, MAX_LIGHTS> lightBuffer;
+	u32 lightCount = 0;
 };
 
 struct ImmediateData
@@ -203,5 +209,6 @@ struct RenderContext
 {
 	std::vector<ModelRenderData> modelData;
 	SceneRenderData sceneData;
+	LightRenderData lightData;
 	float renderScale = 1.0f;
 };

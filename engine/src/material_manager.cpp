@@ -47,5 +47,9 @@ void MaterialManager::SetTexture(MaterialHandle handle, Texture texture, u32 slo
 
 VkDescriptorSet MaterialManager::GetDescriptorSet(MaterialHandle handle)
 {
+	if (handle.index >= mMaterials.size() || handle.index < 0)
+	{
+		return VK_NULL_HANDLE;
+	}
 	return mMaterials[handle.index].materialSet;
 }
