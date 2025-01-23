@@ -4,8 +4,8 @@ struct LightData
 {
     vec4 position;
     vec4 color;
-    vec4 attenuation;
     vec4 spotDirection;
+    vec4 attenuation;
 };
 
 layout(set = 0, binding = 0) uniform Scene

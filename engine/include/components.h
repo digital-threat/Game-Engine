@@ -5,19 +5,14 @@
 #include <handles.h>
 #include <message_queue.h>
 
-enum class ComponentType
-{
-	TRANSFORM,
-	MESH,
-	LIGHT
-};
-
 class TransformComponent : public Component
 {
 public:
 	glm::vec3 mPosition = glm::vec3();
 	glm::vec3 mRotation = glm::vec3();
 	float mScale = 1;
+
+	TransformComponent(Entity &parent) : Component(parent) { mComponentType = ComponentType::TRANSFORM; }
 
 	void Update() override;
 	void Render(RenderContext& context, ModelRenderData &renderData) override;
@@ -27,9 +22,10 @@ public:
 class MeshComponent : public Component, public MessageQueue
 {
 public:
-	MeshComponent();
 	MeshAsset* mMesh = nullptr;
 	MaterialHandle mMaterial = MaterialHandle();
+
+	MeshComponent(Entity &parent) : Component(parent) { mComponentType = ComponentType::MESH; }
 
 	void Update() override;
 	void Render(RenderContext& context, ModelRenderData &renderData) override;
@@ -44,6 +40,8 @@ public:
 	glm::vec3 mColor;
 	float mRange;
 	float mAngle;
+
+	LightComponent(Entity &parent) : Component(parent) { mComponentType = ComponentType::LIGHT; }
 
 	void Update() override;
 	void Render(RenderContext& context, ModelRenderData &renderData) override;

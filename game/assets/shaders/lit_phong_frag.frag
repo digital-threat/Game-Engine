@@ -1,6 +1,5 @@
 #version 460
 
-#include "input.glsl"
 #include "lighting.glsl"
 
 layout (location = 0) in vec3 inPosition;
@@ -19,10 +18,8 @@ void main()
     vec3 lightingColor = vec3(0);
     for (uint i = 0; i < min(lightCount, MAX_LIGHTS); i++)
     {
-        lightingColor += vec3(0.1f);
-        //Light light = lights[i];
-        //light.attenuation = 1;
-        //lightingColor += CalculateLighting(light, normal, viewDir, 16.0f, specularIntensity);
+        Light light = GetLight(i, inPosition);
+        lightingColor += CalculateLighting(light, normal, viewDir, 16.0f, specularIntensity);
     }
 
     outColor = vec4(color * (ambientColor.rgb + lightingColor), 1.0f);

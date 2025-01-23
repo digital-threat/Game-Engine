@@ -54,7 +54,7 @@ void MySandbox::Render()
     sceneData.cameraPos = mCamera.position;
     sceneData.cameraLookAt = mCamera.lookAt;
     sceneData.cameraFOV = mCamera.fov;
-    sceneData.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
+    sceneData.ambientColor = glm::vec3(0.05f, 0.05f, 0.05f);
     mRenderContext.sceneData = sceneData;
     mRenderContext.modelData.clear();
     mRenderContext.lightData.lightCount = 0;
@@ -259,13 +259,13 @@ void MySandbox::LoadDefaultScene()
         Entity &newEntity = mEntityManager.CreateEntity();
         newEntity.mName = "Default Name";
 
-        TransformComponent* transformComponent = new TransformComponent();
+        TransformComponent* transformComponent = new TransformComponent(newEntity);
         transformComponent->mPosition = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
         transformComponent->mRotation = glm::vec3();
         transformComponent->mScale = 1;
         newEntity.AddComponent(transformComponent);
 
-        MeshComponent* meshComponent = new MeshComponent();
+        MeshComponent* meshComponent = new MeshComponent(newEntity);
         meshComponent->mMaterial = handle;
         newEntity.AddComponent(meshComponent);
 
@@ -276,7 +276,7 @@ void MySandbox::LoadDefaultScene()
     Entity &newEntity = mEntityManager.CreateEntity();
     newEntity.mName = "Light";
 
-    LightComponent* lightComponent = new LightComponent();
+    LightComponent* lightComponent = new LightComponent(newEntity);
     newEntity.AddComponent(lightComponent);
 }
 

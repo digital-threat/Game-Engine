@@ -59,17 +59,17 @@ void Entity::OnGUI()
 		{
 			case ComponentType::TRANSFORM:
 			{
-				TransformComponent* transformComponent = new TransformComponent();
+				TransformComponent* transformComponent = new TransformComponent(*this);
 				AddComponent(transformComponent);
 			} break;
 			case ComponentType::MESH:
 			{
-				MeshComponent* meshComponent = new MeshComponent();
+				MeshComponent* meshComponent = new MeshComponent(*this);
 				AddComponent(meshComponent);
 			} break;
 			case ComponentType::LIGHT:
 			{
-				LightComponent* lightComponent = new LightComponent();
+				LightComponent* lightComponent = new LightComponent(*this);
 				AddComponent(lightComponent);
 			} break;
 		}
@@ -86,11 +86,27 @@ void Entity::OnGUI()
 
 void Entity::AddComponent(Component *component)
 {
-	mComponents.push_back(component);
+	if (GetComponent(component->mComponentType) == nullptr)
+	{
+		mComponents.push_back(component);
+	}
 }
 
 void Entity::RemoveComponent(u32 index)
 {
 	if (index < mComponents.size() && index >= 0)
 	mComponents.erase(mComponents.begin() + index);
+}
+
+Component* Entity::GetComponent(ComponentType type)
+{
+	for (Component *component : mComponents)
+	{
+		if (component->mComponentType == type)
+		{
+			return component;
+		}
+	}
+
+	return nullptr;
 }

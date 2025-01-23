@@ -64,8 +64,8 @@ struct LightData
 {
 	glm::vec4 position;
 	glm::vec4 color;
-	glm::vec4 attenuation;
 	glm::vec4 spotDirection;
+	glm::vec4 attenuation;
 };
 
 struct VulkanImage
