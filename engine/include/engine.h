@@ -7,20 +7,14 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_LEFT_HANDED
 #define GLM_ENABLE_EXPERIMENTAL
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
-#include <vendor/stb/stb_image.h>
 #include <VkBootstrap.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 
 #include <vector>
-#include <array>
 #include <functional>
-#include <cassert>
-#include <iostream>
 #include <thread>
 
 #include <application.h>
@@ -32,7 +26,6 @@
 #include "types.h"
 #include "renderer_vk_types.h"
 #include "renderer_vk_descriptors.h"
-#include "renderer_vk_buffers.h"
 #include "utility.h"
 
 constexpr u32 WIDTH = 1280;
@@ -89,9 +82,6 @@ public:
 
     VulkanImage mColorTarget{};
     VulkanImage mDepthTarget{};
-
-    VkSampler mSamplerLinear;
-    VkSampler mSamplerNearest;
 
     DescriptorAllocator mGlobalDescriptorAllocator{};
 
@@ -165,7 +155,6 @@ private:
         CreateCommandObjects();
         InitDescriptors();
         InitBuffers();
-        InitTextureSamplers();
         InitializePipelines();
     }
 
@@ -175,6 +164,7 @@ private:
         std::atomic<bool> cancellationToken;
         std::thread meshManagerThread(&MeshManager::Update, &meshManger, std::ref(cancellationToken));
 
+        TextureManager::Get().Awake();
         mApplication->Awake();
 
         while (!glfwWindowShouldClose(window))
@@ -221,7 +211,6 @@ private:
     void CreateSwapchain(u32 width, u32 height);
     void CreateCommandObjects();
     void InitSyncObjects();
-    void InitTextureSamplers();
 
     // Descriptors
     void InitDescriptors();

@@ -241,8 +241,8 @@ void MySandbox::LoadDefaultScene()
         }
     }
 
-    Texture albedoTexture = { boxAlbedo->imageView, nullptr };
-    Texture specularTexture = { boxSpecular->imageView, nullptr };
+    Texture albedoTexture = { boxAlbedo->imageView, textureManager.GetSampler("LINEAR_MIPMAP_LINEAR") };
+    Texture specularTexture = { boxSpecular->imageView, textureManager.GetSampler("LINEAR_MIPMAP_LINEAR") };
 
     MaterialManager& materialManager = MaterialManager::Get();
     auto handle = materialManager.CreateMaterial("Crate");

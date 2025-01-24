@@ -38,7 +38,6 @@ class LightComponent : public Component
 public:
 	LightType mType;
 	glm::vec3 mColor;
-	float mRange;
 	float mAngle;
 
 	LightComponent(Entity &parent) : Component(parent) { mComponentType = ComponentType::LIGHT; }

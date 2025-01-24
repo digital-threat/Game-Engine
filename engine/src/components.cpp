@@ -160,7 +160,6 @@ void LightComponent::Render(RenderContext& context, ModelRenderData &renderData)
 					glm::vec3 direction = rotation * glm::vec3(0.0f, 0.0f, 1.0f);
 					direction = glm::normalize(direction);
 					data.spotDirection = glm::vec4(direction, glm::cos(mAngle));
-					std::cout << glm::cos(mAngle) << std::endl;
 				} break;
 			}
 
@@ -183,11 +182,9 @@ void LightComponent::OnGUI()
 	{
 		case LightType::POINT:
 		{
-			ImGui::SliderFloat("Range", &mRange, 0.0f, 50.0f);
 		} break;
 		case LightType::SPOT:
 		{
-			ImGui::SliderFloat("Range", &mRange, 0.0f, 50.0f);
 			ImGui::SliderAngle("Angle", &mAngle, 0.0f, 90.0f);
 		} break;
 	}

@@ -16,13 +16,19 @@ public:
 	explicit TextureManager(Engine& engine);
 	
 public:
+	void Awake();
 	static TextureManager& Allocate(Engine &engine);
 	static TextureManager& Get();
 	VulkanImage* GetTexture(const char* pPath);
 	VulkanImage* LoadTexture(const char *pPath);
+	VkSampler GetSampler(const std::string& name);
+
+private:
+	void InitTextureSamplers();
 
 private:
 	Engine& mEngine;
 	static TextureManager* mInstance;
 	std::unordered_map<const char*, VulkanImage*> mTextures;
+	std::unordered_map<std::string, VkSampler> mSamplers;
 };

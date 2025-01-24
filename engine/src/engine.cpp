@@ -3,7 +3,6 @@
 #include <stdexcept>
 #include <chrono>
 #include <cstring>
-#include <mesh_manager.h>
 #include <renderer_vk_utility.h>
 #include <vk_mem_alloc.h>
 #include <glm/gtc/quaternion.hpp>
@@ -11,6 +10,7 @@
 #include "renderer_vk_images.h"
 #include "renderer_vk_pipelines.h"
 #include "renderer_vk_structures.h"
+#include "renderer_vk_buffers.h"
 
 void Engine::InitImGui()
 {
@@ -298,37 +298,6 @@ void Engine::CreateCommandObjects()
     {
         throw std::runtime_error("Failed to allocate command buffers.");
     }
-}
-
-void Engine::InitTextureSamplers()
-{
-    VkPhysicalDeviceProperties properties{};
-    vkGetPhysicalDeviceProperties(mPhysicalDevice, &properties);
-
-    VkSamplerCreateInfo samplerInfo{};
-    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerInfo.magFilter = VK_FILTER_LINEAR;
-    samplerInfo.minFilter = VK_FILTER_LINEAR;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.anisotropyEnable = VK_TRUE;
-    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    samplerInfo.unnormalizedCoordinates = VK_FALSE;
-    samplerInfo.compareEnable = VK_FALSE;
-    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerInfo.mipLodBias = 0.0f;
-    samplerInfo.minLod = 0.0f;
-    samplerInfo.maxLod = 0.0f;
-
-    vkCreateSampler(mDevice, &samplerInfo, nullptr, &mSamplerLinear);
-
-    samplerInfo.magFilter = VK_FILTER_NEAREST;
-    samplerInfo.minFilter = VK_FILTER_NEAREST;
-
-    vkCreateSampler(mDevice, &samplerInfo, nullptr, &mSamplerNearest);
 }
 
 void Engine::InitGlobalDescriptorAllocator()

@@ -41,7 +41,7 @@ const std::vector<Material> & MaterialManager::GetAll()
 void MaterialManager::SetTexture(MaterialHandle handle, Texture texture, u32 slot)
 {
 	DescriptorWriter writer;
-	writer.WriteImage(slot, texture.view, mEngine.mSamplerLinear, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	writer.WriteImage(slot, texture.view, texture.sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 	writer.UpdateSet(mEngine.mDevice, mMaterials[handle.index].materialSet);
 }
 

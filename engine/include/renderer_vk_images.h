@@ -13,6 +13,7 @@ VulkanImage CreateImage(const Engine& pEngine, void* pData, VkExtent3D pSize, Vk
 void DestroyImage(const VulkanImage& pImage);
 
 void TransitionImageLayout(VkCommandBuffer pCmd, VkImage pImage, VkImageLayout pOldLayout, VkImageLayout pNewLayout);
+void GenerateMipmaps(VkCommandBuffer cmd, VkImage image, VkExtent2D size);
 void CopyImage(VkCommandBuffer pCmd, VkImage pSource, VkImage pDestination, VkExtent2D pSrcSize, VkExtent2D pDstSize);
 VkFormat FindSupportedFormat(const VkPhysicalDevice& pPhysicalDevice, const std::span<VkFormat> &pCandidates, VkImageTiling pTiling, VkFormatFeatureFlags pFeatures);
 
