@@ -133,6 +133,12 @@ struct ComputePushConstants
 	glm::vec4 data4;
 };
 
+struct ShadowmapPushConstants
+{
+	glm::mat4 depthMVP;
+	VkDeviceAddress vertexBuffer;
+};
+
 struct FrameData
 {
 	VkSemaphore swapchainSemaphore, renderSemaphore;

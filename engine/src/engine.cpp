@@ -274,6 +274,7 @@ void Engine::InitializePipelines()
 {
     InitializeBackgroundPipeline();
     InitializeMeshPipeline();
+    InitializeShadowmapPipeline();
 }
 
 void Engine::CreateCommandObjects()
@@ -539,6 +540,8 @@ void Engine::RenderShadowmap(VkCommandBuffer pCmd)
 
     vkCmdBeginRendering(pCmd, &renderInfo);
 
+    vkCmdBindPipeline(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mShadowmapPipeline);
+
     VkViewport viewport{};
     viewport.x = 0;
     viewport.y = static_cast<float>(mRenderExtent.height);
@@ -765,6 +768,36 @@ void Engine::InitializeMeshPipeline()
 
     vkDestroyShaderModule(mDevice, vertexShader, nullptr);
     vkDestroyShaderModule(mDevice, fragmentShader, nullptr);
+}
+
+void Engine::InitializeShadowmapPipeline()
+{
+    VkShaderModule vertexShader;
+    LoadShaderModule("assets/shaders/shadowmap_vert.spv", mDevice, &vertexShader);
+
+    VkPushConstantRange pushConstantRange{};
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = sizeof(ShadowmapPushConstants);
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = PipelineLayoutCreateInfo();
+    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
+    VK_CHECK(vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, nullptr, &mShadowmapPipelineLayout));
+
+    PipelineBuilder builder;
+    builder.mPipelineLayout = mShadowmapPipelineLayout;
+    builder.SetShaders(vertexShader, VK_NULL_HANDLE);
+    builder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+    builder.SetPolygonMode(VK_POLYGON_MODE_FILL);
+    builder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+    builder.SetMultisamplingNone();
+    builder.DisableBlending();
+    builder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+    builder.SetDepthFormat(mShadowmapTarget.format);
+    mShadowmapPipeline = builder.Build(mDevice);
+
+    vkDestroyShaderModule(mDevice, vertexShader, nullptr);
 }
 
 MeshBuffers Engine::UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVertices)

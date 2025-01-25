@@ -49,7 +49,10 @@ void PipelineBuilder::SetShaders(VkShaderModule pVertexShader, VkShaderModule pF
 {
 	mShaderStages.clear();
 	mShaderStages.push_back(PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, pVertexShader, "main"));
-	mShaderStages.push_back(PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, pFragmentShader, "main"));
+	if (pFragmentShader != VK_NULL_HANDLE)
+	{
+		mShaderStages.push_back(PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, pFragmentShader, "main"));
+	}
 }
 
 void PipelineBuilder::SetInputTopology(VkPrimitiveTopology pTopology)

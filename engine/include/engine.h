@@ -109,6 +109,9 @@ public:
     VkPipelineLayout mMeshPipelineLayout = VK_NULL_HANDLE;
     VkPipeline mMeshPipeline = VK_NULL_HANDLE;
 
+    VkPipelineLayout mShadowmapPipelineLayout = VK_NULL_HANDLE;
+    VkPipeline mShadowmapPipeline = VK_NULL_HANDLE;
+
     // Immediate
     ImmediateData mImmediate{};
 
@@ -236,6 +239,7 @@ private:
     void InitializePipelines();
     void InitializeBackgroundPipeline();
     void InitializeMeshPipeline();
+    void InitializeShadowmapPipeline();
 
     // ImGui
     void InitImGui();
