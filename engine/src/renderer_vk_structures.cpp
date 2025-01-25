@@ -166,7 +166,7 @@ VkRenderingInfo RenderingInfo(VkExtent2D pExtent, VkRenderingAttachmentInfo *pCo
 	info.pNext = nullptr;
 	info.renderArea = VkRect2D{VkOffset2D {0, 0}, pExtent};
 	info.layerCount = 1;
-	info.colorAttachmentCount = 1;
+	info.colorAttachmentCount = pColorAttachment != VK_NULL_HANDLE ? 1 : 0;
 	info.pColorAttachments = pColorAttachment;
 	info.pDepthAttachment = pDepthAttachment;
 	info.pStencilAttachment = nullptr;

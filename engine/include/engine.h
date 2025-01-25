@@ -82,6 +82,8 @@ public:
 
     VulkanImage mColorTarget{};
     VulkanImage mDepthTarget{};
+    VulkanImage mShadowmapTarget{};
+
 
     DescriptorAllocator mGlobalDescriptorAllocator{};
 
@@ -227,6 +229,7 @@ private:
     void Render();
     void RenderBackground(VkCommandBuffer pCmd);
     void RenderImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView);
+    void RenderShadowmap(VkCommandBuffer pCmd);
     void RenderGeometry(VkCommandBuffer pCmd);
 
     // Pipelines

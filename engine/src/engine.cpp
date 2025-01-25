@@ -252,6 +252,22 @@ void Engine::CreateSwapchain(u32 width, u32 height)
     {
         throw std::runtime_error("Failed to create depth image view.");
     }
+
+    // Shadowmap
+
+    mShadowmapTarget.format = mDepthTarget.format;
+    mShadowmapTarget.extent = {1024, 1024, 1};
+
+    VkImageUsageFlags shadowmapDepthTargetUsage{};
+    shadowmapDepthTargetUsage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+    VkImageCreateInfo shadowmapInfo = ImageCreateInfo(mShadowmapTarget.format, shadowmapDepthTargetUsage, mShadowmapTarget.extent);
+    CreateImage(mAllocator, shadowmapInfo, VMA_MEMORY_USAGE_GPU_ONLY, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mShadowmapTarget);
+    VkImageViewCreateInfo shadowmapViewInfo = ImageViewCreateInfo(mShadowmapTarget.image, mShadowmapTarget.format, VK_IMAGE_ASPECT_DEPTH_BIT);
+    if (vkCreateImageView(mDevice, &shadowmapViewInfo, nullptr, &mShadowmapTarget.imageView) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create depth image view.");
+    }
 }
 
 void Engine::InitializePipelines()
@@ -433,6 +449,10 @@ void Engine::Render()
 
     RenderBackground(cmd);
 
+    // Shadow mapping
+    RenderShadowmap(cmd);
+    //
+
     TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     TransitionImageLayout(cmd, mDepthTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
@@ -512,6 +532,70 @@ void Engine::RenderImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView)
     vkCmdEndRendering(pCmd);
 }
 
+void Engine::RenderShadowmap(VkCommandBuffer pCmd)
+{
+    VkRenderingAttachmentInfo depthAttachment = DepthAttachmentInfo(mDepthTarget.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+    VkRenderingInfo renderInfo = RenderingInfo(mRenderExtent, VK_NULL_HANDLE, &depthAttachment);
+
+    vkCmdBeginRendering(pCmd, &renderInfo);
+
+    VkViewport viewport{};
+    viewport.x = 0;
+    viewport.y = static_cast<float>(mRenderExtent.height);
+    viewport.width = static_cast<float>(mRenderExtent.width);
+    viewport.height = -static_cast<float>(mRenderExtent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    vkCmdSetViewport(pCmd, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+    scissor.extent.width = mRenderExtent.width;
+    scissor.extent.height = mRenderExtent.height;
+
+    vkCmdSetScissor(pCmd, 0, 1, &scissor);
+
+    // float aspect = static_cast<float>(mRenderExtent.width) / static_cast<float>(mRenderExtent.height);
+    //
+    // SceneRenderData sceneRenderData = mApplication->mRenderContext.sceneData;
+    // mScene.matrixV = glm::lookAt(sceneRenderData.cameraPos, sceneRenderData.cameraLookAt, glm::vec3(0.0f, 1.0f, 0.0f));
+    // mScene.matrixP = glm::perspective(glm::radians(sceneRenderData.cameraFOV), aspect, 10000.0f, 0.1f);
+    // mScene.matrixVP = mScene.matrixP * mScene.matrixV;
+    // mScene.ambientColor = glm::vec4(sceneRenderData.ambientColor, 1.0f);
+    // mScene.lightBuffer = mApplication->mRenderContext.lightData.lightBuffer;
+    // mScene.lightCount =  mApplication->mRenderContext.lightData.lightCount;
+    // mScene.cameraPos = glm::vec4(sceneRenderData.cameraPos, 0.0f);
+    //
+    // SceneData* sceneUniformData = static_cast<SceneData*>(GetCurrentFrame().sceneDataBuffer.info.pMappedData);
+    // *sceneUniformData = mScene;
+    //
+    // VkDescriptorSet sceneSet = GetCurrentFrame().descriptorAllocator.Allocate(mDevice, mSceneDescriptorLayout);
+    //
+    // DescriptorWriter writer;
+    // writer.WriteBuffer(0, GetCurrentFrame().sceneDataBuffer.buffer, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    // writer.UpdateSet(mDevice, sceneSet);
+    //
+    // vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 0, 1, &sceneSet, 0, nullptr);
+    //
+    // for (auto& model : mApplication->mRenderContext.modelData)
+    // {
+    //     GeometryPushConstants pushConstants;
+    //     pushConstants.matrixM = model.transform;
+    //     pushConstants.matrixITM = glm::transpose(glm::inverse(model.transform));
+    //     pushConstants.vertexBuffer = model.vertexBufferAddress;
+    //
+    //     vkCmdPushConstants(pCmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GeometryPushConstants), &pushConstants);
+    //     vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 1, 1, &model.materialSet, 0, nullptr);
+    //     vkCmdBindIndexBuffer(pCmd, model.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    //
+    //     vkCmdDrawIndexed(pCmd, model.indexCount, 1, 0, 0, 0);
+    // }
+
+    vkCmdEndRendering(pCmd);
+}
+
 void Engine::RenderGeometry(VkCommandBuffer pCmd)
 {
     VkRenderingAttachmentInfo colorAttachment = ColorAttachmentInfo(mColorTarget.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -540,7 +624,6 @@ void Engine::RenderGeometry(VkCommandBuffer pCmd)
     scissor.extent.height = mRenderExtent.height;
 
     vkCmdSetScissor(pCmd, 0, 1, &scissor);
-
 
     float aspect = static_cast<float>(mRenderExtent.width) / static_cast<float>(mRenderExtent.height);
 
