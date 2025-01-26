@@ -49,14 +49,15 @@ void MySandbox::Render()
     ImGuiCamera();
     ImGuiEntities();
     ImGuiMaterials();
+    ImGuiMainLight();
 
     SceneRenderData sceneData{};
     sceneData.cameraPos = mCamera.position;
     sceneData.cameraLookAt = mCamera.lookAt;
     sceneData.cameraFOV = mCamera.fov;
     sceneData.ambientColor = glm::vec3(0.05f, 0.05f, 0.05f);
-    sceneData.mainLightPos = glm::vec3(0, 5, -10);
-    sceneData.mainLightColor = glm::vec3(1, 1, 1);
+    sceneData.mainLightPos = mMainLightPosition;
+    sceneData.mainLightColor = glm::vec4(mMainLightColor, mMainLightIntensity);
     mRenderContext.sceneData = sceneData;
     mRenderContext.modelData.clear();
     mRenderContext.lightData.lightCount = 0;
@@ -201,6 +202,43 @@ void MySandbox::ImGuiMaterials()
 
             ImGui::EndPopup();
         }
+
+        if (ImGui::Button("Select Sampler"))
+        {
+            ImGui::OpenPopup("Sampler Selector");
+        }
+
+        if (ImGui::BeginPopup("Sampler Selector"))
+        {
+            ImGui::Text("SAMPLERS:");
+            ImGui::Separator();
+
+            TextureManager& textureManager = TextureManager::Get();
+            for (auto& sampler : textureManager.GetSamplers())
+            {
+                if (ImGui::Selectable(sampler.first.c_str()))
+                {
+                    Texture diffuseTexture = { nullptr, sampler.second };
+                    Texture specularTexture = { nullptr, sampler.second };
+                    materialManager.SetTexture(materials[currentMaterial].handle, diffuseTexture, 0);
+                    materialManager.SetTexture(materials[currentMaterial].handle, specularTexture, 1);
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+
+            ImGui::EndPopup();
+        }
+    }
+    ImGui::End();
+}
+
+void MySandbox::ImGuiMainLight()
+{
+    if (ImGui::Begin("Main Light"))
+    {
+        ImGui::InputFloat3("Position", reinterpret_cast<float *>(&mMainLightPosition));
+        ImGui::ColorEdit3("Color", reinterpret_cast<float *>(&mMainLightColor));
+        ImGui::SliderFloat("Intensity", &mMainLightIntensity, 0.0f, 1.0f);
     }
     ImGui::End();
 }
@@ -247,11 +285,15 @@ void MySandbox::LoadDefaultScene()
     Texture specularTexture = { boxSpecular->imageView, textureManager.GetSampler("LINEAR_MIPMAP_LINEAR") };
 
     MaterialManager& materialManager = MaterialManager::Get();
-    auto handle = materialManager.CreateMaterial("Crate");
-    materialManager.SetTexture(handle, albedoTexture, 0);
-    materialManager.SetTexture(handle, specularTexture, 1);
+    MaterialHandle crateHandle = materialManager.CreateMaterial("Crate");
+    materialManager.SetTexture(crateHandle, albedoTexture, 0);
+    materialManager.SetTexture(crateHandle, specularTexture, 1);
 
-    materialManager.CreateMaterial("Nothing");
+    MaterialHandle whiteHandle = materialManager.CreateMaterial("White");
+    VulkanImage* whiteImage = textureManager.LoadTexture("assets/textures/white.png");
+    Texture whiteTexture = { whiteImage->imageView, textureManager.GetSampler("LINEAR_MIPMAP_LINEAR") };
+    materialManager.SetTexture(whiteHandle, whiteTexture, 0);
+    materialManager.SetTexture(whiteHandle, whiteTexture, 1);
 
 
     MeshManager& meshManager = MeshManager::Get();
@@ -268,7 +310,7 @@ void MySandbox::LoadDefaultScene()
         newEntity.AddComponent(transformComponent);
 
         MeshComponent* meshComponent = new MeshComponent(newEntity);
-        meshComponent->mMaterial = handle;
+        meshComponent->mMaterial = crateHandle;
         newEntity.AddComponent(meshComponent);
 
         StringMessage* message = new StringMessage("LoadMesh", "assets/meshes/cube.bin", static_cast<MessageQueue *>(meshComponent));

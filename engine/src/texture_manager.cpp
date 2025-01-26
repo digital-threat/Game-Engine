@@ -33,8 +33,8 @@ TextureManager & TextureManager::Get()
 
 VulkanImage * TextureManager::GetTexture(const char *pPath)
 {
-	auto it = mTextures.find(pPath);
-	if (it != mTextures.end())
+	auto it = mImages.find(pPath);
+	if (it != mImages.end())
 	{
 		return it->second;
 	}
@@ -63,11 +63,11 @@ VulkanImage * TextureManager::LoadTexture(const char *pPath)
 	VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
 	VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	auto newImage = CreateImage(mEngine, pixels, extent, format, usage, true);
-	mTextures[pPath] = new VulkanImage(newImage);
+	mImages[pPath] = new VulkanImage(newImage);
 
 	stbi_image_free(pixels);
 
-	return mTextures[pPath];
+	return mImages[pPath];
 }
 
 VkSampler TextureManager::GetSampler(const std::string& name)
@@ -78,6 +78,11 @@ VkSampler TextureManager::GetSampler(const std::string& name)
 	}
 
 	return nullptr;
+}
+
+std::unordered_map<std::string, VkSampler> TextureManager::GetSamplers()
+{
+	return mSamplers;
 }
 
 void TextureManager::InitTextureSamplers()

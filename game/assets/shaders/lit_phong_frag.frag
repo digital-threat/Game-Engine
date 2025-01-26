@@ -33,16 +33,16 @@ void main()
     float specularIntensity = texture(specularMap, vec2(inUV.x, 1.0f - inUV.y)).r;
 
     Light mainLight;
-    mainLight.color = mainLightColor.xyz;
+    mainLight.color = mainLightColor.xyz * mainLightColor.w;
     mainLight.direction = normalize(mainLightDir.xyz);
     mainLight.attenuation = 1.0f;
 
     vec3 lightingColor = CalculateLighting(mainLight, normal, viewDir, 16.0f, specularIntensity);
-//    for (uint i = 0; i < min(lightCount, MAX_LIGHTS); i++)
-//    {
-//        Light light = GetLight(i, inPosition);
-//        lightingColor += CalculateLighting(light, normal, viewDir, 16.0f, specularIntensity);
-//    }
+    for (uint i = 0; i < min(lightCount, MAX_LIGHTS); i++)
+    {
+        Light light = GetLight(i, inPosition);
+        lightingColor += CalculateLighting(light, normal, viewDir, 16.0f, specularIntensity);
+    }
 
     float shadowAttenuation = ShadowCalculation(inShadowCoord, normal, mainLight.direction);
     lightingColor = lightingColor * shadowAttenuation;

@@ -179,6 +179,7 @@ struct Material
 	MaterialHandle handle;
 	VkBuffer dataBuffer;
 	float shininess;
+	Texture textures[2];
 	VkDescriptorSet materialSet;
 };
 
@@ -196,7 +197,7 @@ struct ModelRenderData
 struct SceneRenderData
 {
 	glm::vec3 mainLightPos;
-	glm::vec3 mainLightColor;
+	glm::vec4 mainLightColor;
 	glm::vec3 ambientColor;
 	glm::vec3 cameraPos;
 	glm::vec3 cameraLookAt;

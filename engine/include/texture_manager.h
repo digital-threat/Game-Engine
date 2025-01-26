@@ -22,6 +22,7 @@ public:
 	VulkanImage* GetTexture(const char* pPath);
 	VulkanImage* LoadTexture(const char *pPath);
 	VkSampler GetSampler(const std::string& name);
+	std::unordered_map<std::string, VkSampler> GetSamplers();
 
 private:
 	void InitTextureSamplers();
@@ -29,6 +30,6 @@ private:
 private:
 	Engine& mEngine;
 	static TextureManager* mInstance;
-	std::unordered_map<const char*, VulkanImage*> mTextures;
+	std::unordered_map<const char*, VulkanImage*> mImages;
 	std::unordered_map<std::string, VkSampler> mSamplers;
 };
