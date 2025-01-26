@@ -158,6 +158,9 @@ struct SceneData
 	glm::mat4 matrixV;
 	glm::mat4 matrixP;
 	glm::mat4 matrixVP;
+	glm::mat4 mainLightVP;
+	glm::vec4 mainLightDir;
+	glm::vec4 mainLightColor;
 	glm::vec4 ambientColor;
 	glm::vec4 cameraPos;
 	std::array<LightData, MAX_LIGHTS> lightBuffer;
@@ -192,6 +195,8 @@ struct ModelRenderData
 
 struct SceneRenderData
 {
+	glm::vec3 mainLightPos;
+	glm::vec3 mainLightColor;
 	glm::vec3 ambientColor;
 	glm::vec3 cameraPos;
 	glm::vec3 cameraLookAt;

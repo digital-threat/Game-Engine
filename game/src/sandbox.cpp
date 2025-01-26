@@ -55,6 +55,8 @@ void MySandbox::Render()
     sceneData.cameraLookAt = mCamera.lookAt;
     sceneData.cameraFOV = mCamera.fov;
     sceneData.ambientColor = glm::vec3(0.05f, 0.05f, 0.05f);
+    sceneData.mainLightPos = glm::vec3(0, 5, -10);
+    sceneData.mainLightColor = glm::vec3(1, 1, 1);
     mRenderContext.sceneData = sceneData;
     mRenderContext.modelData.clear();
     mRenderContext.lightData.lightCount = 0;

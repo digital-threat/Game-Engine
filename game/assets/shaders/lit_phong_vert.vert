@@ -6,6 +6,7 @@
 layout (location = 0) out vec3 outPosition;
 layout (location = 1) out vec3 outNormal;
 layout (location = 2) out vec2 outUV;
+layout (location = 3) out vec4 outShadowCoord;
 
 struct Vertex
 {
@@ -35,4 +36,5 @@ void main()
     outNormal = mat3(matrixITM) * v.normal;
     outUV.x = v.uvX;
     outUV.y = v.uvY;
+    outShadowCoord = mainLightVP * matrixM * vec4(v.position, 1.0f);
 }

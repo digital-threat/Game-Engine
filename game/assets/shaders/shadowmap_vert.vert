@@ -23,5 +23,5 @@ layout(push_constant) uniform PushConstants
 void main()
 {
     Vertex v = vertexBuffer.vertices[gl_VertexIndex];
-    gl_Position =  depthMVP * vec4(v.position, 1.0);
+    gl_Position = depthMVP * vec4(v.position, 1.0);
 }

@@ -19,7 +19,15 @@ void TransitionImageLayout(VkCommandBuffer pCmd, VkImage pImage, VkImageLayout p
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.image = pImage;
 
-	VkImageAspectFlags aspectMask = (pNewLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+	VkImageAspectFlags aspectMask;
+	if (pNewLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL || pOldLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
+	{
+		aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	}
+	else
+	{
+		aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	}
 	barrier.subresourceRange = ImageSubresourceRange(aspectMask);
 
 	if (pOldLayout == VK_IMAGE_LAYOUT_UNDEFINED && pNewLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
