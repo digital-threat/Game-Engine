@@ -10,6 +10,7 @@
 #include <renderer_vk_images.h>
 #include <texture_manager.h>
 #include <utility.h>
+#include "collision.h"
 #include <vendor/stb/stb_image.h>
 #include <mesh_serialization.h>
 #include <obj_loading.h>
@@ -40,6 +41,42 @@ void MySandbox::Update()
     for (auto entity : mEntityManager.All())
     {
         entity->Update();
+    }
+}
+
+void MySandbox::PhysicsUpdate()
+{
+    if (isSimulating)
+    {
+        std::vector<ColliderComponent*> colliders;
+        for (auto entity : mEntityManager.All())
+        {
+            auto collider = static_cast<ColliderComponent*>(entity->GetComponent(ComponentType::SPHERE_COLLIDER));
+            if (collider != nullptr)
+            {
+                colliders.push_back(collider);
+            }
+
+            collider = static_cast<ColliderComponent*>(entity->GetComponent(ComponentType::BOX_COLLIDER));
+            if (collider != nullptr)
+            {
+                colliders.push_back(collider);
+            }
+        }
+
+        for (ColliderComponent* collider1 : colliders)
+        {
+            for (ColliderComponent* collider2 : colliders)
+            {
+                if (collider1 != collider2)
+                {
+                    Collider* c1 = collider1->GetCollider();
+                    Collider* c2 = collider2->GetCollider();
+                    
+                    CheckIntersection(c1, c2);
+                }
+            }
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 #include "entity.h"
 
-#include <components.h>
+#include "components.h"
 #include <imgui.h>
 
 Entity::Entity(i32 id) : id(id)
@@ -51,7 +51,7 @@ void Entity::OnGUI()
 	}
 
 	static ComponentType selectedType = ComponentType::TRANSFORM;
-	const char* typeNames[] = { "Transform", "Mesh", "Light" };
+	const char* typeNames[] = { "Transform", "Mesh", "Light", "Sphere Collider", "Box Collider" };
 
 	if (ImGui::Combo("Add Component", reinterpret_cast<int *>(&selectedType), typeNames, IM_ARRAYSIZE(typeNames)))
 	{
@@ -59,18 +59,28 @@ void Entity::OnGUI()
 		{
 			case ComponentType::TRANSFORM:
 			{
-				TransformComponent* transformComponent = new TransformComponent(*this);
-				AddComponent(transformComponent);
+				TransformComponent* component = new TransformComponent(*this);
+				AddComponent(component);
 			} break;
 			case ComponentType::MESH:
 			{
-				MeshComponent* meshComponent = new MeshComponent(*this);
-				AddComponent(meshComponent);
+				MeshComponent* component = new MeshComponent(*this);
+				AddComponent(component);
 			} break;
 			case ComponentType::LIGHT:
 			{
-				LightComponent* lightComponent = new LightComponent(*this);
-				AddComponent(lightComponent);
+				LightComponent* component = new LightComponent(*this);
+				AddComponent(component);
+			} break;
+			case ComponentType::SPHERE_COLLIDER:
+			{
+				SphereColliderComponent* component = new SphereColliderComponent(*this);
+				AddComponent(component);
+			} break;
+			case ComponentType::BOX_COLLIDER:
+			{
+				BoxColliderComponent* component = new BoxColliderComponent(*this);
+				AddComponent(component);
 			} break;
 		}
 	}

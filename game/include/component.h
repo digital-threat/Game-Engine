@@ -3,13 +3,7 @@
 #include <renderer_vk_types.h>
 
 class Entity;
-
-enum class ComponentType
-{
-	TRANSFORM,
-	MESH,
-	LIGHT
-};
+enum class ComponentType;
 
 class Component
 {

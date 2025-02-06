@@ -4,6 +4,7 @@
 #include <material_manager.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
+#include <collision.h>
 #include <entity.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -13,6 +14,7 @@
 #include <filesystem>
 #include <iostream>
 #include <mesh_manager.h>
+#include <ranges>
 
 void TransformComponent::Update()
 {
@@ -190,4 +192,81 @@ void LightComponent::OnGUI()
 	}
 
 	mType = selectedType;
+}
+
+ColliderComponent::ColliderComponent(Entity &parent): Component(parent)
+{
+	mType = ColliderType::INVALID;
+}
+
+SphereColliderComponent::SphereColliderComponent(Entity &parent) : ColliderComponent(parent)
+{
+	mComponentType = ComponentType::SPHERE_COLLIDER;
+	mCollider.type = ColliderType::SPHERE;
+	mCollider.radius = 1.0f;
+}
+
+void SphereColliderComponent::Update()
+{
+	auto transform = static_cast<TransformComponent *>(parent.GetComponent(ComponentType::TRANSFORM));
+	if (transform != nullptr)
+	{
+		mCollider.position = transform->mPosition;
+	}
+}
+
+void SphereColliderComponent::Render(RenderContext &context, ModelRenderData &renderData)
+{
+}
+
+void SphereColliderComponent::OnGUI()
+{
+	ImGui::InputFloat("Radius", &mCollider.radius);
+}
+
+Collider* SphereColliderComponent::GetCollider()
+{
+	auto transform = static_cast<TransformComponent *>(parent.GetComponent(ComponentType::TRANSFORM));
+	if (transform == nullptr)
+	{
+		mCollider.type = ColliderType::INVALID;
+	}
+
+	return &mCollider;
+}
+
+BoxColliderComponent::BoxColliderComponent(Entity &parent) : ColliderComponent(parent)
+{
+	mComponentType = ComponentType::BOX_COLLIDER;
+	mCollider.type = ColliderType::BOX;
+	mCollider.extents = glm::vec3(1.0f, 1.0f, 1.0f);
+}
+
+void BoxColliderComponent::Update()
+{
+	auto transform = static_cast<TransformComponent *>(parent.GetComponent(ComponentType::TRANSFORM));
+	if (transform != nullptr)
+	{
+		mCollider.position = transform->mPosition;
+	}
+}
+
+void BoxColliderComponent::Render(RenderContext &context, ModelRenderData &renderData)
+{
+}
+
+void BoxColliderComponent::OnGUI()
+{
+	ImGui::InputFloat3("Extents", reinterpret_cast<float *>(&mCollider.extents));
+}
+
+Collider* BoxColliderComponent::GetCollider()
+{
+	auto transform = static_cast<TransformComponent *>(parent.GetComponent(ComponentType::TRANSFORM));
+	if (transform == nullptr)
+	{
+		mCollider.type = ColliderType::INVALID;
+	}
+
+	return &mCollider;
 }

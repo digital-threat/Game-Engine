@@ -182,6 +182,7 @@ private:
             }
 
             mApplication->Update();
+            mApplication->PhysicsUpdate();
 
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();

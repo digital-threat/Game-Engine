@@ -11,18 +11,10 @@ layout (location = 0) out vec4 outColor;
 
 float ShadowCalculation(vec4 shadowCoord, vec3 normal, vec3 lightDir)
 {
-
     vec3 sampleCoords = shadowCoord.xyz / shadowCoord.w;
     sampleCoords.y = -sampleCoords.y;
     sampleCoords.xy = sampleCoords.xy * 0.5f + 0.5f;
-    if (texture(shadowMap, sampleCoords.xy).r > sampleCoords.z)
-    {
-        return 0.0f;
-    }
-    else
-    {
-        return 1.0f;
-    }
+    return texture(shadowMap, sampleCoords.xy).r > sampleCoords.z ? 0.0f : 1.0f;
 }
 
 void main()
