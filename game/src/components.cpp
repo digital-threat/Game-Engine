@@ -224,7 +224,7 @@ void SphereColliderComponent::OnGUI()
 	ImGui::InputFloat("Radius", &mCollider.radius);
 }
 
-Collider* SphereColliderComponent::GetCollider()
+Collider& SphereColliderComponent::GetCollider()
 {
 	auto transform = static_cast<TransformComponent *>(parent.GetComponent(ComponentType::TRANSFORM));
 	if (transform == nullptr)
@@ -232,7 +232,7 @@ Collider* SphereColliderComponent::GetCollider()
 		mCollider.type = ColliderType::INVALID;
 	}
 
-	return &mCollider;
+	return mCollider;
 }
 
 BoxColliderComponent::BoxColliderComponent(Entity &parent) : ColliderComponent(parent)
@@ -260,7 +260,7 @@ void BoxColliderComponent::OnGUI()
 	ImGui::InputFloat3("Extents", reinterpret_cast<float *>(&mCollider.extents));
 }
 
-Collider* BoxColliderComponent::GetCollider()
+Collider& BoxColliderComponent::GetCollider()
 {
 	auto transform = static_cast<TransformComponent *>(parent.GetComponent(ComponentType::TRANSFORM));
 	if (transform == nullptr)
@@ -268,5 +268,5 @@ Collider* BoxColliderComponent::GetCollider()
 		mCollider.type = ColliderType::INVALID;
 	}
 
-	return &mCollider;
+	return mCollider;
 }

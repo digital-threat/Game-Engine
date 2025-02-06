@@ -70,9 +70,9 @@ void MySandbox::PhysicsUpdate()
             {
                 if (collider1 != collider2)
                 {
-                    Collider* c1 = collider1->GetCollider();
-                    Collider* c2 = collider2->GetCollider();
-                    
+                    Collider& c1 = collider1->GetCollider();
+                    Collider& c2 = collider2->GetCollider();
+
                     CheckIntersection(c1, c2);
                 }
             }

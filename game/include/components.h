@@ -66,7 +66,7 @@ public:
 
 	ColliderComponent(Entity &parent);
 
-	virtual Collider* GetCollider() = 0;
+	virtual Collider& GetCollider() = 0;
 };
 
 class SphereColliderComponent : public ColliderComponent
@@ -80,7 +80,7 @@ public:
 	void Render(RenderContext& context, ModelRenderData &renderData) override;
 	void OnGUI() override;
 
-	Collider* GetCollider() override;
+	Collider& GetCollider() override;
 };
 
 class BoxColliderComponent : public ColliderComponent
@@ -94,6 +94,6 @@ public:
 	void Render(RenderContext& context, ModelRenderData &renderData) override;
 	void OnGUI() override;
 
-	Collider* GetCollider() override;
+	Collider& GetCollider() override;
 };
 

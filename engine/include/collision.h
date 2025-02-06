@@ -26,8 +26,8 @@ struct BoxCollider : Collider
 };
 
 
-bool CheckIntersection(Collider* c1, Collider* c2);
-bool Intersection(SphereCollider* c1, SphereCollider* c2);
+bool CheckIntersection(Collider& c1, Collider& c2);
+bool Intersection(SphereCollider c1, SphereCollider c2);
 bool Intersection(SphereCollider* c1, BoxCollider* c2);
 bool Intersection(BoxCollider* c1, BoxCollider* c2);
 
