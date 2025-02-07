@@ -248,6 +248,7 @@ void BoxColliderComponent::Update()
 	if (transform != nullptr)
 	{
 		mCollider.position = transform->mPosition;
+		mCollider.rotation = transform->mRotation;
 	}
 }
 

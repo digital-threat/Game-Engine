@@ -11,12 +11,10 @@
 #include <texture_manager.h>
 #include <utility.h>
 #include "collision.h"
-#include <vendor/stb/stb_image.h>
 #include <mesh_serialization.h>
 #include <obj_loading.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/quaternion.hpp>
 
 void MySandbox::Awake()
 {
