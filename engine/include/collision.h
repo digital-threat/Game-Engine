@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp>
 
 enum class ColliderType
 {
@@ -12,23 +13,23 @@ enum class ColliderType
 struct Collider
 {
 	ColliderType type;
-	glm::vec3 position;
 };
 
 struct SphereCollider : Collider
 {
+	glm::vec3 position;
 	float radius;
 };
 
 struct BoxCollider : Collider
 {
-	glm::vec3 rotation;
+	glm::mat4 transform;
 	glm::vec3 extents;
 };
 
 
 bool CheckIntersection(Collider& c1, Collider& c2);
-bool Intersection(SphereCollider sphere1, SphereCollider sphere2);
-bool Intersection(SphereCollider sphere, BoxCollider box);
-bool Intersection(BoxCollider* c1, BoxCollider* c2);
+bool Intersection(SphereCollider& sphere1, SphereCollider& sphere2);
+bool Intersection(SphereCollider& sphere, BoxCollider& box);
+bool Intersection(BoxCollider& box1, BoxCollider& box2);
 

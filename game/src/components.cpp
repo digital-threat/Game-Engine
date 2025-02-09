@@ -247,8 +247,10 @@ void BoxColliderComponent::Update()
 	auto transform = static_cast<TransformComponent *>(parent.GetComponent(ComponentType::TRANSFORM));
 	if (transform != nullptr)
 	{
-		mCollider.position = transform->mPosition;
-		mCollider.rotation = transform->mRotation;
+		glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), transform->mPosition);
+		glm::mat4 rotationMatrix = glm::toMat4(glm::quat(glm::radians(transform->mRotation)));
+		glm::mat4 transform = translationMatrix * rotationMatrix;
+		mCollider.transform = transform;
 	}
 }
 
