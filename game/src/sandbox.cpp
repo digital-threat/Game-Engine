@@ -40,6 +40,10 @@ void MySandbox::Update()
     {
         entity->Update();
     }
+
+    Ray ray{};
+    ray.direction = glm::vec3(0, 0, 1);
+    Raycast(ray);
 }
 
 void MySandbox::PhysicsUpdate()
@@ -357,6 +361,36 @@ void MySandbox::LoadDefaultScene()
 
     LightComponent* lightComponent = new LightComponent(newEntity);
     newEntity.AddComponent(lightComponent);
+}
+
+bool MySandbox::Raycast(Ray &ray)
+{
+    std::vector<ColliderComponent*> colliders;
+    for (auto entity : mEntityManager.All())
+    {
+        auto collider = static_cast<ColliderComponent*>(entity->GetComponent(ComponentType::SPHERE_COLLIDER));
+        if (collider != nullptr)
+        {
+            colliders.push_back(collider);
+        }
+
+        collider = static_cast<ColliderComponent*>(entity->GetComponent(ComponentType::BOX_COLLIDER));
+        if (collider != nullptr)
+        {
+            colliders.push_back(collider);
+        }
+    }
+
+    for (ColliderComponent* collider : colliders)
+    {
+        Collider& c = collider->GetCollider();
+        if (CheckRayIntersection(ray, c))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void MySandbox::ProcessMessage(Message *pMessage)

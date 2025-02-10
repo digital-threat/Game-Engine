@@ -4,6 +4,8 @@
 #include <message_queue.h>
 #include <entity_manager.h>
 
+struct Ray;
+
 class MySandbox : public Application, public MessageQueue
 {
 private:
@@ -30,6 +32,8 @@ private:
 	void ImGuiMainLight();
 
 	void LoadDefaultScene();
+
+	bool Raycast(Ray& ray);
 
 	void ProcessMessage(Message *pMessage) override;
 };

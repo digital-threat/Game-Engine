@@ -27,9 +27,26 @@ struct BoxCollider : Collider
 	glm::vec3 extents;
 };
 
+struct Ray
+{
+	glm::vec3 origin;
+	glm::vec3 direction;
+};
+
+struct RayHit
+{
+	glm::vec3 point;
+	float t;
+};
 
 bool CheckIntersection(Collider& c1, Collider& c2);
 bool Intersection(SphereCollider& sphere1, SphereCollider& sphere2);
 bool Intersection(SphereCollider& sphere, BoxCollider& box);
 bool Intersection(BoxCollider& box1, BoxCollider& box2);
+
+bool CheckRayIntersection(Ray& ray, RayHit& hit, Collider& collider);
+bool CheckRayIntersection(Ray& ray, Collider& collider);
+
+bool IntersectRaySphere(Ray& ray, RayHit& hit, SphereCollider& sphere);
+bool TestRaySphere(Ray& ray, SphereCollider& sphere);
 

@@ -127,3 +127,65 @@ bool Intersection(BoxCollider& box1, BoxCollider& box2)
 	std::cout << "Box to box intersection" << std::endl;
 	return true;
 }
+
+bool CheckRayIntersection(Ray &ray, RayHit &hit, Collider &collider)
+{
+	if (collider.type == ColliderType::SPHERE)
+	{
+		return IntersectRaySphere(ray, hit, static_cast<SphereCollider&>(collider));
+	}
+
+	return false;
+}
+
+bool CheckRayIntersection(Ray &ray, Collider &collider)
+{
+	if (collider.type == ColliderType::SPHERE)
+	{
+		return TestRaySphere(ray, static_cast<SphereCollider&>(collider));
+	}
+
+	return false;
+}
+
+bool IntersectRaySphere(Ray& ray, RayHit& hit, SphereCollider& sphere)
+{
+	glm::vec3 m = ray.origin - sphere.position;
+	float b = glm::dot(m, ray.direction);
+	float c = glm::dot(m, m) - sphere.radius * sphere.radius;
+
+	if (c > 0.0f && b > 0.0f) return false;
+
+	float discriminant = b * b - c;
+	if (discriminant < 0.0f) return false;
+
+	hit.t = -b - glm::sqrt(discriminant);
+
+	if (hit.t < 0.0f) hit.t = 0.0f;
+	hit.point = ray.origin + hit.t * ray.direction;
+
+	std::cout << "Ray to sphere intersection" << std::endl;
+	return true;
+}
+
+bool TestRaySphere(Ray &ray, SphereCollider &sphere)
+{
+	glm::vec3 m = ray.origin - sphere.position;
+	float c = glm::dot(m, m) - sphere.radius * sphere.radius;
+
+	if (c <= 0.0f)
+	{
+		std::cout << "Ray to sphere intersection" << std::endl;
+		return true;
+	}
+
+	float b = glm::dot(m, ray.direction);
+
+	if (b > 0.0f) return false;
+	float discriminant = b * b - c;
+
+	if (discriminant < 0.0f) return false;
+
+	std::cout << "Ray to sphere intersection" << std::endl;
+	return true;
+}
