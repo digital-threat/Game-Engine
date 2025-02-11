@@ -5,7 +5,7 @@
 #include <renderer_vk_types.h>
 #include <stdexcept>
 #include <utility.h>
-#include <vendor/stb/stb_image.h>
+#include <stb_image.h>
 
 TextureManager* TextureManager::mInstance = nullptr;
 
@@ -77,7 +77,7 @@ VkSampler TextureManager::GetSampler(const std::string& name)
 		return mSamplers[name];
 	}
 
-	return nullptr;
+	return VK_NULL_HANDLE;
 }
 
 std::unordered_map<std::string, VkSampler> TextureManager::GetSamplers()

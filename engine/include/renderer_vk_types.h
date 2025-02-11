@@ -1,6 +1,5 @@
 #pragma once
 
-#include <camera.h>
 #include <vulkan/vulkan_core.h>
 #include <vk_mem_alloc.h>
 #include <glm/glm.hpp>
@@ -10,6 +9,7 @@
 #include <handles.h>
 #include <string>
 #include <vector>
+#include <array>
 
 #include "types.h"
 #include "renderer_vk_descriptors.h"

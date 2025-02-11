@@ -41,17 +41,17 @@ const std::vector<Material> & MaterialManager::GetAll()
 void MaterialManager::SetTexture(MaterialHandle handle, Texture texture, u32 slot)
 {
 	DescriptorWriter writer;
-	if (texture.view != nullptr && texture.sampler == nullptr)
+	if (texture.view != VK_NULL_HANDLE && texture.sampler == VK_NULL_HANDLE)
 	{
 		writer.WriteImage(slot, texture.view, mMaterials[handle.index].textures[slot].sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		mMaterials[handle.index].textures[slot].view = texture.view;
 	}
-	else if (texture.view == nullptr && texture.sampler != nullptr)
+	else if (texture.view == VK_NULL_HANDLE && texture.sampler != VK_NULL_HANDLE)
 	{
 		writer.WriteImage(slot, mMaterials[handle.index].textures[slot].view, texture.sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		mMaterials[handle.index].textures[slot].sampler = texture.sampler;
 	}
-	else if (texture.view != nullptr && texture.sampler != nullptr)
+	else if (texture.view != VK_NULL_HANDLE && texture.sampler != VK_NULL_HANDLE)
 	{
 		writer.WriteImage(slot, texture.view, texture.sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		mMaterials[handle.index].textures[slot].view = texture.view;
