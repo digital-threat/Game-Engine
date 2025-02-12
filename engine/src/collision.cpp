@@ -159,10 +159,10 @@ bool IntersectRaySphere(Ray& ray, RayHit& hit, SphereCollider& sphere)
 	float discriminant = b * b - c;
 	if (discriminant < 0.0f) return false;
 
-	hit.t = -b - glm::sqrt(discriminant);
+	hit.distance = -b - glm::sqrt(discriminant);
 
-	if (hit.t < 0.0f) hit.t = 0.0f;
-	hit.point = ray.origin + hit.t * ray.direction;
+	if (hit.distance < 0.0f) hit.distance = 0.0f;
+	hit.point = ray.origin + hit.distance * ray.direction;
 
 	std::cout << "Ray to sphere intersection" << std::endl;
 	return true;

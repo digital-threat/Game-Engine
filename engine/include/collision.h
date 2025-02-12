@@ -36,7 +36,7 @@ struct Ray
 struct RayHit
 {
 	glm::vec3 point;
-	float t;
+	float distance;
 };
 
 bool CheckIntersection(Collider& c1, Collider& c2);
