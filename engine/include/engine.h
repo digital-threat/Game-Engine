@@ -1,6 +1,8 @@
 #pragma once
 
-#define NOMINMAX
+#ifndef NOMINMAX
+    #define NOMINMAX
+#endif
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -115,7 +117,7 @@ public:
     VkPipeline mShadowmapPipeline = VK_NULL_HANDLE;
 
     // Immediate
-    ImmediateData mImmediate{};
+    ImmediateData mImmediate;
 
     Application* mApplication;
 

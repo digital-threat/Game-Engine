@@ -25,7 +25,7 @@ void Entity::Render(RenderContext &renderContext)
 		component->Render(renderContext, renderData);
 	}
 
-	if (renderData.indexCount == 0 || renderData.materialSet == nullptr)
+	if (renderData.indexCount == 0 || renderData.materialSet == VK_NULL_HANDLE)
 	{
 		return;
 	}

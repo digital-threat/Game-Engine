@@ -280,7 +280,7 @@ void Engine::InitializePipelines()
 
 void Engine::CreateCommandObjects()
 {
-    auto graphicsQueueIndex = mVkbDevice.get_queue_index(vkb::QueueType::graphics);
+    vkb::Result<u32> graphicsQueueIndex = mVkbDevice.get_queue_index(vkb::QueueType::graphics);
 
     if (!graphicsQueueIndex)
     {
@@ -680,9 +680,6 @@ void Engine::InitializeBackgroundPipeline()
     VkShaderModule gradientShader;
     LoadShaderModule("assets/shaders/gradient_color.spv", mDevice, &gradientShader);
 
-    VkShaderModule skyShader;
-    LoadShaderModule("assets/shaders/sky.spv", mDevice, &skyShader);
-
     VkPipelineShaderStageCreateInfo stageInfo = PipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT, gradientShader, "main");
 
     VkComputePipelineCreateInfo computePipelineCreateInfo{};
@@ -702,23 +699,9 @@ void Engine::InitializeBackgroundPipeline()
         throw std::runtime_error("Failed to create compute pipeline.");
     }
 
-    computePipelineCreateInfo.stage.module = skyShader;
-
-    ComputeEffect sky{};
-    sky.layout = mBackground.pipelineLayout;
-    sky.name = "sky";
-    sky.data.data1 = glm::vec4(0.1, 0.2, 0.4 ,0.97);
-
-    if (vkCreateComputePipelines(mDevice, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &sky.pipeline) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create compute pipeline.");
-    }
-
     mBackground.effects.push_back(gradient);
-    mBackground.effects.push_back(sky);
 
     vkDestroyShaderModule(mDevice, gradientShader, nullptr);
-    vkDestroyShaderModule(mDevice, skyShader, nullptr);
 }
 
 void Engine::InitializeMeshPipeline()

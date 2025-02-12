@@ -32,8 +32,8 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
         PUBLIC
-            imgui
             Vulkan::Vulkan
+            imgui
             glfw
             glm::glm-header-only
             vk-bootstrap::vk-bootstrap

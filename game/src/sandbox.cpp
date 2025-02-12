@@ -189,7 +189,7 @@ void MySandbox::ImGuiMaterials()
                         try
                         {
                             texture = textureManager.LoadTexture(file.path().string().c_str());
-                            Texture albedoTexture = { texture->imageView, nullptr };
+                            Texture albedoTexture = { texture->imageView, VK_NULL_HANDLE };
                             materialManager.SetTexture(materials[currentMaterial].handle, albedoTexture, 0);
 
                         }
@@ -226,7 +226,7 @@ void MySandbox::ImGuiMaterials()
                         try
                         {
                             texture = textureManager.LoadTexture(file.path().string().c_str());
-                            Texture specularTexture = { texture->imageView, nullptr };
+                            Texture specularTexture = { texture->imageView, VK_NULL_HANDLE };
                             materialManager.SetTexture(materials[currentMaterial].handle, specularTexture, 1);
 
                         }
@@ -257,8 +257,8 @@ void MySandbox::ImGuiMaterials()
             {
                 if (ImGui::Selectable(sampler.first.c_str()))
                 {
-                    Texture diffuseTexture = { nullptr, sampler.second };
-                    Texture specularTexture = { nullptr, sampler.second };
+                    Texture diffuseTexture = { VK_NULL_HANDLE, sampler.second };
+                    Texture specularTexture = { VK_NULL_HANDLE, sampler.second };
                     materialManager.SetTexture(materials[currentMaterial].handle, diffuseTexture, 0);
                     materialManager.SetTexture(materials[currentMaterial].handle, specularTexture, 1);
                     ImGui::CloseCurrentPopup();
