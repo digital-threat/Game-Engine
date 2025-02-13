@@ -50,3 +50,6 @@ bool CheckRayIntersection(Ray& ray, Collider& collider);
 bool IntersectRaySphere(Ray& ray, RayHit& hit, SphereCollider& sphere);
 bool TestRaySphere(Ray& ray, SphereCollider& sphere);
 
+bool IntersectRayOBB(Ray& ray, RayHit& hit, BoxCollider &box);
+bool IntersectRayAABB(Ray& ray, RayHit& hit, BoxCollider &box);
+

@@ -134,6 +134,10 @@ bool CheckRayIntersection(Ray &ray, RayHit &hit, Collider &collider)
 	{
 		return IntersectRaySphere(ray, hit, static_cast<SphereCollider&>(collider));
 	}
+	if (collider.type == ColliderType::BOX)
+	{
+		return IntersectRayOBB(ray, hit, static_cast<BoxCollider&>(collider));
+	}
 
 	return false;
 }
@@ -187,5 +191,58 @@ bool TestRaySphere(Ray &ray, SphereCollider &sphere)
 	if (discriminant < 0.0f) return false;
 
 	std::cout << "Ray to sphere intersection" << std::endl;
+	return true;
+}
+
+bool IntersectRayOBB(Ray &ray, RayHit &hit, BoxCollider &box)
+{
+	glm::vec3 center = glm::vec3(box.transform[3]);
+	glm::mat3 rotation = glm::mat3(box.transform);
+
+	glm::vec3 localOrigin = glm::transpose(rotation) * (ray.origin - center);
+	glm::vec3 localDirection = glm::transpose(rotation) * ray.direction;
+
+	BoxCollider localBox;
+	localBox.transform = glm::mat4(1.0f);
+	localBox.extents = box.extents;
+
+	Ray localRay;
+	localRay.origin = localOrigin;
+	localRay.direction = localDirection;
+
+	return IntersectRayAABB(localRay, hit, localBox);
+}
+
+bool IntersectRayAABB(Ray &ray, RayHit &hit, BoxCollider &box)
+{
+	float tMin = 0.0f; // Set to -FLT_MAX to get first hit on line
+	float tMax = FLT_MAX; // Set to max distance ray can travel (for segment)
+
+	for (int i = 0; i < 3; i++)
+	{
+		if (glm::abs(ray.direction[i]) < glm::epsilon<float>())
+		{
+			if (ray.origin[i] < -box.extents[i] || ray.origin[i] > box.extents[i]) return false;
+		}
+		else
+		{
+			float ood = 1.0f / ray.direction[i];
+			float t1 = (-box.extents[i] - ray.origin[i]) * ood;
+			float t2 = (box.extents[i] - ray.origin[i]) * ood;
+			if (t1 > t2)
+			{
+				float temp = t1;
+				t1 = t2;
+				t2 = temp;
+			}
+			tMin = glm::max(tMin, t1);
+			tMax = glm::min(tMax, t2);
+			if (tMin > tMax) return false;
+		}
+	}
+
+	hit.distance = tMin;
+	hit.point = ray.origin + ray.direction * tMin;
+	std::cout << "Ray to box intersection" << std::endl;
 	return true;
 }
