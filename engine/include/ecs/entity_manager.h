@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ecs/ecs_constants.h>
 #include <types.h>
 #include <bitset>
 #include <queue>
