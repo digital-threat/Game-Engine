@@ -10,7 +10,7 @@ ComponentManager::ComponentManager()
 	mNextComponentType = 0;
 }
 
-ComponentType ComponentManager::RegisterComponent(std::string& name)
+void ComponentManager::RegisterComponent(std::string& name)
 {
 	assert(!mComponentTypes.contains(name), "Cannot register a component: component already registered");
 	assert(mNextComponentType < MAX_COMPONENTS, "Cannot register a component: MAX_COMPONENTS already reached");
@@ -19,27 +19,40 @@ ComponentType ComponentManager::RegisterComponent(std::string& name)
 
 	// NOTE(Sergei): This makes registering a component expensive
 	// I could preallocate all arrays but that may consume a lot of memory depending on MAX_COMPONENTS.
-	mComponentArrays[mNextComponentType] = new std::array<Component, MAX_COMPONENT_INSTANCES>();
+	mComponentArrays.emplace(mNextComponentType, std::array<Component, MAX_COMPONENT_INSTANCES>());
 
 	mNextComponentType++;
 }
 
 ComponentType ComponentManager::GetComponentType(std::string &name)
 {
+	assert(mComponentTypes.contains(name), "Cannot retrieve component type: component not registered");
+	return mComponentTypes[name];
 }
 
-std::span<Component> & ComponentManager::GetComponentsOfType(ComponentType type)
+std::array<Component, MAX_COMPONENT_INSTANCES>& ComponentManager::GetComponentsOfType(std::string& name)
 {
+	auto type = GetComponentType(name);
+	assert(mComponentArrays.contains(type), "Cannot retrieve component array: component not registered");
+	return mComponentArrays[type];
 }
 
-Component & ComponentManager::GetComponent(EntityHandle entity, ComponentType type)
+Component& ComponentManager::GetComponent(EntityHandle entity, std::string& name)
 {
+	auto type = GetComponentType(name);
+	assert(mComponentArrays.contains(type), "Cannot retrieve component array: component not registered");
+	// TODO(Sergei): Assert entity handle is valid
+	return mComponentArrays[type][entity.handle];
 }
 
-ComponentHandle ComponentManager::AddComponent(EntityHandle entity, ComponentType type)
+void ComponentManager::AddComponent(EntityHandle entity, Component& component)
 {
+	assert(mComponentArrays.contains(component.type), "Cannot retrieve component array: component not registered");
+	// TODO(Sergei): Assert entity handle is valid
+	mComponentArrays[component.type][entity.handle] = component;
+
 }
 
-void ComponentManager::RemoveComponent(ComponentHandle handle)
+void ComponentManager::RemoveComponent(EntityHandle entity, std::string& name)
 {
 }

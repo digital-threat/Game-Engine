@@ -7,22 +7,20 @@
 #include <bitset>
 #include <span>
 
-typedef u8 ComponentType;
-
 class ComponentManager
 {
 public:
 	ComponentManager();
-    ComponentType RegisterComponent(std::string& name); // Assign a ComponentType to component
+    void RegisterComponent(std::string& name);
 	ComponentType GetComponentType(std::string& name);
-	std::span<Component>& GetComponentsOfType(ComponentType type);
-    Component& GetComponent(EntityHandle entity, ComponentType type);
-    ComponentHandle AddComponent(EntityHandle entity, ComponentType type);
-    void RemoveComponent(ComponentHandle handle);
+	std::array<Component, MAX_COMPONENT_INSTANCES>& GetComponentsOfType(std::string& name);
+    Component& GetComponent(EntityHandle entity, std::string& name);
+    void AddComponent(EntityHandle entity, Component& component);
+    void RemoveComponent(EntityHandle entity, std::string& name);
 
   private:
 	std::unordered_map<std::string, ComponentType> mComponentTypes;
-	std::unordered_map<ComponentType, std::array<Component, MAX_COMPONENT_INSTANCES>*> mComponentArrays;
+	std::unordered_map<ComponentType, std::array<Component, MAX_COMPONENT_INSTANCES>> mComponentArrays;
 	ComponentType mNextComponentType;
 };
 

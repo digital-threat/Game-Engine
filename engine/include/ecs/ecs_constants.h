@@ -5,3 +5,5 @@
 constexpr u16 MAX_ENTITIES = 1024;
 constexpr u16 MAX_COMPONENTS = 32;
 constexpr u16 MAX_COMPONENT_INSTANCES = 256;
+
+typedef u8 ComponentType;
