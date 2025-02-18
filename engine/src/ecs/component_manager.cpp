@@ -19,7 +19,7 @@ void ComponentManager::RegisterComponent(std::string& name)
 
 	// NOTE(Sergei): This makes registering a component expensive
 	// I could preallocate all arrays but that may consume a lot of memory depending on MAX_COMPONENTS.
-	mComponentArrays.emplace(mNextComponentType, std::array<Component, MAX_COMPONENT_INSTANCES>());
+	mComponentArrays.emplace(mNextComponentType, std::array<Component, MAX_ENTITIES>());
 
 	mNextComponentType++;
 }
@@ -30,7 +30,7 @@ ComponentType ComponentManager::GetComponentType(std::string &name)
 	return mComponentTypes[name];
 }
 
-std::array<Component, MAX_COMPONENT_INSTANCES>& ComponentManager::GetComponentsOfType(std::string& name)
+std::array<Component, MAX_ENTITIES>& ComponentManager::GetComponentsOfType(std::string& name)
 {
 	auto type = GetComponentType(name);
 	assert(mComponentArrays.contains(type), "Cannot retrieve component array: component not registered");
