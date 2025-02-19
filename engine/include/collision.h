@@ -13,6 +13,9 @@ enum class ColliderType
 struct Collider
 {
 	ColliderType type;
+	bool isKinematic;
+	bool hasGravity;
+	glm::vec3 velocity;
 };
 
 struct SphereCollider : Collider
@@ -39,10 +42,21 @@ struct RayHit
 	float distance;
 };
 
-bool CheckIntersection(Collider& c1, Collider& c2);
-bool Intersection(SphereCollider& sphere1, SphereCollider& sphere2);
-bool Intersection(SphereCollider& sphere, BoxCollider& box);
-bool Intersection(BoxCollider& box1, BoxCollider& box2);
+struct Collision
+{
+	bool collided;
+
+	Collider& c1;
+	Collider& c2;
+
+	glm::vec3 point;
+	glm::vec3 normal;
+};
+
+bool CheckIntersection(Collider& c1, Collider& c2, Collision& collision);
+bool Intersection(SphereCollider& sphere1, SphereCollider& sphere2, Collision& collision);
+bool Intersection(SphereCollider& sphere, BoxCollider& box, Collision& collision);
+bool Intersection(BoxCollider& box1, BoxCollider& box2, Collision& collision);
 
 bool CheckRayIntersection(Ray& ray, RayHit& hit, Collider& collider);
 bool CheckRayIntersection(Ray& ray, Collider& collider);

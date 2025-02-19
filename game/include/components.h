@@ -73,6 +73,8 @@ class SphereColliderComponent : public ColliderComponent
 {
 public:
 	SphereCollider mCollider;
+	bool hasGravity = false;
+	bool isKinematic = true;
 
 	SphereColliderComponent(Entity &parent);
 

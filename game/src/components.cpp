@@ -204,6 +204,8 @@ SphereColliderComponent::SphereColliderComponent(Entity &parent) : ColliderCompo
 	mComponentType = ComponentType::SPHERE_COLLIDER;
 	mCollider.type = ColliderType::SPHERE;
 	mCollider.radius = 1.0f;
+	mCollider.isKinematic = isKinematic;
+	mCollider.hasGravity = hasGravity;
 }
 
 void SphereColliderComponent::Update()
@@ -222,6 +224,11 @@ void SphereColliderComponent::Render(RenderContext &context, ModelRenderData &re
 void SphereColliderComponent::OnGUI()
 {
 	ImGui::InputFloat("Radius", &mCollider.radius);
+	ImGui::Checkbox("Gravity", &hasGravity);
+	ImGui::Checkbox("Kinematic", &isKinematic);
+
+	mCollider.isKinematic = isKinematic;
+	mCollider.hasGravity = hasGravity;
 }
 
 Collider& SphereColliderComponent::GetCollider()

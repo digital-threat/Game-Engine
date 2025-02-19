@@ -7,33 +7,37 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-bool CheckIntersection(Collider& c1, Collider& c2)
+bool CheckIntersection(Collider& c1, Collider& c2, Collision& collision)
 {
 	if (c1.type == ColliderType::SPHERE && c2.type == ColliderType::SPHERE)
 	{
-		return Intersection(static_cast<SphereCollider&>(c1), static_cast<SphereCollider&>(c2));
+		return Intersection(static_cast<SphereCollider&>(c1), static_cast<SphereCollider&>(c2), collision);
 	}
 	if (c1.type == ColliderType::BOX && c2.type == ColliderType::SPHERE)
 	{
-		return Intersection(static_cast<SphereCollider&>(c2), static_cast<BoxCollider&>(c1));
+		return Intersection(static_cast<SphereCollider&>(c2), static_cast<BoxCollider&>(c1), collision);
 	}
 	if (c1.type == ColliderType::SPHERE && c2.type == ColliderType::BOX)
 	{
-		return Intersection(static_cast<SphereCollider&>(c1), static_cast<BoxCollider&>(c2));
+		return Intersection(static_cast<SphereCollider&>(c1), static_cast<BoxCollider&>(c2), collision);
 	}
 	if (c1.type == ColliderType::BOX && c2.type == ColliderType::BOX)
 	{
-		return Intersection(static_cast<BoxCollider&>(c1), static_cast<BoxCollider&>(c2));
+		return Intersection(static_cast<BoxCollider&>(c1), static_cast<BoxCollider&>(c2), collision);
 	}
 
 	return false;
 }
 
-bool Intersection(SphereCollider& sphere1, SphereCollider& sphere2)
+bool Intersection(SphereCollider& sphere1, SphereCollider& sphere2, Collision& collision)
 {
 	float distSqr = distance2(sphere1.position, sphere2.position);
 	if (distSqr < (sphere1.radius + sphere2.radius) * (sphere1.radius + sphere2.radius))
 	{
+		float dist = glm::sqrt(distSqr);
+		collision.normal = (dist > 0.0f) ? (sphere2.position - sphere1.position) / dist : glm::vec3(1, 0, 0);
+		collision.point = sphere1.position + collision.normal * sphere1.radius;
+
 		std::cout << "Sphere to sphere intersection" << std::endl;
 		return true;
 	}
@@ -41,7 +45,7 @@ bool Intersection(SphereCollider& sphere1, SphereCollider& sphere2)
 	return false;
 }
 
-bool Intersection(SphereCollider& sphere, BoxCollider& box)
+bool Intersection(SphereCollider& sphere, BoxCollider& box, Collision& collision)
 {
 	glm::vec3 localSpherePosition = inverse(box.transform) * glm::vec4(sphere.position, 1.0f);
 	glm::vec3 closestPoint = clamp(localSpherePosition, -box.extents, box.extents);
@@ -55,7 +59,7 @@ bool Intersection(SphereCollider& sphere, BoxCollider& box)
 	return false;
 }
 
-bool Intersection(BoxCollider& box1, BoxCollider& box2)
+bool Intersection(BoxCollider& box1, BoxCollider& box2, Collision& collision)
 {
 	glm::mat3 rotation1 = glm::mat3(box1.transform);
 	glm::mat3 rotation2 = glm::mat3(box2.transform);

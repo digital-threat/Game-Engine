@@ -16,12 +16,14 @@ private:
 	glm::vec3 mMainLightColor = glm::vec3(1, 1, 1);
 	glm::vec3 mMainLightPosition = glm::vec3(0, 5, -10);
 	float mMainLightIntensity = 1.0f;
-	bool isSimulating = true;
+	bool mIsSimulating = true;
+	float mGravity = -3.0f;
+	float mRestitution = 0.5f;
 
 public:
 	void Awake() override;
 	void Update() override;
-	void PhysicsUpdate() override;
+	void PhysicsUpdate(f64 deltaTime) override;
 	void Render() override;
 	void Destroy() override;
 

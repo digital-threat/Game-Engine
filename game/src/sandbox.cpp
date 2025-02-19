@@ -47,9 +47,9 @@ void MySandbox::Update()
     Raycast(ray, hit);
 }
 
-void MySandbox::PhysicsUpdate()
+void MySandbox::PhysicsUpdate(f64 deltaTime)
 {
-    if (isSimulating)
+    if (mIsSimulating)
     {
         std::vector<ColliderComponent*> colliders;
         for (auto entity : mEntityManager.All())
@@ -67,17 +67,68 @@ void MySandbox::PhysicsUpdate()
             }
         }
 
-        for (ColliderComponent* collider1 : colliders)
-        {
-            for (ColliderComponent* collider2 : colliders)
-            {
-                if (collider1 != collider2)
-                {
-                    Collider& c1 = collider1->GetCollider();
-                    Collider& c2 = collider2->GetCollider();
+        std::vector<Collision> collisions;
 
-                    CheckIntersection(c1, c2);
+        for (int i = 0; i < colliders.size(); i++)
+        {
+            for (int j = i + 1; j < colliders.size(); j++)
+            {
+                Collider& c1 = colliders[i]->GetCollider();
+                Collider& c2 = colliders[j]->GetCollider();
+
+                Collision collision { false, c1, c2 };
+                if (CheckIntersection(c1, c2, collision))
+                {
+                    collisions.push_back(collision);
                 }
+            }
+        }
+
+        // Apply gravity
+        for (ColliderComponent* colliderComponent : colliders)
+        {
+            Collider& collider = colliderComponent->GetCollider();
+            if (collider.hasGravity && !collider.isKinematic)
+            {
+                collider.velocity += glm::vec3(0, mGravity, 0) * static_cast<float>(deltaTime);
+            }
+        }
+
+        // Handle collisions
+        for (Collision collision : collisions)
+        {
+            if (!collision.c1.isKinematic || !collision.c2.isKinematic)
+            {
+                glm::vec3 relativeVelocity = collision.c2.velocity - collision.c1.velocity;
+                float velocityAlongNormal = glm::dot(relativeVelocity, collision.normal);
+
+                if (velocityAlongNormal < 0)
+                {
+                    float impulse = (1 + mRestitution) * velocityAlongNormal;
+
+                    if (!collision.c1.isKinematic)
+                    {
+                        glm::vec3 impulseVector = impulse * collision.normal;
+                        collision.c1.velocity += impulseVector;
+                    }
+
+                    if (!collision.c2.isKinematic)
+                    {
+                        glm::vec3 impulseVector = impulse * collision.normal;
+                        collision.c2.velocity -= impulseVector;
+                    }
+                }
+            }
+        }
+
+        // Apply velocity
+        for (ColliderComponent* colliderComponent : colliders)
+        {
+            Collider& collider = colliderComponent->GetCollider();
+            if (!collider.isKinematic)
+            {
+                auto transform = static_cast<TransformComponent*>(colliderComponent->parent.GetComponent(ComponentType::TRANSFORM));
+                transform->mPosition += collider.velocity * static_cast<float>(deltaTime);
             }
         }
     }
