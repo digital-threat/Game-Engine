@@ -1,8 +1,6 @@
 #pragma once
 
-#include <types.h>
-#include <bitset>
-#include <ecs/ecs_constants.h>
+#include <ecs/ecs_typedefs.h>
 
 struct Component
 {

@@ -1,26 +1,25 @@
 #pragma once
 
 #include <ecs/ecs_constants.h>
+#include <ecs/ecs_typedefs.h>
 #include <types.h>
 #include <bitset>
 #include <queue>
 #include <array>
 
-struct EntityHandle;
-
-typedef std::bitset<MAX_COMPONENTS> Archetype;
+struct Entity;
 
 class EntityManager
 {
 public:
 	EntityManager();
-	EntityHandle CreateEntity();
-	void DestroyEntity(EntityHandle handle);
-	void SetArchetype(EntityHandle handle, Archetype archetype);
-	Archetype GetArchetype(EntityHandle handle);
+	Entity CreateEntity();
+	void DestroyEntity(Entity entity);
+	void SetArchetype(Entity entity, Archetype archetype);
+	Archetype GetArchetype(Entity entity);
 
 private:
-	std::queue<EntityHandle> mAvailableHandles;
+	std::queue<Entity> mAvailableEntities;
 	std::array<Archetype, MAX_ENTITIES> mArchetypes;
 	u32 mEntityCount;
 };

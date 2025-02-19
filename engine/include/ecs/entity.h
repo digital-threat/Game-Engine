@@ -2,7 +2,7 @@
 
 #include <types.h>
 
-struct EntityHandle
+struct Entity
 {
 	u16 handle;
 };
