@@ -1,12 +1,10 @@
 #pragma once
 
-#include <unordered_map>
-#include <ecs/component.h>
 #include <ecs/entity.h>
-#include <ecs/ecs_constants.h>
-#include <ecs/component_manager.h>
+#include <ecs/constants.h>
 #include <ecs/component_array.h>
-#include <bitset>
+
+#include <unordered_map>
 #include <typeinfo>
 
 class ComponentManager

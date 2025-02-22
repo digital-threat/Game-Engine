@@ -1,15 +1,12 @@
 #pragma once
 
 #include <ecs/entity.h>
-#include <ecs/ecs_constants.h>
-#include <array>
-#include <unordered_map>
-#include <cassert>
+#include <ecs/constants.h>
+#include <ecs/component.h>
 
-struct ComponentHandle
-{
-	u32 handle;
-};
+#include <unordered_map>
+#include <array>
+#include <cassert>
 
 class IComponentArray
 {
@@ -22,13 +19,13 @@ template<typename T>
 class ComponentArray : public IComponentArray
 {
 public:
-	ComponentHandle AddComponent(Entity entity, T& component)
+	Component AddComponent(Entity entity, T& component)
 	{
 		assert(!mEntityToIndexMap.contains(entity) && "Cannot add component: entity already has a component of this type");
 		assert(mSize < MAX_ENTITIES && "Cannot add component: max components reached");
 		// TODO(Sergei): Assert entity handle is valid
 
-		ComponentHandle handle = { mSize };
+		Component handle = { mSize };
 
 		mEntityToIndexMap[entity] = handle;
 		mIndexToEntityMap[handle] = entity;
@@ -52,8 +49,8 @@ public:
 		assert(mEntityToIndexMap.contains(entity) && "Cannot remove component: invalid entity or entity doesn't have a component of this type");
 		// TODO(Sergei): Assert entity handle is valid
 
-		ComponentHandle removedElement = mEntityToIndexMap[entity];
-		ComponentHandle lastElement = { mSize - 1 };
+		Component removedElement = mEntityToIndexMap[entity];
+		Component lastElement = { mSize - 1 };
 		mComponentArray[removedElement] = std::move(mComponentArray[lastElement]);
 
 		Entity lastElementEntity = mIndexToEntityMap[lastElement];
@@ -76,7 +73,7 @@ public:
 
 private:
 	std::array<T, MAX_ENTITIES> mComponentArray;
-	std::unordered_map<Entity, ComponentHandle> mEntityToIndexMap;
-	std::unordered_map<ComponentHandle, Entity> mIndexToEntityMap;
+	std::unordered_map<Entity, Component> mEntityToIndexMap;
+	std::unordered_map<Component, Entity> mIndexToEntityMap;
     u32 mSize;
 };

@@ -1,11 +1,13 @@
 #pragma once
 
-#include <ecs/ecs_constants.h>
-#include <ecs/ecs_typedefs.h>
+#include <ecs/constants.h>
+#include <ecs/typedefs.h>
+
 #include <types.h>
 #include <bitset>
 #include <queue>
 #include <array>
+#include <functional>
 
 struct Entity;
 
@@ -17,6 +19,7 @@ public:
 	void DestroyEntity(Entity entity);
 	void SetArchetype(Entity entity, Archetype archetype);
 	Archetype GetArchetype(Entity entity);
+	void Each(Archetype archetype, std::function<void(Entity entity)> f);
 
 private:
 	std::queue<Entity> mAvailableEntities;

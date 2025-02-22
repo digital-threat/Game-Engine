@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ecs/ecs_constants.h>
+#include <ecs/constants.h>
 #include <bitset>
 #include <types.h>
 

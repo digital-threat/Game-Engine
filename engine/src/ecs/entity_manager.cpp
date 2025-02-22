@@ -1,5 +1,5 @@
 #include <ecs/entity_manager.h>
-#include <ecs/ecs_constants.h>
+#include <ecs/constants.h>
 #include <ecs/entity.h>
 #include <cassert>
 
@@ -33,14 +33,25 @@ void EntityManager::DestroyEntity(Entity entity)
 
 void EntityManager::SetArchetype(Entity entity, Archetype archetype)
 {
-	assert(entity.handle < MAX_ENTITIES, "Cannot destroy entity: invalid entity");
+	assert(entity.handle < MAX_ENTITIES, "Cannot set archetype: invalid entity");
 
 	mArchetypes[entity.handle] = archetype;
 }
 
 Archetype EntityManager::GetArchetype(Entity entity)
 {
-	assert(entity.handle < MAX_ENTITIES, "Cannot destroy entity: invalid entity");
+	assert(entity.handle < MAX_ENTITIES, "Cannot get archetype: invalid entity");
 
 	return mArchetypes[entity.handle];
+}
+
+void EntityManager::Each(Archetype archetype, std::function<void(Entity entity)> f)
+{
+	for (int i = 0; i < mEntityCount; i++)
+	{
+		if ((mArchetypes[i] & archetype) == archetype)
+		{
+			f(Entity(i));
+		}
+	}
 }

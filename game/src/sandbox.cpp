@@ -1,6 +1,5 @@
 #include "sandbox.h"
 
-#include <components.h>
 #include <imgui.h>
 #include <iostream>
 #include <mesh_manager.h>
@@ -15,6 +14,8 @@
 #include <obj_loading.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <ecs/coordinator.h>
+#include <systems/collision_system.h>
 
 void MySandbox::Awake()
 {

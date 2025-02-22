@@ -1,8 +1,9 @@
 #pragma once
+
 #include <application.h>
 #include <camera.h>
 #include <message_queue.h>
-#include <entity_manager.h>
+#include <ecs/coordinator.h>
 
 struct RayHit;
 struct Ray;
@@ -10,8 +11,8 @@ struct Ray;
 class MySandbox : public Application, public MessageQueue
 {
 private:
+	Coordinator mCoordinator;
 	Camera mCamera{ .position = glm::vec3{ 0.0f, 2.0f, -3.0f }, .fov = 60};
-	EntityManager mEntityManager;
 	i32 mCurrentEntity = 0;
 	glm::vec3 mMainLightColor = glm::vec3(1, 1, 1);
 	glm::vec3 mMainLightPosition = glm::vec3(0, 5, -10);
