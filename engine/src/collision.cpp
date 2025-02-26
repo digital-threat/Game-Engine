@@ -52,6 +52,9 @@ bool Intersection(SphereCollider& sphere, BoxCollider& box, Collision& collision
 	float distSqr = distance2(localSpherePosition, closestPoint);
 	if (distSqr < sphere.radius * sphere.radius)
 	{
+		glm::vec3 delta = localSpherePosition - closestPoint;
+		collision.normal = glm::length(delta) > 0.0f ? glm::normalize(delta) : glm::vec3(1, 0, 0);
+		collision.point = box.transform * glm::vec4(closestPoint, 1.0f);
 		std::cout << "Sphere to box intersection" << std::endl;
 		return true;
 	}
@@ -71,14 +74,22 @@ bool Intersection(BoxCollider& box1, BoxCollider& box2, Collision& collision)
 	glm::mat3 absRotation = glm::mat3(glm::abs(rotation[0]), glm::abs(rotation[1]), glm::abs(rotation[2])) + glm::mat3(glm::epsilon<float>());
 
 	float r1, r2;
+	float minPenetration = FLT_MAX;
+	glm::vec3 bestAxis = glm::vec3(0.0f);
 
 	for (int i = 0; i < 3; i++)
 	{
 		r1 = box1.extents[i];
 		r2 = glm::dot(absRotation[i], box2.extents);
-		if (glm::abs(translation[i]) > r1 + r2)
+
+		float penetration = (r1 + r2) - glm::abs(glm::dot(translation, rotation1[i]));
+
+		if (penetration < 0.0f) return false;
+
+		if (penetration < minPenetration)
 		{
-			return false;
+			minPenetration = penetration;
+			bestAxis = rotation1[i];
 		}
 	}
 
@@ -86,47 +97,50 @@ bool Intersection(BoxCollider& box1, BoxCollider& box2, Collision& collision)
 	{
 		r1 = glm::dot(absRotation[i], box1.extents);
 		r2 = box2.extents[i];
-		if (glm::abs(glm::dot(rotation[i], translation)) > r1 + r2)
+
+		float penetration = (r1 + r2) - glm::abs(glm::dot(translation, rotation2[i]));
+
+		if (penetration < 0.0f) return false;
+
+		if (penetration < minPenetration)
 		{
-			return false;
+			minPenetration = penetration;
+			bestAxis = rotation2[i];
 		}
 	}
 
-	r1 = box1.extents[1] * absRotation[2][0] + box1.extents[2] * absRotation[1][0];
-	r2 = box2.extents[1] * absRotation[0][2] + box2.extents[2] * absRotation[0][1];
-	if (glm::abs(translation[2] * rotation[1][0] - translation[1] * rotation[2][0]) > r1 + r2) return false;
+	for (int i = 0; i < 3; ++i)
+	{
+		for (int j = 0; j < 3; ++j)
+		{
+			glm::vec3 axis = glm::cross(rotation1[i], rotation2[j]);
 
-	r1 = box1.extents[1] * absRotation[2][1] + box1.extents[2] * absRotation[1][1];
-	r2 = box2.extents[0] * absRotation[0][2] + box2.extents[2] * absRotation[0][0];
-	if (glm::abs(translation[2] * rotation[1][1] - translation[1] * rotation[2][1]) > r1 + r2) return false;
+			if (glm::length(axis) > 0.0f)
+			{
+				axis = glm::normalize(axis);
 
-	r1 = box1.extents[1] * absRotation[2][2] + box1.extents[2] * absRotation[1][2];
-	r2 = box2.extents[0] * absRotation[0][1] + box2.extents[1] * absRotation[0][0];
-	if (glm::abs(translation[2] * rotation[1][2] - translation[1] * rotation[2][2]) > r1 + r2) return false;
+				float ra = glm::dot(box1.extents, glm::abs(rotation1 * axis));
+				float rb = glm::dot(box2.extents, glm::abs(rotation2 * axis));
+				float penetration = (ra + rb) - glm::abs(glm::dot(glm::normalize(translation), axis)) * glm::length(translation);
 
-	r1 = box1.extents[0] * absRotation[2][0] + box1.extents[2] * absRotation[0][0];
-	r2 = box2.extents[1] * absRotation[1][2] + box2.extents[2] * absRotation[1][1];
-	if (glm::abs(translation[0] * rotation[2][0] - translation[2] * rotation[0][0]) > r1 + r2) return false;
+				if (penetration < 0.0f) return false;
 
-	r1 = box1.extents[0] * absRotation[2][1] + box1.extents[2] * absRotation[0][1];
-	r2 = box2.extents[0] * absRotation[1][2] + box2.extents[2] * absRotation[1][0];
-	if (glm::abs(translation[0] * rotation[2][1] - translation[2] * rotation[0][1]) > r1 + r2) return false;
+				if (penetration < minPenetration)
+				{
+					minPenetration = penetration;
+					bestAxis = axis;
+				}
+			}
+		}
+	}
 
-	r1 = box1.extents[0] * absRotation[2][2] + box1.extents[2] * absRotation[0][2];
-	r2 = box2.extents[0] * absRotation[1][1] + box2.extents[1] * absRotation[1][0];
-	if (glm::abs(translation[0] * rotation[2][2] - translation[2] * rotation[0][2]) > r1 + r2) return false;
+	collision.normal = glm::normalize(bestAxis);
+	if (glm::dot(collision.normal, translation) < 0.0f)
+	{
+		collision.normal = -collision.normal;
+	}
 
-	r1 = box1.extents[0] * absRotation[1][0] + box1.extents[1] * absRotation[0][0];
-	r2 = box2.extents[1] * absRotation[2][2] + box2.extents[2] * absRotation[2][1];
-	if (glm::abs(translation[1] * rotation[0][0] - translation[0] * rotation[1][0]) > r1 + r2) return false;
-
-	r1 = box1.extents[0] * absRotation[1][1] + box1.extents[1] * absRotation[0][1];
-	r2 = box2.extents[0] * absRotation[2][2] + box2.extents[2] * absRotation[2][0];
-	if (glm::abs(translation[1] * rotation[0][1] - translation[0] * rotation[1][1]) > r1 + r2) return false;
-
-	r1 = box1.extents[0] * absRotation[1][2] + box1.extents[1] * absRotation[0][2];
-	r2 = box2.extents[0] * absRotation[2][1] + box2.extents[1] * absRotation[2][0];
-	if (glm::abs(translation[1] * rotation[0][2] - translation[0] * rotation[1][2]) > r1 + r2) return false;
+	collision.point = glm::vec3(box1.transform[3]) + collision.normal * minPenetration * 0.5f;
 
 	std::cout << "Box to box intersection" << std::endl;
 	return true;

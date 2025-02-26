@@ -203,7 +203,7 @@ SphereColliderComponent::SphereColliderComponent(Entity &parent) : ColliderCompo
 {
 	mComponentType = ComponentType::SPHERE_COLLIDER;
 	mCollider.type = ColliderType::SPHERE;
-	mCollider.radius = 1.0f;
+	mCollider.radius = 0.5f;
 	mCollider.isKinematic = isKinematic;
 	mCollider.hasGravity = hasGravity;
 }
@@ -226,9 +226,15 @@ void SphereColliderComponent::OnGUI()
 	ImGui::InputFloat("Radius", &mCollider.radius);
 	ImGui::Checkbox("Gravity", &hasGravity);
 	ImGui::Checkbox("Kinematic", &isKinematic);
+	if (ImGui::Button("Reset Velocity"))
+	{
+		mCollider.velocity = glm::vec3(0.0f);
+	}
 
 	mCollider.isKinematic = isKinematic;
 	mCollider.hasGravity = hasGravity;
+
+
 }
 
 Collider& SphereColliderComponent::GetCollider()
@@ -246,7 +252,9 @@ BoxColliderComponent::BoxColliderComponent(Entity &parent) : ColliderComponent(p
 {
 	mComponentType = ComponentType::BOX_COLLIDER;
 	mCollider.type = ColliderType::BOX;
-	mCollider.extents = glm::vec3(1.0f, 1.0f, 1.0f);
+	mCollider.extents = glm::vec3(0.5f, 0.5f, 0.5f);
+	mCollider.isKinematic = isKinematic;
+	mCollider.hasGravity = hasGravity;
 }
 
 void BoxColliderComponent::Update()
@@ -268,6 +276,15 @@ void BoxColliderComponent::Render(RenderContext &context, ModelRenderData &rende
 void BoxColliderComponent::OnGUI()
 {
 	ImGui::InputFloat3("Extents", reinterpret_cast<float *>(&mCollider.extents));
+	ImGui::Checkbox("Gravity", &hasGravity);
+	ImGui::Checkbox("Kinematic", &isKinematic);
+	if (ImGui::Button("Reset Velocity"))
+	{
+		mCollider.velocity = glm::vec3(0.0f);
+	}
+
+	mCollider.isKinematic = isKinematic;
+	mCollider.hasGravity = hasGravity;
 }
 
 Collider& BoxColliderComponent::GetCollider()

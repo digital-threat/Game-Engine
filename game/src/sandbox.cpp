@@ -76,7 +76,7 @@ void MySandbox::PhysicsUpdate(f64 deltaTime)
                 Collider& c1 = colliders[i]->GetCollider();
                 Collider& c2 = colliders[j]->GetCollider();
 
-                Collision collision { false, c1, c2 };
+                Collision collision { c1, c2 };
                 if (CheckIntersection(c1, c2, collision))
                 {
                     collisions.push_back(collision);
@@ -400,6 +400,9 @@ void MySandbox::LoadDefaultScene()
         transformComponent->mScale = 1;
         newEntity.AddComponent(transformComponent);
 
+        BoxColliderComponent* boxColliderComponent = new BoxColliderComponent(newEntity);
+        newEntity.AddComponent(boxColliderComponent);
+
         MeshComponent* meshComponent = new MeshComponent(newEntity);
         meshComponent->mMaterial = crateHandle;
         newEntity.AddComponent(meshComponent);
@@ -408,11 +411,11 @@ void MySandbox::LoadDefaultScene()
         meshManager.QueueMessage(message);
     }
 
-    Entity &newEntity = mEntityManager.CreateEntity();
-    newEntity.mName = "Light";
-
-    LightComponent* lightComponent = new LightComponent(newEntity);
-    newEntity.AddComponent(lightComponent);
+    // Entity &newEntity = mEntityManager.CreateEntity();
+    // newEntity.mName = "Light";
+    //
+    // LightComponent* lightComponent = new LightComponent(newEntity);
+    // newEntity.AddComponent(lightComponent);
 }
 
 bool MySandbox::Raycast(Ray &ray, RayHit& hit)

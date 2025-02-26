@@ -89,6 +89,8 @@ class BoxColliderComponent : public ColliderComponent
 {
 public:
 	BoxCollider mCollider;
+	bool hasGravity = false;
+	bool isKinematic = true;
 
 	BoxColliderComponent(Entity &parent);
 

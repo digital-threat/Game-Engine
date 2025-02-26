@@ -44,8 +44,6 @@ struct RayHit
 
 struct Collision
 {
-	bool collided;
-
 	Collider& c1;
 	Collider& c2;
 
