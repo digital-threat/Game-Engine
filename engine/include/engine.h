@@ -176,8 +176,14 @@ private:
         TextureManager::Get().Awake();
         mApplication->Awake();
 
+        double lastTime;
+
         while (!glfwWindowShouldClose(window))
         {
+            double currentTime = glfwGetTime();
+            double deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+
             glfwPollEvents();
 
             if (mResizeRequested)
@@ -186,7 +192,7 @@ private:
             }
 
             mApplication->Update();
-            mApplication->PhysicsUpdate();
+            mApplication->PhysicsUpdate(deltaTime);
 
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();

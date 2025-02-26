@@ -4,6 +4,8 @@
 #include <camera.h>
 #include <message_queue.h>
 #include <ecs/coordinator.h>
+#include <systems/physics_system.h>
+#include <systems/render_system.h>
 
 struct RayHit;
 struct Ray;
@@ -18,11 +20,13 @@ private:
 	glm::vec3 mMainLightPosition = glm::vec3(0, 5, -10);
 	float mMainLightIntensity = 1.0f;
 	bool isSimulating = true;
+	PhysicsSystem mPhysicsSystem;
+	RenderSystem mRenderSystem;
 
 public:
 	void Awake() override;
 	void Update() override;
-	void PhysicsUpdate() override;
+	void PhysicsUpdate(f64 deltaTime) override;
 	void Render() override;
 	void Destroy() override;
 

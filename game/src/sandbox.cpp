@@ -1,21 +1,21 @@
 #include "sandbox.h"
 
-#include <imgui.h>
 #include <iostream>
-#include <mesh_manager.h>
-#include <ostream>
 #include <filesystem>
+
+#include <imgui.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+
+#include <mesh_manager.h>
 #include <material_manager.h>
 #include <renderer_vk_images.h>
 #include <texture_manager.h>
 #include <utility.h>
-#include "collision.h"
+#include <collision.h>
 #include <mesh_serialization.h>
 #include <obj_loading.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
 #include <ecs/coordinator.h>
-#include <systems/collision_system.h>
 
 void MySandbox::Awake()
 {
@@ -48,39 +48,11 @@ void MySandbox::Update()
     Raycast(ray, hit);
 }
 
-void MySandbox::PhysicsUpdate()
+void MySandbox::PhysicsUpdate(f64 deltaTime)
 {
     if (isSimulating)
     {
-        std::vector<ColliderComponent*> colliders;
-        for (auto entity : mEntityManager.All())
-        {
-            auto collider = static_cast<ColliderComponent*>(entity->GetComponent(ComponentType::SPHERE_COLLIDER));
-            if (collider != nullptr)
-            {
-                colliders.push_back(collider);
-            }
-
-            collider = static_cast<ColliderComponent*>(entity->GetComponent(ComponentType::BOX_COLLIDER));
-            if (collider != nullptr)
-            {
-                colliders.push_back(collider);
-            }
-        }
-
-        for (ColliderComponent* collider1 : colliders)
-        {
-            for (ColliderComponent* collider2 : colliders)
-            {
-                if (collider1 != collider2)
-                {
-                    Collider& c1 = collider1->GetCollider();
-                    Collider& c2 = collider2->GetCollider();
-
-                    CheckIntersection(c1, c2);
-                }
-            }
-        }
+        mPhysicsSystem.Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, deltaTime);
     }
 }
 
@@ -102,10 +74,8 @@ void MySandbox::Render()
     mRenderContext.sceneData = sceneData;
     mRenderContext.modelData.clear();
     mRenderContext.lightData.lightCount = 0;
-    for (auto entity : mEntityManager.All())
-    {
-        entity->Render(mRenderContext);
-    }
+
+    mRenderSystem.Update(mRenderContext);
 }
 
 void MySandbox::Destroy()

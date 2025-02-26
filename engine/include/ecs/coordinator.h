@@ -63,7 +63,7 @@ public:
 		return mComponentManager.GetComponentType<T>();
 	}
 
-private:
+public:
 	ComponentManager mComponentManager;
 	EntityManager mEntityManager;
 };

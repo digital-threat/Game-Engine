@@ -71,9 +71,11 @@ public:
 		}
 	}
 
-private:
+public:
 	std::array<T, MAX_ENTITIES> mComponentArray;
+	u32 mSize;
+
+private:
 	std::unordered_map<Entity, Component> mEntityToIndexMap;
 	std::unordered_map<Component, Entity> mIndexToEntityMap;
-    u32 mSize;
 };
