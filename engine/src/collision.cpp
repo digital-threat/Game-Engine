@@ -52,9 +52,15 @@ bool Intersection(SphereCollider& sphere, BoxCollider& box, Collision& collision
 	float distSqr = distance2(localSpherePosition, closestPoint);
 	if (distSqr < sphere.radius * sphere.radius)
 	{
-		glm::vec3 delta = localSpherePosition - closestPoint;
-		collision.normal = glm::length(delta) > 0.0f ? glm::normalize(delta) : glm::vec3(1, 0, 0);
 		collision.point = box.transform * glm::vec4(closestPoint, 1.0f);
+
+		glm::vec3 normalLocal = localSpherePosition - closestPoint;
+		glm::vec3 normalWorld = glm::mat3(box.transform) * normalLocal;
+		if (glm::length(normalWorld) > 0.0001f)
+			collision.normal = glm::normalize(normalWorld);
+		else
+			collision.normal = glm::vec3(1, 0, 0);
+
 		std::cout << "Sphere to box intersection" << std::endl;
 		return true;
 	}

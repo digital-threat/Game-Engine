@@ -42,8 +42,8 @@ void MySandbox::Update()
     }
 
     Ray ray{};
-    RayHit hit{};
     ray.direction = glm::vec3(0, 0, 1);
+    RayHit hit{};
     Raycast(ray, hit);
 }
 
