@@ -1,8 +1,9 @@
 #pragma once
 
-#include <renderer_vk_types.h>
+#include <message_type.h>
+#include <mesh_structs.h>
+#include <ecs/typedefs.h>
 #include <string>
-#include "message_type.h"
 
 
 class MessageQueue;
@@ -18,16 +19,18 @@ struct Message
 
 struct StringMessage : Message
 {
-	StringMessage(std::string pMessage, std::string param, MessageQueue *sender = nullptr);
+	StringMessage(std::string pMessage, std::string param, Entity entity, MessageQueue *sender = nullptr);
 
 	MessageQueue *sender;
+	Entity entity;
 	std::string param;
 };
 
 struct MeshMessage : Message
 {
-	MeshMessage(std::string pMessage, MeshAsset param, MessageQueue *sender = nullptr);
+	MeshMessage(std::string pMessage, Mesh param, Entity entity, MessageQueue *sender = nullptr);
 
 	MessageQueue *sender;
-	MeshAsset param;
+	Entity entity;
+	Mesh param;
 };

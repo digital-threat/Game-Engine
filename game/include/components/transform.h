@@ -5,7 +5,7 @@
 
 struct Transform
 {
-	glm::vec3 mPosition;
-	glm::quaternion mRotation;
-	float mScale;
+	glm::vec3 position;
+	glm::quat rotation;
+	float scale;
 };

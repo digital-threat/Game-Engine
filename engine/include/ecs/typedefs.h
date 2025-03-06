@@ -5,6 +5,8 @@
 #include <types.h>
 
 typedef std::bitset<MAX_COMPONENTS> Archetype;
-typedef u8 ComponentType;
+typedef u32 ComponentType;
+typedef u32 Entity;
+typedef u32 Component;
 
 

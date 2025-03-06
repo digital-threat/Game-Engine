@@ -564,7 +564,7 @@ void Engine::RenderShadowmap(VkCommandBuffer pCmd)
 
     vkCmdSetScissor(pCmd, 0, 1, &scissor);
 
-    for (auto& model : mApplication->mRenderContext.modelData)
+    for (auto& model : mApplication->mRenderContext.renderObjects)
     {
         ShadowmapPushConstants pushConstants;
 
@@ -642,7 +642,7 @@ void Engine::RenderGeometry(VkCommandBuffer pCmd, FrameData& currentFrame)
 
     vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 0, 1, &sceneSet, 0, nullptr);
 
-    for (auto& model : mApplication->mRenderContext.modelData)
+    for (auto& model : mApplication->mRenderContext.renderObjects)
     {
         GeometryPushConstants pushConstants;
         pushConstants.matrixM = model.transform;

@@ -7,5 +7,7 @@
     <inspection_tool class="CppPassValueParameterByConstReference" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="CppTemplateArgumentsCanBeDeduced" enabled="false" level="HINT" enabled_by_default="false" />
     <inspection_tool class="CppTooWideScopeInitStatement" enabled="false" level="HINT" enabled_by_default="false" />
+    <inspection_tool class="CppUseAuto" enabled="false" level="HINT" enabled_by_default="false" />
+    <inspection_tool class="CppUseStructuredBinding" enabled="false" level="HINT" enabled_by_default="false" />
   </profile>
 </component>

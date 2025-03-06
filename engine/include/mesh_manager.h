@@ -1,8 +1,8 @@
 #pragma once
 
 #include <atomic>
+#include <unordered_map>
 #include <message_queue.h>
-#include <renderer_vk_types.h>
 
 class Engine;
 
@@ -27,11 +27,11 @@ public:
 private:
 	void ProcessMessage(Message *pMessage) override;
 
-	MeshAsset GetMesh(const char* pPath);
-	MeshAsset LoadMesh(const char* pPath);
+	Mesh GetMesh(const char* pPath);
+	Mesh LoadMesh(const char* pPath);
 
 private:
 	Engine& mEngine;
 	static MeshManager* mInstance;
-	std::unordered_map<const char*, MeshAsset> mMeshes;
+	std::unordered_map<const char*, Mesh> mMeshes;
 };

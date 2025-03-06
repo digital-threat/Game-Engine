@@ -1,6 +1,6 @@
 #include <ecs/entity_manager.h>
 #include <ecs/constants.h>
-#include <ecs/entity.h>
+#include <ecs/typedefs.h>
 #include <cassert>
 
 EntityManager::EntityManager()
@@ -13,7 +13,7 @@ EntityManager::EntityManager()
 
 Entity EntityManager::CreateEntity()
 {
-	assert(mEntityCount < MAX_ENTITIES, "Cannot create entity: max entities reached");
+	assert(mEntityCount < MAX_ENTITIES);
 
 	Entity entity = mAvailableEntities.front();
 	mAvailableEntities.pop();
@@ -24,25 +24,25 @@ Entity EntityManager::CreateEntity()
 
 void EntityManager::DestroyEntity(Entity entity)
 {
-	assert(entity.handle < MAX_ENTITIES, "Cannot destroy entity: invalid entity");
+	assert(entity < MAX_ENTITIES);
 
-	mArchetypes[entity.handle].reset();
+	mArchetypes[entity].reset();
 	mAvailableEntities.push(entity);
 	mEntityCount--;
 }
 
 void EntityManager::SetArchetype(Entity entity, Archetype archetype)
 {
-	assert(entity.handle < MAX_ENTITIES, "Cannot set archetype: invalid entity");
+	assert(entity < MAX_ENTITIES);
 
-	mArchetypes[entity.handle] = archetype;
+	mArchetypes[entity] = archetype;
 }
 
 Archetype EntityManager::GetArchetype(Entity entity)
 {
-	assert(entity.handle < MAX_ENTITIES, "Cannot get archetype: invalid entity");
+	assert(entity < MAX_ENTITIES);
 
-	return mArchetypes[entity.handle];
+	return mArchetypes[entity];
 }
 
 void EntityManager::Each(Archetype archetype, std::function<void(Entity entity)> f)

@@ -27,7 +27,7 @@ MeshManager& MeshManager::Get()
 	return *mInstance;
 }
 
-MeshAsset MeshManager::GetMesh(const char* pPath)
+Mesh MeshManager::GetMesh(const char* pPath)
 {
 	auto it = mMeshes.find(pPath);
 	if (it != mMeshes.end())
@@ -35,13 +35,13 @@ MeshAsset MeshManager::GetMesh(const char* pPath)
 		return it->second;
 	}
 
-	return MeshAsset();
+	return Mesh();
 }
 
-MeshAsset MeshManager::LoadMesh(const char* pPath)
+Mesh MeshManager::LoadMesh(const char* pPath)
 {
 	MeshData meshData{};
-	MeshAsset meshAsset{};
+	Mesh meshAsset{};
 
 	std::filesystem::path path = pPath;
 	if (DeserializeMesh(path, meshData))
@@ -75,7 +75,7 @@ void MeshManager::ProcessMessage(Message *pMessage)
 				auto stringMsg = static_cast<StringMessage*>(pMessage);
 				std::string& path = stringMsg->param;
 
-				MeshAsset mesh = GetMesh(path.c_str());
+				Mesh mesh = GetMesh(path.c_str());
 				if (mesh.indexCount == 0)
 				{
 					mesh = LoadMesh(path.c_str());
@@ -88,7 +88,7 @@ void MeshManager::ProcessMessage(Message *pMessage)
 
 				if (stringMsg->sender != nullptr)
 				{
-					MeshMessage* reply = new MeshMessage("MeshLoaded", mesh);
+					MeshMessage* reply = new MeshMessage("MeshLoaded", mesh, stringMsg->entity);
 					stringMsg->sender->QueueMessage(reply);
 				}
 			}

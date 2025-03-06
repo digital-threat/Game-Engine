@@ -9,8 +9,6 @@
 #include <array>
 #include <functional>
 
-struct Entity;
-
 class EntityManager
 {
 public:
@@ -24,5 +22,5 @@ public:
 private:
 	std::queue<Entity> mAvailableEntities;
 	std::array<Archetype, MAX_ENTITIES> mArchetypes;
-	u32 mEntityCount;
+	u32 mEntityCount = 0;
 };

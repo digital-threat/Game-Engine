@@ -1,4 +1,4 @@
-#include "sandbox.h"
+#include <sandbox.h>
 
 #include <iostream>
 #include <filesystem>
@@ -14,11 +14,23 @@
 #include <utility.h>
 #include <collision.h>
 #include <mesh_serialization.h>
+#include <mesh_structs.h>
 #include <obj_loading.h>
+#include <components/renderer.h>
+#include <components/transform.h>
 #include <ecs/coordinator.h>
+
+MySandbox::MySandbox(): mResourceSystem(mCoordinator)
+{
+}
 
 void MySandbox::Awake()
 {
+    mCoordinator.RegisterComponent<Transform>();
+    mCoordinator.RegisterComponent<Renderer>();
+    mCoordinator.RegisterComponent<SphereCollider>();
+    mCoordinator.RegisterComponent<BoxCollider>();
+
     std::filesystem::path path = "assets/meshes/";
     for (const auto &entry : std::filesystem::directory_iterator(path))
     {
@@ -37,10 +49,7 @@ void MySandbox::Update()
 {
     ProcessMessages();
 
-    for (auto entity : mEntityManager.All())
-    {
-        entity->Update();
-    }
+    mResourceSystem.Update();
 
     Ray ray{};
     RayHit hit{};
@@ -60,7 +69,7 @@ void MySandbox::Render()
 {
 	ImGuiApplication();
     ImGuiCamera();
-    ImGuiEntities();
+    //ImGuiEntities();
     ImGuiMaterials();
     ImGuiMainLight();
 
@@ -72,10 +81,10 @@ void MySandbox::Render()
     sceneData.mainLightPos = mMainLightPosition;
     sceneData.mainLightColor = glm::vec4(mMainLightColor, mMainLightIntensity);
     mRenderContext.sceneData = sceneData;
-    mRenderContext.modelData.clear();
+    mRenderContext.renderObjects.clear();
     mRenderContext.lightData.lightCount = 0;
 
-    mRenderSystem.Update(mRenderContext);
+    mRenderSystem.Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, mRenderContext);
 }
 
 void MySandbox::Destroy()
@@ -94,40 +103,40 @@ void MySandbox::ImGuiCamera()
     ImGui::End();
 }
 
-void MySandbox::ImGuiEntities()
-{
-    if (ImGui::Begin("Entities"))
-    {
-        if (mEntityManager.Count() > 0)
-        {
-            Entity* selected = mEntityManager.All()[mCurrentEntity];
-
-            ImGui::SliderInt("Entity Index", &mCurrentEntity,0, mEntityManager.Count() - 1);
-
-            selected->OnGUI();
-
-            ImGui::Separator();
-
-            if (ImGui::Button("Delete Entity"))
-            {
-                mEntityManager.DeleteEntity(selected);
-                if (mEntityManager.Count() > 0)
-                {
-                    mCurrentEntity %= mEntityManager.Count();
-                }
-            }
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("Create Entity"))
-        {
-            mEntityManager.CreateEntity();
-        }
-
-    }
-    ImGui::End();
-}
+// void MySandbox::ImGuiEntities()
+// {
+//     if (ImGui::Begin("Entities"))
+//     {
+//         if (mEntityManager.Count() > 0)
+//         {
+//             Entity* selected = mEntityManager.All()[mCurrentEntity];
+//
+//             ImGui::SliderInt("Entity Index", &mCurrentEntity,0, mEntityManager.Count() - 1);
+//
+//             selected->OnGUI();
+//
+//             ImGui::Separator();
+//
+//             if (ImGui::Button("Delete Entity"))
+//             {
+//                 mEntityManager.DeleteEntity(selected);
+//                 if (mEntityManager.Count() > 0)
+//                 {
+//                     mCurrentEntity %= mEntityManager.Count();
+//                 }
+//             }
+//         }
+//
+//         ImGui::SameLine();
+//
+//         if (ImGui::Button("Create Entity"))
+//         {
+//             mEntityManager.CreateEntity();
+//         }
+//
+//     }
+//     ImGui::End();
+// }
 
 void MySandbox::ImGuiMaterials()
 {
@@ -311,52 +320,43 @@ void MySandbox::LoadDefaultScene()
 
     for (i32 i = 0; i < 3; ++i)
     {
-        Entity &newEntity = mEntityManager.CreateEntity();
-        newEntity.mName = "Default Name";
+        Entity entity = mCoordinator.CreateEntity();
 
-        TransformComponent* transformComponent = new TransformComponent(newEntity);
-        transformComponent->mPosition = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
-        transformComponent->mRotation = glm::vec3();
-        transformComponent->mScale = 1;
-        newEntity.AddComponent(transformComponent);
+        Transform transform;
+        transform.position = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
+        transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+        transform.scale = 1;
+        mCoordinator.AddComponent<Transform>(entity, transform);
 
-        MeshComponent* meshComponent = new MeshComponent(newEntity);
-        meshComponent->mMaterial = crateHandle;
-        newEntity.AddComponent(meshComponent);
+        Renderer renderer;
+        renderer.material = crateHandle;
+        mCoordinator.AddComponent<Renderer>(entity, renderer);
 
-        StringMessage* message = new StringMessage("LoadMesh", "assets/meshes/cube.bin", static_cast<MessageQueue *>(meshComponent));
+        StringMessage* message = new StringMessage("LoadMesh", "assets/meshes/cube.bin", entity, static_cast<MessageQueue *>(&mResourceSystem));
         meshManager.QueueMessage(message);
     }
-
-    Entity &newEntity = mEntityManager.CreateEntity();
-    newEntity.mName = "Light";
-
-    LightComponent* lightComponent = new LightComponent(newEntity);
-    newEntity.AddComponent(lightComponent);
 }
 
 bool MySandbox::Raycast(Ray &ray, RayHit& hit)
 {
-    std::vector<ColliderComponent*> colliders;
-    for (auto entity : mEntityManager.All())
-    {
-        auto collider = static_cast<ColliderComponent*>(entity->GetComponent(ComponentType::SPHERE_COLLIDER));
-        if (collider != nullptr)
-        {
-            colliders.push_back(collider);
-        }
+    auto sphereColliders = mCoordinator.mComponentManager.GetComponentsOfType<SphereCollider>();
+    auto boxColliders = mCoordinator.mComponentManager.GetComponentsOfType<BoxCollider>();
 
-        collider = static_cast<ColliderComponent*>(entity->GetComponent(ComponentType::BOX_COLLIDER));
-        if (collider != nullptr)
+    std::vector<Collision> collisions;
+
+    for (u32 i = 0; i < sphereColliders.mSize; i++)
+    {
+        SphereCollider& c = sphereColliders.mComponentArray[i];
+        if (IntersectRaySphere(ray, hit, c))
         {
-            colliders.push_back(collider);
+            return true;
         }
     }
 
-    for (ColliderComponent* collider : colliders)
+    for (u32 i = 0; i < boxColliders.mSize; i++)
     {
-        Collider& c = collider->GetCollider();
-        if (CheckRayIntersection(ray, hit, c))
+        BoxCollider& c = boxColliders.mComponentArray[i];
+        if (IntersectRayOBB(ray, hit, c))
         {
             return true;
         }

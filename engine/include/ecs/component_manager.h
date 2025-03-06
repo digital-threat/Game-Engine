@@ -1,8 +1,8 @@
 #pragma once
 
-#include <ecs/entity.h>
 #include <ecs/constants.h>
 #include <ecs/component_array.h>
+#include <ecs/typedefs.h>
 
 #include <unordered_map>
 #include <typeinfo>
@@ -21,13 +21,13 @@ public:
 	{
 		std::string name = typeid(T).name();
 
-		assert(!mComponentTypes.contains(name) && "Cannot register a component: component already registered");
-		assert(mNextComponentType < MAX_COMPONENTS && "Cannot register a component: MAX_COMPONENTS already reached");
+		assert(!mComponentTypes.contains(name));
+		assert(mNextComponentType < MAX_COMPONENTS);
 
 		mComponentTypes[name] = mNextComponentType;
 
 		// NOTE(Sergei): Alternatively could preallocate all arrays instead.
-		mComponentArrays.emplace(mNextComponentType, ComponentArray<T>());
+		mComponentArrays[mNextComponentType] = new ComponentArray<T>();
 
 		mNextComponentType++;
 	}
@@ -36,7 +36,7 @@ public:
 	ComponentType GetComponentType()
 	{
 		std::string name = typeid(T).name();
-		assert(mComponentTypes.contains(name) && "Cannot retrieve component type: component not registered");
+		assert(mComponentTypes.contains(name));
 		return mComponentTypes[name];
 	}
 
@@ -44,8 +44,8 @@ public:
 	ComponentArray<T>& GetComponentsOfType()
 	{
 		auto type = GetComponentType<T>();
-		assert(mComponentArrays.contains(type) && "Cannot retrieve component array: component not registered");
-		return mComponentArrays[type];
+		assert(mComponentArrays.contains(type));
+		return *dynamic_cast<ComponentArray<T>*>(mComponentArrays[type]);
 	}
 
 	template<typename T>

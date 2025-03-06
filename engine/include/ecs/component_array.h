@@ -1,8 +1,7 @@
 #pragma once
 
-#include <ecs/entity.h>
+#include <ecs/typedefs.h>
 #include <ecs/constants.h>
-#include <ecs/component.h>
 
 #include <unordered_map>
 #include <array>
@@ -21,8 +20,8 @@ class ComponentArray : public IComponentArray
 public:
 	Component AddComponent(Entity entity, T& component)
 	{
-		assert(!mEntityToIndexMap.contains(entity) && "Cannot add component: entity already has a component of this type");
-		assert(mSize < MAX_ENTITIES && "Cannot add component: max components reached");
+		assert(!mEntityToIndexMap.contains(entity));
+		assert(mSize < MAX_ENTITIES);
 		// TODO(Sergei): Assert entity handle is valid
 
 		Component handle = { mSize };
@@ -38,7 +37,7 @@ public:
 
 	T& GetComponent(Entity entity)
 	{
-		assert(mEntityToIndexMap.contains(entity) && "Cannot get component: invalid entity or entity doesn't have a component of this type");
+		assert(mEntityToIndexMap.contains(entity));
 		// TODO(Sergei): Assert entity handle is valid
 
 		return mComponentArray[mEntityToIndexMap[entity]];
@@ -46,7 +45,7 @@ public:
 
 	void RemoveComponent(Entity entity)
 	{
-		assert(mEntityToIndexMap.contains(entity) && "Cannot remove component: invalid entity or entity doesn't have a component of this type");
+		assert(mEntityToIndexMap.contains(entity));
 		// TODO(Sergei): Assert entity handle is valid
 
 		Component removedElement = mEntityToIndexMap[entity];

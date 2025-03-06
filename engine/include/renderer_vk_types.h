@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vulkan/vulkan_core.h>
-#include <vk_mem_alloc.h>
 #include <glm/glm.hpp>
 
 #include <deque>
@@ -11,8 +10,9 @@
 #include <vector>
 #include <array>
 
-#include "types.h"
-#include "renderer_vk_descriptors.h"
+#include <types.h>
+#include <renderer_vk_descriptors.h>
+#include <vulkan_structs.h>
 
 #define MAX_LIGHTS 8
 
@@ -37,21 +37,7 @@ struct DeletionQueue
 	}
 };
 
-struct Vertex
-{
-	glm::vec3 position;
-	float u;
-	glm::vec3 normal;
-	float v;
 
-	bool operator==(const Vertex& other) const
-	{
-		return position == other.position &&
-			   u == other.u &&
-			   v == other.v &&
-			   normal == other.normal;
-	}
-};
 
 enum class LightType : u8
 {
@@ -66,50 +52,6 @@ struct LightData
 	glm::vec4 color;
 	glm::vec4 spotDirection;
 	glm::vec4 attenuation;
-};
-
-struct VulkanImage
-{
-	VkImage image;
-	VkImageView imageView;
-	VmaAllocation allocation;
-	VkExtent3D extent;
-	VkFormat format;
-};
-
-struct VulkanBuffer
-{
-    VkBuffer buffer;
-    VmaAllocation allocation;
-    VmaAllocationInfo info;
-};
-
-struct MeshBuffers
-{
-	VulkanBuffer indexBuffer;
-	VulkanBuffer vertexBuffer;
-	VkDeviceAddress vertexBufferAddress;
-};
-
-struct Submesh
-{
-	u32 startIndex;
-	size_t count;
-};
-
-struct MeshData
-{
-	std::string name;
-	std::vector<Vertex> vertices;
-	std::vector<u32> indices;
-};
-
-struct MeshAsset
-{
-	std::string name;
-	u32 indexCount;
-	//std::vector<Submesh> submeshes;
-	MeshBuffers meshBuffers;
 };
 
 enum class RenderQueue : u8
@@ -183,7 +125,7 @@ struct Material
 	VkDescriptorSet materialSet;
 };
 
-struct ModelRenderData
+struct RenderObject
 {
 	std::string name;
 	u32 indexCount;
@@ -219,7 +161,7 @@ struct ImmediateData
 
 struct RenderContext
 {
-	std::vector<ModelRenderData> modelData;
+	std::vector<RenderObject> renderObjects;
 	SceneRenderData sceneData;
 	LightRenderData lightData;
 	float renderScale = 1.0f;

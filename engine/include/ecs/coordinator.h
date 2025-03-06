@@ -4,8 +4,6 @@
 #include <ecs/entity_manager.h>
 #include <ecs/component_manager.h>
 
-struct Entity;
-
 class Coordinator
 {
 public:
@@ -20,7 +18,7 @@ public:
 		mComponentManager.EntityDestroyed(entity);
 	}
 
-	void EntityManager::Each(Archetype archetype, std::function<void(Entity entity)> f)
+	void Each(Archetype archetype, std::function<void(Entity entity)> f)
 	{
 		mEntityManager.Each(archetype, f);
 	}

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <fstream>
-#include <renderer_vk_types.h>
+#include <mesh_structs.h>
 
 bool SerializeMesh(const MeshData &meshData, std::filesystem::path &path);
 

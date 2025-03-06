@@ -1,9 +1,11 @@
 #pragma once
 
+class EntityManager;
+class ComponentManager;
 struct RenderContext;
 
 class RenderSystem
 {
 public:
-	void Update(RenderContext& renderContext);
+	void Update(EntityManager& entityManager, ComponentManager& componentManager, RenderContext &context);
 };
