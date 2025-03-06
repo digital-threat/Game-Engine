@@ -65,8 +65,6 @@ public:
     VmaAllocator mAllocator{};
 
     vkb::Instance mVkbInstance;
-    vkb::PhysicalDevice mVkbPhysicalDevice;
-    vkb::Device mVkbDevice;
     vkb::Swapchain mVkbSwapchain;
 
     VkInstance mInstance = VK_NULL_HANDLE;
@@ -75,11 +73,13 @@ public:
     VkPhysicalDevice mPhysicalDevice = VK_NULL_HANDLE;
     VkDevice mDevice = VK_NULL_HANDLE;
 
-    FrameData mFrames[MAX_FRAMES_IN_FLIGHT]{};
-    u32 mCurrentFrame = 0;
+    // Immediate
+    ImmediateData mImmediate{};
 
     VkQueue mGraphicsQueue = VK_NULL_HANDLE;
     VkQueue mPresentQueue = VK_NULL_HANDLE;
+    u32 mGraphicsQueueIndex;
+    u32 mPresentQueueIndex;
 
     std::vector<VkImage> mSwapchainImages;
     std::vector<VkImageView> mSwapchainImageViews;
@@ -116,9 +116,6 @@ public:
     VkPipelineLayout mShadowmapPipelineLayout = VK_NULL_HANDLE;
     VkPipeline mShadowmapPipeline = VK_NULL_HANDLE;
 
-    // Immediate
-    ImmediateData mImmediate;
-
     Application* mApplication;
 
 public:
@@ -131,10 +128,12 @@ public:
 
     void Run()
     {
+        FrameData frames[MAX_FRAMES_IN_FLIGHT]{};
+
         InitWindow();
-        InitVulkan();
+        InitVulkan(frames);
         InitImGui();
-        MainLoop();
+        MainLoop(frames);
         Cleanup();
     }
 
@@ -151,24 +150,26 @@ private:
         glfwSetFramebufferSizeCallback(window, FramebufferResizeCallback);
     }
 
-    void InitVulkan()
+    void InitVulkan(FrameData* frames)
     {
         CreateInstance();
         CreateSurface();
-        SelectPhysicalDevice();
-        CreateDevice();
-        GetQueues();
+        auto vkbPhysicalDevice = SelectPhysicalDevice();
+        auto vkbDevice = CreateDevice(vkbPhysicalDevice);
+        GetQueues(vkbDevice);
         CreateAllocator();
         CreateSwapchain(WIDTH, HEIGHT);
-        InitSyncObjects();
-        CreateCommandObjects();
-        InitDescriptors();
-        InitBuffers();
+        InitSyncObjects(frames);
+        CreateCommandObjects(vkbDevice, frames);
+        InitDescriptors(frames);
+        InitBuffers(frames);
         InitializePipelines();
     }
 
-    void MainLoop()
+    void MainLoop(FrameData* frames)
     {
+        u32 currentFrame = 0;
+
         MeshManager &meshManger = MeshManager::Get();
         std::atomic<bool> cancellationToken;
         std::thread meshManagerThread(&MeshManager::Update, &meshManger, std::ref(cancellationToken));
@@ -176,7 +177,7 @@ private:
         TextureManager::Get().Awake();
         mApplication->Awake();
 
-        double lastTime;
+        double lastTime = 0;
 
         while (!glfwWindowShouldClose(window))
         {
@@ -200,7 +201,8 @@ private:
 
             mApplication->Render();
             ImGui::Render();
-            Render();
+            Render(frames[currentFrame % MAX_FRAMES_IN_FLIGHT]);
+            currentFrame++;
         }
 
         cancellationToken = true;
@@ -220,31 +222,31 @@ private:
 
     void CreateInstance();
     void CreateSurface();
-    void SelectPhysicalDevice();
-    void CreateDevice();
-    void GetQueues();
+    vkb::PhysicalDevice SelectPhysicalDevice();
+    vkb::Device CreateDevice(vkb::PhysicalDevice& vkbPhysicalDevice);
+    void GetQueues(vkb::Device& device);
     void CreateAllocator();
     void CreateSwapchain(u32 width, u32 height);
-    void CreateCommandObjects();
-    void InitSyncObjects();
+    void CreateCommandObjects(vkb::Device& device, FrameData* frames);
+    void InitSyncObjects(FrameData* frames);
 
     // Descriptors
-    void InitDescriptors();
+    void InitDescriptors(FrameData* frames);
     void InitGlobalDescriptorAllocator();
-    void InitFrameDescriptorAllocators();
+    void InitFrameDescriptorAllocators(FrameData* frames);
     void InitBackgroundDescriptorLayout();
     void InitSceneDescriptorLayout();
     void InitMaterialDescriptorLayout();
 
     // Buffers
-    void InitBuffers();
+    void InitBuffers(FrameData* frames);
 
     // Drawing
-    void Render();
+    void Render(FrameData& currentFrame);
     void RenderBackground(VkCommandBuffer pCmd);
     void RenderImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView);
     void RenderShadowmap(VkCommandBuffer pCmd);
-    void RenderGeometry(VkCommandBuffer pCmd);
+    void RenderGeometry(VkCommandBuffer pCmd, FrameData& currentFrame);
 
     // Pipelines
     void InitializePipelines();
@@ -255,8 +257,6 @@ private:
     // ImGui
     void InitImGui();
 
-    FrameData& GetCurrentFrame() { return mFrames[mCurrentFrame % MAX_FRAMES_IN_FLIGHT]; }
-
     static void FramebufferResizeCallback(GLFWwindow* window, int width, int height)
     {
         auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
@@ -265,10 +265,4 @@ private:
 
 public:
     MeshBuffers UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVertices);
-
-private:
-    // Old
-    void copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height);
-    VkCommandBuffer BeginSingleTimeCommands();
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 };
