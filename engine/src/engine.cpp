@@ -118,7 +118,7 @@ void Engine::CreateSurface()
     }
 }
 
-void Engine::SelectPhysicalDevice()
+vkb::PhysicalDevice Engine::SelectPhysicalDevice()
 {
     VkPhysicalDeviceFeatures features{};
     features.samplerAnisotropy = VK_TRUE;
@@ -147,13 +147,14 @@ void Engine::SelectPhysicalDevice()
         throw std::runtime_error("Failed to select physical device. Error: " + physicalDevice.error().message() + "\n");
     }
 
-    mVkbPhysicalDevice = physicalDevice.value();
-    mPhysicalDevice = mVkbPhysicalDevice.physical_device;
+    mPhysicalDevice = physicalDevice.value().physical_device;
+
+    return physicalDevice.value();
 }
 
-void Engine::CreateDevice()
+vkb::Device Engine::CreateDevice(vkb::PhysicalDevice& vkbPhysicalDevice)
 {
-    vkb::DeviceBuilder builder{mVkbPhysicalDevice};
+    vkb::DeviceBuilder builder{ vkbPhysicalDevice };
 
     auto device = builder.build();
 
@@ -162,13 +163,14 @@ void Engine::CreateDevice()
         throw std::runtime_error("Failed to create device. Error: " + device.error().message() + "\n");
     }
 
-    mVkbDevice = device.value();
-    mDevice = mVkbDevice.device;
+    mDevice = device.value().device;
+
+    return device.value();
 }
 
-void Engine::GetQueues()
+void Engine::GetQueues(vkb::Device& device)
 {
-    auto graphicsQueue = mVkbDevice.get_queue(vkb::QueueType::graphics);
+    auto graphicsQueue = device.get_queue(vkb::QueueType::graphics);
 
     if (!graphicsQueue)
     {
@@ -176,8 +178,9 @@ void Engine::GetQueues()
     }
 
     mGraphicsQueue = graphicsQueue.value();
+    mGraphicsQueueIndex = device.get_queue_index(vkb::QueueType::graphics).value();
 
-    auto presentQueue = mVkbDevice.get_queue(vkb::QueueType::present);
+    auto presentQueue = device.get_queue(vkb::QueueType::present);
 
     if (!presentQueue)
     {
@@ -185,6 +188,7 @@ void Engine::GetQueues()
     }
 
     mPresentQueue = presentQueue.value();
+    mPresentQueueIndex = device.get_queue_index(vkb::QueueType::present).value();
 }
 
 void Engine::CreateAllocator()
@@ -199,7 +203,7 @@ void Engine::CreateAllocator()
 
 void Engine::CreateSwapchain(u32 width, u32 height)
 {
-    vkb::SwapchainBuilder builder{mVkbDevice};
+    vkb::SwapchainBuilder builder{ mPhysicalDevice, mDevice, mSurface, mGraphicsQueueIndex, mPresentQueueIndex };
     builder.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR);
     builder.set_desired_extent(width, height);
     builder.set_old_swapchain(mVkbSwapchain);
@@ -278,9 +282,9 @@ void Engine::InitializePipelines()
     InitializeShadowmapPipeline();
 }
 
-void Engine::CreateCommandObjects()
+void Engine::CreateCommandObjects(vkb::Device& device, FrameData* frames)
 {
-    vkb::Result<u32> graphicsQueueIndex = mVkbDevice.get_queue_index(vkb::QueueType::graphics);
+    vkb::Result<u32> graphicsQueueIndex = device.get_queue_index(vkb::QueueType::graphics);
 
     if (!graphicsQueueIndex)
     {
@@ -292,14 +296,14 @@ void Engine::CreateCommandObjects()
     // Per frame
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-        if (vkCreateCommandPool(mDevice, &poolInfo, nullptr, &mFrames[i].commandPool) != VK_SUCCESS)
+        if (vkCreateCommandPool(mDevice, &poolInfo, nullptr, &frames[i].commandPool) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create command pool.");
         }
 
-        VkCommandBufferAllocateInfo allocInfo = CommandBufferAllocateInfo(mFrames[i].commandPool, 1);
+        VkCommandBufferAllocateInfo allocInfo = CommandBufferAllocateInfo(frames[i].commandPool, 1);
 
-        if (vkAllocateCommandBuffers(mDevice, &allocInfo, &mFrames[i].mainCommandBuffer) != VK_SUCCESS)
+        if (vkAllocateCommandBuffers(mDevice, &allocInfo, &frames[i].mainCommandBuffer) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to allocate command buffers.");
         }
@@ -328,7 +332,7 @@ void Engine::InitGlobalDescriptorAllocator()
     mGlobalDescriptorAllocator.InitializePool(mDevice, 10, sizes);
 }
 
-void Engine::InitFrameDescriptorAllocators()
+void Engine::InitFrameDescriptorAllocators(FrameData* frames)
 {
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -340,8 +344,8 @@ void Engine::InitFrameDescriptorAllocators()
             { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4 },
         };
 
-        mFrames[i].descriptorAllocator = DescriptorAllocator{};
-        mFrames[i].descriptorAllocator.InitializePool(mDevice, 1000, sizes);
+        frames[i].descriptorAllocator = DescriptorAllocator{};
+        frames[i].descriptorAllocator.InitializePool(mDevice, 1000, sizes);
     }
 }
 
@@ -369,10 +373,10 @@ void Engine::InitMaterialDescriptorLayout()
     mMaterialDescriptorLayout = builder.Build(mDevice, VK_SHADER_STAGE_FRAGMENT_BIT);
 }
 
-void Engine::InitDescriptors()
+void Engine::InitDescriptors(FrameData* frames)
 {
     InitGlobalDescriptorAllocator();
-    InitFrameDescriptorAllocators();
+    InitFrameDescriptorAllocators(frames);
 
     InitBackgroundDescriptorLayout();
     InitSceneDescriptorLayout();
@@ -385,15 +389,15 @@ void Engine::InitDescriptors()
     writer.UpdateSet(mDevice, mBackground.descriptorSet);
 }
 
-void Engine::InitBuffers()
+void Engine::InitBuffers(FrameData* frames)
 {
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-         mFrames[i].sceneDataBuffer = CreateBuffer(mAllocator, sizeof(SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+        frames[i].sceneDataBuffer = CreateBuffer(mAllocator, sizeof(SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
     }
 }
 
-void Engine::InitSyncObjects()
+void Engine::InitSyncObjects(FrameData* frames)
 {
     VkFenceCreateInfo fenceInfo = FenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
     VkSemaphoreCreateInfo semaphoreInfo = SemaphoreCreateInfo();
@@ -401,9 +405,9 @@ void Engine::InitSyncObjects()
     // Per frame
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-        if (vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &mFrames[i].swapchainSemaphore) != VK_SUCCESS ||
-            vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &mFrames[i].renderSemaphore) != VK_SUCCESS ||
-            vkCreateFence(mDevice, &fenceInfo, nullptr, &mFrames[i].renderFence) != VK_SUCCESS)
+        if (vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &frames[i].swapchainSemaphore) != VK_SUCCESS ||
+            vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &frames[i].renderSemaphore) != VK_SUCCESS ||
+            vkCreateFence(mDevice, &fenceInfo, nullptr, &frames[i].renderFence) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create synchronization objects.");
         }
@@ -416,14 +420,14 @@ void Engine::InitSyncObjects()
     }
 }
 
-void Engine::Render()
+void Engine::Render(FrameData& currentFrame)
 {
-    vkWaitForFences(mDevice, 1, &GetCurrentFrame().renderFence, VK_TRUE, UINT64_MAX);
-    GetCurrentFrame().deletionQueue.Flush();
-    GetCurrentFrame().descriptorAllocator.ClearDescriptors(mDevice);
+    vkWaitForFences(mDevice, 1, &currentFrame.renderFence, VK_TRUE, UINT64_MAX);
+    currentFrame.deletionQueue.Flush();
+    currentFrame.descriptorAllocator.ClearDescriptors(mDevice);
 
     u32 imageIndex;
-    VkResult result = vkAcquireNextImageKHR(mDevice, mVkbSwapchain, UINT64_MAX, GetCurrentFrame().swapchainSemaphore, VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkAcquireNextImageKHR(mDevice, mVkbSwapchain, UINT64_MAX, currentFrame.swapchainSemaphore, VK_NULL_HANDLE, &imageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         mResizeRequested = true;
@@ -437,10 +441,10 @@ void Engine::Render()
     mRenderExtent.width = std::min(mVkbSwapchain.extent.width, mColorTarget.extent.width) * mApplication->mRenderContext.renderScale;
     mRenderExtent.height = std::min(mVkbSwapchain.extent.height, mColorTarget.extent.height) * mApplication->mRenderContext.renderScale;
 
-    vkResetFences(mDevice, 1, &GetCurrentFrame().renderFence);
-    vkResetCommandBuffer(GetCurrentFrame().mainCommandBuffer, 0);
+    vkResetFences(mDevice, 1, &currentFrame.renderFence);
+    vkResetCommandBuffer(currentFrame.mainCommandBuffer, 0);
 
-    VkCommandBuffer cmd = GetCurrentFrame().mainCommandBuffer;
+    VkCommandBuffer cmd = currentFrame.mainCommandBuffer;
 
     VkCommandBufferBeginInfo beginInfo = CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     if (vkBeginCommandBuffer(cmd, &beginInfo) != VK_SUCCESS)
@@ -459,7 +463,7 @@ void Engine::Render()
     TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     TransitionImageLayout(cmd, mDepthTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-    RenderGeometry(cmd);
+    RenderGeometry(cmd, currentFrame);
 
     TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     TransitionImageLayout(cmd, mSwapchainImages[imageIndex],VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -479,12 +483,12 @@ void Engine::Render()
 
     VkCommandBufferSubmitInfo cmdSubmitInfo = CommandBufferSubmitInfo(cmd);
 
-    VkSemaphoreSubmitInfo waitInfo = SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, GetCurrentFrame().swapchainSemaphore);
-    VkSemaphoreSubmitInfo signalInfo = SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, GetCurrentFrame().renderSemaphore);
+    VkSemaphoreSubmitInfo waitInfo = SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, currentFrame.swapchainSemaphore);
+    VkSemaphoreSubmitInfo signalInfo = SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, currentFrame.renderSemaphore);
 
     VkSubmitInfo2 submitInfo = SubmitInfo(&cmdSubmitInfo, &signalInfo, &waitInfo);
 
-    if (vkQueueSubmit2(mGraphicsQueue, 1, &submitInfo, GetCurrentFrame().renderFence) != VK_SUCCESS)
+    if (vkQueueSubmit2(mGraphicsQueue, 1, &submitInfo, currentFrame.renderFence) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit draw command buffer.");
     }
@@ -492,7 +496,7 @@ void Engine::Render()
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = &GetCurrentFrame().renderSemaphore;
+    presentInfo.pWaitSemaphores = &currentFrame.renderSemaphore;
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &mVkbSwapchain.swapchain;
     presentInfo.pImageIndices = &imageIndex;
@@ -507,8 +511,6 @@ void Engine::Render()
     {
         throw std::runtime_error("failed to present swap chain image!");
     }
-
-    mCurrentFrame++;
 }
 
 void Engine::RenderBackground(VkCommandBuffer pCmd)
@@ -582,7 +584,7 @@ void Engine::RenderShadowmap(VkCommandBuffer pCmd)
     vkCmdEndRendering(pCmd);
 }
 
-void Engine::RenderGeometry(VkCommandBuffer pCmd)
+void Engine::RenderGeometry(VkCommandBuffer pCmd, FrameData& currentFrame)
 {
     VkRenderingAttachmentInfo colorAttachment = ColorAttachmentInfo(mColorTarget.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingAttachmentInfo depthAttachment = DepthAttachmentInfo(mDepthTarget.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
@@ -628,13 +630,13 @@ void Engine::RenderGeometry(VkCommandBuffer pCmd)
     mScene.lightCount =  mApplication->mRenderContext.lightData.lightCount;
     mScene.cameraPos = glm::vec4(sceneRenderData.cameraPos, 0.0f);
 
-    SceneData* sceneUniformData = static_cast<SceneData*>(GetCurrentFrame().sceneDataBuffer.info.pMappedData);
+    SceneData* sceneUniformData = static_cast<SceneData*>(currentFrame.sceneDataBuffer.info.pMappedData);
     *sceneUniformData = mScene;
 
-    VkDescriptorSet sceneSet = GetCurrentFrame().descriptorAllocator.Allocate(mDevice, mSceneDescriptorLayout);
+    VkDescriptorSet sceneSet = currentFrame.descriptorAllocator.Allocate(mDevice, mSceneDescriptorLayout);
 
     DescriptorWriter writer;
-    writer.WriteBuffer(0, GetCurrentFrame().sceneDataBuffer.buffer, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    writer.WriteBuffer(0, currentFrame.sceneDataBuffer.buffer, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     writer.WriteImage(1, mShadowmapTarget.imageView, TextureManager::Get().GetSampler("NEAREST_MIPMAP_LINEAR"), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     writer.UpdateSet(mDevice, sceneSet);
 
@@ -827,54 +829,4 @@ MeshBuffers Engine::UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVerti
     DestroyBuffer(mAllocator, stagingBuffer);
 
     return newSurface;
-}
-
-void Engine::copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height)
-{
-    VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
-
-    VkBufferImageCopy region{};
-    region.bufferOffset = 0;
-    region.bufferRowLength = 0;
-    region.bufferImageHeight = 0;
-
-    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = 1;
-
-    region.imageOffset = {0, 0, 0};
-    region.imageExtent = {width, height, 1};
-
-    vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-    endSingleTimeCommands(commandBuffer);
-}
-
-VkCommandBuffer Engine::BeginSingleTimeCommands()
-{
-    VkCommandBuffer cmd;
-
-    VkCommandBufferAllocateInfo allocInfo = CommandBufferAllocateInfo(GetCurrentFrame().commandPool, 1);
-    vkAllocateCommandBuffers(mDevice, &allocInfo, &cmd);
-
-    VkCommandBufferBeginInfo beginInfo = CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-    vkBeginCommandBuffer(cmd, &beginInfo);
-
-    return cmd;
-}
-
-void Engine::endSingleTimeCommands(VkCommandBuffer commandBuffer)
-{
-    vkEndCommandBuffer(commandBuffer);
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-
-    vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(mGraphicsQueue);
-
-    vkFreeCommandBuffers(mDevice, GetCurrentFrame().commandPool, 1, &commandBuffer);
 }
