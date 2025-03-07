@@ -329,6 +329,7 @@ void MySandbox::LoadDefaultScene()
         mCoordinator.AddComponent<Transform>(entity, transform);
 
         Renderer renderer;
+        renderer.mesh = nullptr;
         renderer.material = crateHandle;
         mCoordinator.AddComponent<Renderer>(entity, renderer);
 

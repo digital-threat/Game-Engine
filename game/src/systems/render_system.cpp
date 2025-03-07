@@ -19,8 +19,8 @@ void RenderSystem::Update(EntityManager& entityManager, ComponentManager& compon
 
 	auto func = [&](Entity entity)
 	{
-		Transform transform = componentManager.GetComponent<Transform>(entity);
-		Renderer renderer = componentManager.GetComponent<Renderer>(entity);
+		Transform& transform = componentManager.GetComponent<Transform>(entity);
+		Renderer& renderer = componentManager.GetComponent<Renderer>(entity);
 
 		RenderObject renderObject;
 
@@ -30,14 +30,23 @@ void RenderSystem::Update(EntityManager& entityManager, ComponentManager& compon
 
 		renderObject.transform = matrixM;
 
-		assert(renderer.mesh != nullptr);
-		assert(renderer.material.index != -1);
+		//assert(renderer.mesh.indexCount != 0);
+		//assert(renderer.material.index != -1);
 
-		renderObject.indexBuffer = renderer.mesh->meshBuffers.indexBuffer;
-		renderObject.indexCount = renderer.mesh->indexCount;
-		renderObject.vertexBuffer = renderer.mesh->meshBuffers.vertexBuffer;
-		renderObject.vertexBufferAddress = renderer.mesh->meshBuffers.vertexBufferAddress;
-		renderObject.materialSet = MaterialManager::Get().GetDescriptorSet(renderer.material);
+		if (renderer.mesh != nullptr)
+		{
+			renderObject.indexBuffer = renderer.mesh->meshBuffers.indexBuffer;
+			renderObject.indexCount = renderer.mesh->indexCount;
+			renderObject.vertexBuffer = renderer.mesh->meshBuffers.vertexBuffer;
+			renderObject.vertexBufferAddress = renderer.mesh->meshBuffers.vertexBufferAddress;
+
+			if (renderer.material.index != -1)
+			{
+				renderObject.materialSet = MaterialManager::Get().GetDescriptorSet(renderer.material);
+
+				context.renderObjects.emplace_back(renderObject);
+			}
+		}
 	};
 
 	entityManager.Each(archetype, func);
