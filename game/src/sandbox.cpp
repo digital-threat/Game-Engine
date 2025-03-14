@@ -18,18 +18,23 @@
 #include <obj_loading.h>
 #include <components/renderer.h>
 #include <components/transform.h>
+#include <components/camera.h>
 #include <ecs/coordinator.h>
+#include <systems/camera_system.h>
+#include <systems/physics_system.h>
+#include <systems/render_system.h>
 
-MySandbox::MySandbox(): mResourceSystem(mCoordinator)
+Sandbox::Sandbox(): mResourceSystem(mCoordinator)
 {
 }
 
-void MySandbox::Awake()
+void Sandbox::Awake()
 {
     mCoordinator.RegisterComponent<Transform>();
     mCoordinator.RegisterComponent<Renderer>();
     mCoordinator.RegisterComponent<SphereCollider>();
     mCoordinator.RegisterComponent<BoxCollider>();
+    mCoordinator.RegisterComponent<Camera>();
 
     std::filesystem::path path = "assets/meshes/";
     for (const auto &entry : std::filesystem::directory_iterator(path))
@@ -45,11 +50,13 @@ void MySandbox::Awake()
     LoadDefaultScene();
 }
 
-void MySandbox::Update()
+void Sandbox::Update()
 {
     ProcessMessages();
 
     mResourceSystem.Update();
+
+    CameraSystem::Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, mRenderContext.sceneData);
 
     Ray ray{};
     RayHit hit{};
@@ -57,50 +64,35 @@ void MySandbox::Update()
     Raycast(ray, hit);
 }
 
-void MySandbox::PhysicsUpdate(f64 deltaTime)
+void Sandbox::PhysicsUpdate(f64 deltaTime)
 {
     if (isSimulating)
     {
-        mPhysicsSystem.Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, deltaTime);
+        PhysicsSystem::Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, deltaTime);
     }
 }
 
-void MySandbox::Render()
+void Sandbox::Render()
 {
+    CameraSystem::OnGUI(mCoordinator.mEntityManager, mCoordinator.mComponentManager);
+
 	ImGuiApplication();
-    ImGuiCamera();
     //ImGuiEntities();
     ImGuiMaterials();
     ImGuiMainLight();
 
-    SceneRenderData sceneData{};
-    sceneData.cameraPos = mCamera.position;
-    sceneData.cameraLookAt = mCamera.lookAt;
-    sceneData.cameraFOV = mCamera.fov;
-    sceneData.ambientColor = glm::vec3(0.05f, 0.05f, 0.05f);
-    sceneData.mainLightPos = mMainLightPosition;
-    sceneData.mainLightColor = glm::vec4(mMainLightColor, mMainLightIntensity);
-    mRenderContext.sceneData = sceneData;
+    mRenderContext.sceneData.ambientColor = glm::vec3(0.05f, 0.05f, 0.05f);
+    mRenderContext.sceneData.mainLightPos = mMainLightPosition;
+    mRenderContext.sceneData.mainLightColor = glm::vec4(mMainLightColor, mMainLightIntensity);
     mRenderContext.renderObjects.clear();
     mRenderContext.lightData.lightCount = 0;
 
-    mRenderSystem.Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, mRenderContext);
+    RenderSystem::Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, mRenderContext);
 }
 
-void MySandbox::Destroy()
+void Sandbox::Destroy()
 {
 	
-}
-
-void MySandbox::ImGuiCamera()
-{
-    if (ImGui::Begin("Camera"))
-    {
-        ImGui::InputFloat3("Position:", reinterpret_cast<float *>(&mCamera.position));
-        ImGui::InputFloat3("Look At:", reinterpret_cast<float *>(&mCamera.lookAt));
-        ImGui::InputFloat("FOV", &mCamera.fov);
-    }
-    ImGui::End();
 }
 
 // void MySandbox::ImGuiEntities()
@@ -138,7 +130,7 @@ void MySandbox::ImGuiCamera()
 //     ImGui::End();
 // }
 
-void MySandbox::ImGuiMaterials()
+void Sandbox::ImGuiMaterials()
 {
     static int currentMaterial = 0;
     if (ImGui::Begin("Materials"))
@@ -252,7 +244,7 @@ void MySandbox::ImGuiMaterials()
     ImGui::End();
 }
 
-void MySandbox::ImGuiMainLight()
+void Sandbox::ImGuiMainLight()
 {
     if (ImGui::Begin("Main Light"))
     {
@@ -263,7 +255,7 @@ void MySandbox::ImGuiMainLight()
     ImGui::End();
 }
 
-void MySandbox::ImGuiApplication()
+void Sandbox::ImGuiApplication()
 {
     if (ImGui::Begin("Application"))
     {
@@ -272,7 +264,7 @@ void MySandbox::ImGuiApplication()
     ImGui::End();
 }
 
-void MySandbox::LoadDefaultScene()
+void Sandbox::LoadDefaultScene()
 {
     TextureManager& textureManager = TextureManager::Get();
     VulkanImage* boxAlbedo = textureManager.GetTexture("assets/textures/container2.png");
@@ -336,9 +328,17 @@ void MySandbox::LoadDefaultScene()
         StringMessage* message = new StringMessage("LoadMesh", "assets/meshes/cube.bin", entity, static_cast<MessageQueue *>(&mResourceSystem));
         meshManager.QueueMessage(message);
     }
+
+    Entity cameraEntity = mCoordinator.CreateEntity();
+
+    Camera camera;
+    camera.position = glm::vec3(0.0f, 2.0f, -3.0f);
+    camera.lookAt = glm::vec3(0.0f, 0.0f, 0.0f);
+    camera.fov = 60.0f;
+    mCoordinator.AddComponent<Camera>(cameraEntity, camera);
 }
 
-bool MySandbox::Raycast(Ray &ray, RayHit& hit)
+bool Sandbox::Raycast(Ray &ray, RayHit& hit)
 {
     auto sphereColliders = mCoordinator.mComponentManager.GetComponentsOfType<SphereCollider>();
     auto boxColliders = mCoordinator.mComponentManager.GetComponentsOfType<BoxCollider>();
@@ -366,7 +366,7 @@ bool MySandbox::Raycast(Ray &ray, RayHit& hit)
     return false;
 }
 
-void MySandbox::ProcessMessage(Message *pMessage)
+void Sandbox::ProcessMessage(Message *pMessage)
 {
     std::string& message = pMessage->message;
     switch(pMessage->type)

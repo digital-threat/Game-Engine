@@ -4,7 +4,7 @@
 
 int main()
 {
-	Application* application = new MySandbox();
+	Application* application = new Sandbox();
 	Engine* engine = new Engine(application);
 
 	try

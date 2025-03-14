@@ -6,5 +6,5 @@ class EntityManager;
 class PhysicsSystem
 {
 public:
-	void Update(EntityManager& entityManager, ComponentManager& componentManager, float deltaTime);
+	static void Update(EntityManager& entityManager, ComponentManager& componentManager, float deltaTime);
 };

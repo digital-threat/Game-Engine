@@ -12,8 +12,8 @@
 void RenderSystem::Update(EntityManager& entityManager, ComponentManager& componentManager, RenderContext &context)
 {
 	Archetype archetype;
-	archetype |= Archetype(componentManager.GetComponentType<Transform>());
-	archetype |= Archetype(componentManager.GetComponentType<Renderer>());
+	archetype.set(componentManager.GetComponentType<Transform>());
+	archetype.set(componentManager.GetComponentType<Renderer>());
 
 	context.renderObjects.clear();
 

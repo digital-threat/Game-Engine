@@ -7,5 +7,5 @@ struct RenderContext;
 class RenderSystem
 {
 public:
-	void Update(EntityManager& entityManager, ComponentManager& componentManager, RenderContext &context);
+	static void Update(EntityManager& entityManager, ComponentManager& componentManager, RenderContext &context);
 };
