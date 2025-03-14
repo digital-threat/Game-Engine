@@ -23,6 +23,7 @@
 #include <thread>
 
 #include <application.h>
+#include <input.h>
 #include <material_manager.h>
 #include <mesh_manager.h>
 #include <renderer_vk_images.h>
@@ -61,7 +62,7 @@ public:
     bool mResizeRequested = false;
     bool mFramebufferResized = false;
 
-    GLFWwindow *window = nullptr;
+    GLFWwindow *mWindow = nullptr;
 
     VmaAllocator mAllocator{};
 
@@ -132,6 +133,7 @@ public:
         FrameData frames[MAX_FRAMES_IN_FLIGHT]{};
 
         InitWindow();
+        Input::Initialize(mWindow);
         InitVulkan(frames);
         InitImGui();
         MainLoop(frames);
@@ -146,9 +148,9 @@ private:
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-        window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-        glfwSetWindowUserPointer(window, this);
-        glfwSetFramebufferSizeCallback(window, FramebufferResizeCallback);
+        mWindow = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+        glfwSetWindowUserPointer(mWindow, this);
+        glfwSetFramebufferSizeCallback(mWindow, FramebufferResizeCallback);
     }
 
     void InitVulkan(FrameData* frames)
@@ -180,7 +182,7 @@ private:
 
         double lastTime = 0;
 
-        while (!glfwWindowShouldClose(window))
+        while (!glfwWindowShouldClose(mWindow))
         {
             double currentTime = glfwGetTime();
             double deltaTime = currentTime - lastTime;
@@ -193,7 +195,7 @@ private:
                 ResizeSwapchain();
             }
 
-            mApplication->Update();
+            mApplication->Update(deltaTime);
             mApplication->PhysicsUpdate(deltaTime);
 
             ImGui_ImplVulkan_NewFrame();

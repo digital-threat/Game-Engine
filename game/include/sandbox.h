@@ -22,7 +22,7 @@ private:
 public:
 	Sandbox();
 	void Awake() override;
-	void Update() override;
+	void Update(f64 deltaTime) override;
 	void PhysicsUpdate(f64 deltaTime) override;
 	void Render() override;
 	void Destroy() override;

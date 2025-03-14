@@ -50,13 +50,13 @@ void Sandbox::Awake()
     LoadDefaultScene();
 }
 
-void Sandbox::Update()
+void Sandbox::Update(f64 deltaTime)
 {
     ProcessMessages();
 
     mResourceSystem.Update();
 
-    CameraSystem::Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, mRenderContext.sceneData);
+    CameraSystem::Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, mRenderContext.sceneData, deltaTime);
 
     Ray ray{};
     RayHit hit{};

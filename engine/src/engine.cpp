@@ -47,7 +47,7 @@ void Engine::InitImGui()
 
     ImGui::StyleColorsDark();
 
-    ImGui_ImplGlfw_InitForVulkan(window, true);
+    ImGui_ImplGlfw_InitForVulkan(mWindow, true);
     ImGui_ImplVulkan_InitInfo initInfo{};
     initInfo.Instance = mInstance;
     initInfo.PhysicalDevice = mPhysicalDevice;
@@ -71,10 +71,10 @@ void Engine::InitImGui()
 void Engine::ResizeSwapchain()
 {
     int width = 0, height = 0;
-    glfwGetFramebufferSize(window, &width, &height);
+    glfwGetFramebufferSize(mWindow, &width, &height);
     while (width == 0 || height == 0)
     {
-        glfwGetFramebufferSize(window, &width, &height);
+        glfwGetFramebufferSize(mWindow, &width, &height);
         glfwWaitEvents();
     }
 
@@ -112,7 +112,7 @@ void Engine::CreateInstance()
 
 void Engine::CreateSurface()
 {
-    if (glfwCreateWindowSurface(mInstance, window, nullptr, &mSurface) != VK_SUCCESS)
+    if (glfwCreateWindowSurface(mInstance, mWindow, nullptr, &mSurface) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create window surface.\n");
     }
