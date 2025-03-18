@@ -3,14 +3,14 @@
 #include <stdexcept>
 #include <chrono>
 #include <cstring>
-#include <renderer_vk_utility.h>
+#include <vk_utility.h>
 #include <vk_mem_alloc.h>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include "renderer_vk_images.h"
-#include "renderer_vk_pipelines.h"
-#include "renderer_vk_structures.h"
-#include "renderer_vk_buffers.h"
+#include <vk_images.h>
+#include <vk_pipelines.h>
+#include <vk_helpers.h>
+#include <vk_buffers.h>
 
 void Engine::InitImGui()
 {
@@ -568,7 +568,7 @@ void Engine::RenderShadowmap(VkCommandBuffer pCmd)
     {
         ShadowmapPushConstants pushConstants;
 
-        glm::vec3 lightPos = mApplication->mRenderContext.sceneData.mainLightPos;
+        glm::vec3 lightPos = mApplication->mRenderContext.scene.mainLightPos;
         glm::mat4 matrixP = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 100.0f, 0.1f);
         glm::mat4 matrixV = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
 
@@ -615,20 +615,21 @@ void Engine::RenderGeometry(VkCommandBuffer pCmd, FrameData& currentFrame)
 
     float aspect = static_cast<float>(mRenderExtent.width) / static_cast<float>(mRenderExtent.height);
 
-    SceneRenderData sceneRenderData = mApplication->mRenderContext.sceneData;
+    SceneRenderData sceneRenderData = mApplication->mRenderContext.scene;
     glm::mat4 mainLightP = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 100.0f, 0.1f);
     glm::mat4 mainLightV = glm::lookAt(sceneRenderData.mainLightPos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
 
-    mScene.matrixV = glm::lookAt(sceneRenderData.cameraPos, sceneRenderData.cameraLookAt, glm::vec3(0.0f, 1.0f, 0.0f));
-    mScene.matrixP = glm::perspective(glm::radians(sceneRenderData.cameraFOV), aspect, 100.0f, 0.1f);
+    CameraRenderData& camera = mApplication->mRenderContext.camera;
+    mScene.matrixV = glm::lookAt(camera.pos, camera.pos + camera.forward, camera.up);
+    mScene.matrixP = glm::perspective(glm::radians(camera.fov), aspect, 100.0f, 0.1f);
     mScene.matrixVP = mScene.matrixP * mScene.matrixV;
     mScene.mainLightVP = mainLightP * mainLightV;
     mScene.mainLightColor = sceneRenderData.mainLightColor;
     mScene.mainLightDir = glm::normalize(glm::vec4(sceneRenderData.mainLightPos - glm::vec3(0.0f), 1.0f));
     mScene.ambientColor = glm::vec4(sceneRenderData.ambientColor, 1.0f);
-    mScene.lightBuffer = mApplication->mRenderContext.lightData.lightBuffer;
-    mScene.lightCount =  mApplication->mRenderContext.lightData.lightCount;
-    mScene.cameraPos = glm::vec4(sceneRenderData.cameraPos, 0.0f);
+    mScene.lightBuffer = mApplication->mRenderContext.light.lightBuffer;
+    mScene.lightCount =  mApplication->mRenderContext.light.lightCount;
+    mScene.cameraPos = glm::vec4(camera.pos, 0.0f);
 
     SceneData* sceneUniformData = static_cast<SceneData*>(currentFrame.sceneDataBuffer.info.pMappedData);
     *sceneUniformData = mScene;

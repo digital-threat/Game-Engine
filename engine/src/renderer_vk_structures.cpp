@@ -1,4 +1,4 @@
-#include "renderer_vk_structures.h"
+#include <vk_helpers.h>
 
 
 VkCommandPoolCreateInfo CommandPoolCreateInfo(const u32 pQueueFamilyIndex, const VkCommandPoolCreateFlags pFlags)

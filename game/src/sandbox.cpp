@@ -9,7 +9,7 @@
 
 #include <mesh_manager.h>
 #include <material_manager.h>
-#include <renderer_vk_images.h>
+#include <vk_images.h>
 #include <texture_manager.h>
 #include <utility.h>
 #include <collision.h>
@@ -56,7 +56,7 @@ void Sandbox::Update(f64 deltaTime)
 
     mResourceSystem.Update();
 
-    CameraSystem::Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, mRenderContext.sceneData, deltaTime);
+    CameraSystem::Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, mRenderContext.camera, deltaTime);
 
     Ray ray{};
     RayHit hit{};
@@ -81,11 +81,11 @@ void Sandbox::Render()
     ImGuiMaterials();
     ImGuiMainLight();
 
-    mRenderContext.sceneData.ambientColor = glm::vec3(0.05f, 0.05f, 0.05f);
-    mRenderContext.sceneData.mainLightPos = mMainLightPosition;
-    mRenderContext.sceneData.mainLightColor = glm::vec4(mMainLightColor, mMainLightIntensity);
+    mRenderContext.scene.ambientColor = glm::vec3(0.05f, 0.05f, 0.05f);
+    mRenderContext.scene.mainLightPos = mMainLightPosition;
+    mRenderContext.scene.mainLightColor = glm::vec4(mMainLightColor, mMainLightIntensity);
     mRenderContext.renderObjects.clear();
-    mRenderContext.lightData.lightCount = 0;
+    mRenderContext.light.lightCount = 0;
 
     RenderSystem::Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, mRenderContext);
 }
@@ -331,9 +331,11 @@ void Sandbox::LoadDefaultScene()
 
     Entity cameraEntity = mCoordinator.CreateEntity();
 
-    Camera camera;
+    Camera camera{};
     camera.position = glm::vec3(0.0f, 2.0f, -3.0f);
-    camera.lookAt = glm::vec3(0.0f, 0.0f, 0.0f);
+    camera.sensitivity = 0.1f;
+    camera.speed = 1.0f;
+    camera.yaw = 90.0f;
     camera.fov = 60.0f;
     mCoordinator.AddComponent<Camera>(cameraEntity, camera);
 }

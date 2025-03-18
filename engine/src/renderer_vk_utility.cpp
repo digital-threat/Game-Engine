@@ -1,6 +1,5 @@
-#include "renderer_vk_utility.h"
-
-#include <renderer_vk_structures.h>
+#include <vk_utility.h>
+#include <vk_helpers.h>
 
 void ImmediateSubmit(const VkDevice& pDevice, const VkQueue& pQueue, const ImmediateData& pData, std::function<void(VkCommandBuffer cmd)> &&pFunction)
 {

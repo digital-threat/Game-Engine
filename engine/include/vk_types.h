@@ -5,16 +5,13 @@
 
 #include <deque>
 #include <functional>
-#include <handles.h>
 #include <string>
-#include <vector>
 #include <array>
 
 #include <types.h>
-#include <renderer_vk_descriptors.h>
-#include <vulkan_structs.h>
-
-#define MAX_LIGHTS 8
+#include <vk_descriptors.h>
+#include <vk_structs.h>
+#include <lights.h>
 
 // TODO(Sergei): Temporary, replace!
 struct DeletionQueue
@@ -35,23 +32,6 @@ struct DeletionQueue
 
 		deletors.clear();
 	}
-};
-
-
-
-enum class LightType : u8
-{
-	DIRECTIONAL,
-	POINT,
-	SPOT,
-};
-
-struct LightData
-{
-	glm::vec4 position;
-	glm::vec4 color;
-	glm::vec4 spotDirection;
-	glm::vec4 attenuation;
 };
 
 enum class RenderQueue : u8
@@ -107,62 +87,4 @@ struct SceneData
 	glm::vec4 cameraPos;
 	std::array<LightData, MAX_LIGHTS> lightBuffer;
 	u32 lightCount;
-};
-
-struct Texture
-{
-	VkImageView view;
-	VkSampler sampler;
-};
-
-struct Material
-{
-	std::string name;
-	MaterialHandle handle;
-	VkBuffer dataBuffer;
-	float shininess;
-	Texture textures[2];
-	VkDescriptorSet materialSet;
-};
-
-struct RenderObject
-{
-	std::string name;
-	u32 indexCount;
-	VulkanBuffer indexBuffer;
-	VulkanBuffer vertexBuffer;
-	VkDeviceAddress vertexBufferAddress;
-	glm::mat4 transform;
-	VkDescriptorSet materialSet;
-};
-
-struct SceneRenderData
-{
-	glm::vec3 mainLightPos;
-	glm::vec4 mainLightColor;
-	glm::vec3 ambientColor;
-	glm::vec3 cameraPos;
-	glm::vec3 cameraLookAt;
-	float cameraFOV;
-};
-
-struct LightRenderData
-{
-	std::array<LightData, MAX_LIGHTS> lightBuffer;
-	u32 lightCount = 0;
-};
-
-struct ImmediateData
-{
-	VkFence fence = VK_NULL_HANDLE;
-	VkCommandBuffer cmd = VK_NULL_HANDLE;
-	VkCommandPool cmdPool = VK_NULL_HANDLE;
-};
-
-struct RenderContext
-{
-	std::vector<RenderObject> renderObjects;
-	SceneRenderData sceneData;
-	LightRenderData lightData;
-	float renderScale = 1.0f;
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vulkan_structs.h>
+#include <vk_structs.h>
 #include <vertex.h>
 #include <types.h>
 

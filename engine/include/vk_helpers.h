@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan_core.h>
-#include "types.h"
+#include <types.h>
 
 VkCommandPoolCreateInfo CommandPoolCreateInfo(u32 pQueueFamilyIndex, VkCommandPoolCreateFlags pFlags = 0);
 VkCommandBufferAllocateInfo CommandBufferAllocateInfo(VkCommandPool pPool, u32 pCount = 1);

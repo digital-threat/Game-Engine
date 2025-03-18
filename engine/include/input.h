@@ -10,4 +10,8 @@ namespace Input
 	bool GetKeyDown(u32 key);
 	bool GetButtonDown(u32 button);
 	glm::vec2 GetMousePosition();
+	glm::vec2 GetMouseDelta();
+	f32 GetMouseScrollFactor();
+	void HideCursor();
+	void ShowCursor();
 }

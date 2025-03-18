@@ -2,13 +2,13 @@
 
 #include <types.h>
 
+struct CameraRenderData;
 class EntityManager;
 class ComponentManager;
-struct SceneRenderData;
 
 class CameraSystem
 {
 public:
-	static void Update(EntityManager& entityManager, ComponentManager& componentManager, SceneRenderData &context, f32 deltaTime);
+	static void Update(EntityManager& entityManager, ComponentManager& componentManager, CameraRenderData& context, f32 deltaTime);
 	static void OnGUI(EntityManager& entityManager, ComponentManager& componentManager);
 };

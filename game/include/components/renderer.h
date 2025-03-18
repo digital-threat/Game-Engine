@@ -1,6 +1,6 @@
 #pragma once
 
-#include <handles.h>
+#include <material_structs.h>
 
 struct Mesh;
 

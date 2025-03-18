@@ -5,6 +5,10 @@
 struct Camera
 {
 	glm::vec3 position;
-	glm::vec3 lookAt;
+	glm::vec2 prevMousePos;
+	float yaw;
+	float pitch;
+	float speed;
+	float sensitivity;
 	float fov;
 };

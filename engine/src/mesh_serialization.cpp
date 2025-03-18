@@ -1,7 +1,7 @@
 #include <iostream>
 #include <filesystem>
 #include <mesh_serialization.h>
-#include <renderer_vk_types.h>
+#include <mesh_structs.h>
 
 bool SerializeMesh(const MeshData &meshData, std::filesystem::path &path)
 {

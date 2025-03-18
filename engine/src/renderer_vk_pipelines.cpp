@@ -1,11 +1,10 @@
-#include "renderer_vk_pipelines.h"
+#include <vk_pipelines.h>
 
 #include <array>
 
-#include "renderer_vk_structures.h"
-#include "utility.h"
+#include <vk_helpers.h>
+#include <utility.h>
 #include <fstream>
-#include <iostream>
 #include <vector>
 
 void LoadShaderModule(const char *pFilePath, const VkDevice pDevice, VkShaderModule *outShaderModule)

@@ -1,16 +1,25 @@
 #include <systems/camera_system.h>
 #include <imgui.h>
 #include <input.h>
-#include <renderer_vk_types.h>
+#include <iostream>
+#include <render_context.h>
 #include <components/camera.h>
 #include <ecs/component_manager.h>
 #include <ecs/entity_manager.h>
 #include <ecs/typedefs.h>
 
-#include "glm/ext/scalar_constants.hpp"
-
-void CameraSystem::Update(EntityManager& entityManager, ComponentManager& componentManager, SceneRenderData &context, f32 deltaTime)
+void CameraSystem::Update(EntityManager& entityManager, ComponentManager& componentManager, CameraRenderData& context, f32 deltaTime)
 {
+	if (Input::GetButtonDown(GLFW_MOUSE_BUTTON_2))
+	{
+		Input::HideCursor();
+	}
+	else
+	{
+		Input::ShowCursor();
+		return;
+	}
+
 	Archetype archetype;
 	archetype.set(componentManager.GetComponentType<Camera>());
 
@@ -18,24 +27,44 @@ void CameraSystem::Update(EntityManager& entityManager, ComponentManager& compon
 	{
 		Camera& camera = componentManager.GetComponent<Camera>(entity);
 
-		glm::vec3 velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+		f32 scrollFactor = Input::GetMouseScrollFactor();
 
-		if (Input::GetKeyDown(GLFW_KEY_W)) velocity.z += 1;
-		if (Input::GetKeyDown(GLFW_KEY_A)) velocity.x += -1;
-		if (Input::GetKeyDown(GLFW_KEY_S)) velocity.z += -1;
-		if (Input::GetKeyDown(GLFW_KEY_D)) velocity.x += 1;
-		if (Input::GetKeyDown(GLFW_KEY_Q)) velocity.y += -1;
-		if (Input::GetKeyDown(GLFW_KEY_E)) velocity.y += 1;
+		glm::vec3 direction = glm::vec3(0.0f, 0.0f, 0.0f);
+		if (Input::GetKeyDown(GLFW_KEY_W)) direction.z += 1;
+		if (Input::GetKeyDown(GLFW_KEY_A)) direction.x += -1;
+		if (Input::GetKeyDown(GLFW_KEY_S)) direction.z += -1;
+		if (Input::GetKeyDown(GLFW_KEY_D)) direction.x += 1;
+		if (Input::GetKeyDown(GLFW_KEY_Q)) direction.y += -1;
+		if (Input::GetKeyDown(GLFW_KEY_E)) direction.y += 1;
 
-		if (glm::length(velocity) > 0.01f)
+		glm::vec2 mousePos = Input::GetMousePosition();
+		glm::vec2 mouseDelta = camera.prevMousePos - mousePos;
+		camera.prevMousePos = mousePos;
+
+		camera.yaw += mouseDelta.x * camera.sensitivity;
+		camera.pitch += mouseDelta.y * camera.sensitivity;
+		camera.pitch = glm::clamp(camera.pitch, -89.0f, 89.0f);
+
+		glm::vec3 forward, right, up;
+		forward.x = cos(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
+		forward.y = sin(glm::radians(camera.pitch));
+		forward.z = sin(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
+		forward = glm::normalize(forward);
+
+		right = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), forward));
+		up = glm::normalize(glm::cross(forward, right));
+
+		if (glm::length(direction) > 0.0f)
 		{
-			velocity = glm::normalize(velocity);
-			camera.position += velocity * deltaTime;
+			direction = glm::normalize(direction);
+			direction = direction.x * right + direction.y * up + direction.z * forward;
+			camera.position += direction * camera.speed * scrollFactor * deltaTime;
 		}
 
-		context.cameraPos = camera.position;
-		context.cameraLookAt = camera.lookAt;
-		context.cameraFOV = camera.fov;
+		context.pos = camera.position;
+		context.forward = forward;
+		context.up = up;
+		context.fov = camera.fov;
 	};
 
 	entityManager.Each(archetype, func);
@@ -53,7 +82,8 @@ void CameraSystem::OnGUI(EntityManager &entityManager, ComponentManager &compone
 		if (ImGui::Begin("Camera"))
 		{
 			ImGui::InputFloat3("Position:", reinterpret_cast<float *>(&camera.position));
-			ImGui::InputFloat3("Look At:", reinterpret_cast<float *>(&camera.lookAt));
+			ImGui::InputFloat("Speed", &camera.speed);
+			ImGui::InputFloat("Sensitivity", &camera.sensitivity);
 			ImGui::InputFloat("FOV", &camera.fov);
 		}
 		ImGui::End();

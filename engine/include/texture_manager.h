@@ -1,5 +1,7 @@
 #pragma once
-#include <renderer_vk_types.h>
+#include <vk_structs.h>
+#include <unordered_map>
+#include <string>
 
 class Engine;
 

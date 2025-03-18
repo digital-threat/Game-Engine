@@ -1,6 +1,6 @@
 #include <material_manager.h>
 #include <mesh_structs.h>
-#include <renderer_vk_types.h>
+#include <render_context.h>
 #include <ecs/component_manager.h>
 #include <ecs/entity_manager.h>
 #include <systems/render_system.h>

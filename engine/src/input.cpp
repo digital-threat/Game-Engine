@@ -6,11 +6,23 @@ namespace Input
 	{
 		GLFWwindow* _window;
 		glm::vec2 _mousePosition;
+		glm::vec2 _prevMousePosition;
+		f32 _mouseScrollFactor = 1.0f;
 
 		void MouseCallback(GLFWwindow* window, double x, double y)
 		{
+			_prevMousePosition = _mousePosition;
 			_mousePosition.x = x;
 			_mousePosition.y = y;
+		}
+
+		void ScrollCallback(GLFWwindow* window, double x, double y)
+		{
+			_mouseScrollFactor += y;
+			if (_mouseScrollFactor < 0.0f)
+			{
+				_mouseScrollFactor = 0.0f;
+			}
 		}
 	}
 
@@ -26,6 +38,7 @@ namespace Input
 		_mousePosition.y = height / 2;
 
 		glfwSetCursorPosCallback(_window, MouseCallback);
+		glfwSetScrollCallback(_window, ScrollCallback);
 	}
 
 	bool GetKeyDown(u32 key)
@@ -43,5 +56,25 @@ namespace Input
 	glm::vec2 GetMousePosition()
 	{
 		return _mousePosition;
+	}
+
+	glm::vec2 GetMouseDelta()
+	{
+		return _prevMousePosition - _mousePosition;
+	}
+
+	f32 GetMouseScrollFactor()
+	{
+		return _mouseScrollFactor;
+	}
+
+	void HideCursor()
+	{
+		glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	}
+
+	void ShowCursor()
+	{
+		glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	}
 }

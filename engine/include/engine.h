@@ -26,13 +26,13 @@
 #include <input.h>
 #include <material_manager.h>
 #include <mesh_manager.h>
-#include <renderer_vk_images.h>
+#include <vk_images.h>
 #include <texture_manager.h>
-
-#include "types.h"
-#include "renderer_vk_types.h"
-#include "renderer_vk_descriptors.h"
-#include "utility.h"
+#include <vk_utility.h>
+#include <types.h>
+#include <vk_types.h>
+#include <vk_descriptors.h>
+#include <utility.h>
 
 constexpr u32 WIDTH = 1280;
 constexpr u32 HEIGHT = 720;

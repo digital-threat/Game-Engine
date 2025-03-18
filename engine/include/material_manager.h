@@ -1,6 +1,7 @@
 #pragma once
-#include <renderer_vk_types.h>
-#include <handles.h>
+#include <material_structs.h>
+#include <types.h>
+#include <vector>
 
 class Engine;
 

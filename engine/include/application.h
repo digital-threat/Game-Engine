@@ -1,6 +1,6 @@
 #pragma once
 
-#include <renderer_vk_types.h>
+#include <render_context.h>
 
 class Application
 {

@@ -1,8 +1,7 @@
-#include "texture_manager.h"
+#include <texture_manager.h>
 
 #include <engine.h>
-#include <renderer_vk_images.h>
-#include <renderer_vk_types.h>
+#include <vk_images.h>
 #include <stdexcept>
 #include <utility.h>
 #include <stb_image.h>

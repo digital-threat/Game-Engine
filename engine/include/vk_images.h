@@ -1,6 +1,6 @@
 #pragma once
 
-#include "renderer_vk_types.h"
+#include <vk_structs.h>
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan_core.h>
 #include <span>

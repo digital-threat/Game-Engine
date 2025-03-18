@@ -1,10 +1,10 @@
-#include "renderer_vk_images.h"
+#include <vk_images.h>
 
 #include <engine.h>
-#include <renderer_vk_buffers.h>
-#include <renderer_vk_structures.h>
-#include <renderer_vk_types.h>
-#include <renderer_vk_utility.h>
+#include <vk_buffers.h>
+#include <vk_helpers.h>
+#include <vk_types.h>
+#include <vk_utility.h>
 #include <stdexcept>
 
 
