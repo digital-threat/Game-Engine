@@ -14,16 +14,10 @@
 #define GLM_FORCE_RADIANS
 
 #include <VkBootstrap.h>
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_vulkan.h>
 
 #include <vector>
-#include <functional>
-#include <thread>
 
 #include <application.h>
-#include <input.h>
 #include <material_manager.h>
 #include <mesh_manager.h>
 #include <vk_images.h>
@@ -32,7 +26,7 @@
 #include <types.h>
 #include <vk_types.h>
 #include <vk_descriptors.h>
-#include <utility.h>
+
 
 constexpr u32 WIDTH = 1280;
 constexpr u32 HEIGHT = 720;
@@ -66,7 +60,6 @@ public:
 
     VmaAllocator mAllocator{};
 
-    vkb::Instance mVkbInstance;
     vkb::Swapchain mVkbSwapchain;
 
     VkInstance mInstance = VK_NULL_HANDLE;
@@ -120,6 +113,9 @@ public:
 
     Application* mApplication;
 
+    // Ray tracing
+    VkPhysicalDeviceRayTracingPipelinePropertiesKHR mRtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+
 public:
     Engine(Application* application) : mApplication(application)
     {
@@ -128,104 +124,19 @@ public:
         MaterialManager::Allocate(*this);
     }
 
-    void Run()
-    {
-        FrameData frames[MAX_FRAMES_IN_FLIGHT]{};
-
-        InitWindow();
-        Input::Initialize(mWindow);
-        InitVulkan(frames);
-        InitImGui();
-        MainLoop(frames);
-        Cleanup();
-    }
+    void Run();
 
 private:
-    void InitWindow()
-    {
-        glfwInit();
-
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-        mWindow = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-        glfwSetWindowUserPointer(mWindow, this);
-        glfwSetFramebufferSizeCallback(mWindow, FramebufferResizeCallback);
-    }
-
-    void InitVulkan(FrameData* frames)
-    {
-        CreateInstance();
-        CreateSurface();
-        auto vkbPhysicalDevice = SelectPhysicalDevice();
-        auto vkbDevice = CreateDevice(vkbPhysicalDevice);
-        GetQueues(vkbDevice);
-        CreateAllocator();
-        CreateSwapchain(WIDTH, HEIGHT);
-        InitSyncObjects(frames);
-        CreateCommandObjects(vkbDevice, frames);
-        InitDescriptors(frames);
-        InitBuffers(frames);
-        InitializePipelines();
-    }
-
-    void MainLoop(FrameData* frames)
-    {
-        u32 currentFrame = 0;
-
-        MeshManager &meshManger = MeshManager::Get();
-        std::atomic<bool> cancellationToken;
-        std::thread meshManagerThread(&MeshManager::Update, &meshManger, std::ref(cancellationToken));
-
-        TextureManager::Get().Awake();
-        mApplication->Awake();
-
-        double lastTime = 0;
-
-        while (!glfwWindowShouldClose(mWindow))
-        {
-            double currentTime = glfwGetTime();
-            double deltaTime = currentTime - lastTime;
-            lastTime = currentTime;
-
-            glfwPollEvents();
-
-            if (mResizeRequested)
-            {
-                ResizeSwapchain();
-            }
-
-            mApplication->Update(deltaTime);
-            mApplication->PhysicsUpdate(deltaTime);
-
-            ImGui_ImplVulkan_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
-            ImGui::NewFrame();
-
-            mApplication->Render();
-            ImGui::Render();
-            Render(frames[currentFrame % MAX_FRAMES_IN_FLIGHT]);
-            currentFrame++;
-        }
-
-        cancellationToken = true;
-        meshManagerThread.join();
-
-        vkDeviceWaitIdle(mDevice);
-
-        mApplication->Destroy();
-    }
-
-    void Cleanup()
-    {
-        glfwTerminate();
-    }
+    void InitWindow();
+    void InitVulkan(FrameData* frames);
+    void MainLoop(FrameData* frames);
+    void Cleanup();
 
     void ResizeSwapchain();
 
-    void CreateInstance();
+    static vkb::Instance CreateInstance();
     void CreateSurface();
-    vkb::PhysicalDevice SelectPhysicalDevice();
+    static vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance& vkbInstance, VkSurfaceKHR vkSurface);
     vkb::Device CreateDevice(vkb::PhysicalDevice& vkbPhysicalDevice);
     void GetQueues(vkb::Device& device);
     void CreateAllocator();
@@ -248,14 +159,16 @@ private:
     void Render(FrameData& currentFrame);
     void RenderBackground(VkCommandBuffer pCmd);
     void RenderImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView);
+    void RenderRasterized(VkCommandBuffer pCmd, FrameData& currentFrame);
     void RenderShadowmap(VkCommandBuffer pCmd);
-    void RenderGeometry(VkCommandBuffer pCmd, FrameData& currentFrame);
+    void RenderRaytracing(VkCommandBuffer pCmd);
 
     // Pipelines
     void InitializePipelines();
     void InitializeBackgroundPipeline();
-    void InitializeMeshPipeline();
+    void InitializeRasterizedPipeline();
     void InitializeShadowmapPipeline();
+    void InitializeRaytracingPipeline();
 
     // ImGui
     void InitImGui();

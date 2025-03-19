@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <fstream>
 #include <filesystem>
 #include <unordered_map>
 #define GLM_ENABLE_EXPERIMENTAL
