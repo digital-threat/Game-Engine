@@ -3,7 +3,7 @@
 #include <vk_pipelines.h>
 #include <glm/gtc/quaternion.hpp>
 
-void Engine::InitializeShadowmapPipeline()
+void Engine::InitShadowmapPipeline()
 {
 	VkShaderModule vertexShader;
 	LoadShaderModule("assets/shaders/shadowmap_vert.spv", mDevice, &vertexShader);
@@ -33,14 +33,14 @@ void Engine::InitializeShadowmapPipeline()
 	vkDestroyShaderModule(mDevice, vertexShader, nullptr);
 }
 
-void Engine::RenderShadowmap(VkCommandBuffer pCmd)
+void Engine::RenderShadowmap(VkCommandBuffer cmd)
 {
 	VkRenderingAttachmentInfo depthAttachment = DepthAttachmentInfo(mShadowmapTarget.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 	VkRenderingInfo renderInfo = RenderingInfo(VkExtent2D(mShadowmapTarget.extent.width, mShadowmapTarget.extent.height), VK_NULL_HANDLE, &depthAttachment);
 
-	vkCmdBeginRendering(pCmd, &renderInfo);
+	vkCmdBeginRendering(cmd, &renderInfo);
 
-	vkCmdBindPipeline(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mShadowmapPipeline);
+	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mShadowmapPipeline);
 
 	VkViewport viewport{};
 	viewport.x = 0;
@@ -50,7 +50,7 @@ void Engine::RenderShadowmap(VkCommandBuffer pCmd)
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
-	vkCmdSetViewport(pCmd, 0, 1, &viewport);
+	vkCmdSetViewport(cmd, 0, 1, &viewport);
 
 	VkRect2D scissor{};
 	scissor.offset.x = 0;
@@ -58,7 +58,7 @@ void Engine::RenderShadowmap(VkCommandBuffer pCmd)
 	scissor.extent.width = mShadowmapTarget.extent.width;
 	scissor.extent.height = mShadowmapTarget.extent.height;
 
-	vkCmdSetScissor(pCmd, 0, 1, &scissor);
+	vkCmdSetScissor(cmd, 0, 1, &scissor);
 
 	for (auto& model : mApplication->mRenderContext.renderObjects)
 	{
@@ -71,11 +71,11 @@ void Engine::RenderShadowmap(VkCommandBuffer pCmd)
 		pushConstants.depthMVP = matrixP * matrixV * model.transform;
 		pushConstants.vertexBuffer = model.vertexBufferAddress;
 
-		vkCmdPushConstants(pCmd, mShadowmapPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShadowmapPushConstants), &pushConstants);
-		vkCmdBindIndexBuffer(pCmd, model.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdPushConstants(cmd, mShadowmapPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShadowmapPushConstants), &pushConstants);
+		vkCmdBindIndexBuffer(cmd, model.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdDrawIndexed(pCmd, model.indexCount, 1, 0, 0, 0);
+		vkCmdDrawIndexed(cmd, model.indexCount, 1, 0, 0, 0);
 	}
 
-	vkCmdEndRendering(pCmd);
+	vkCmdEndRendering(cmd);
 }

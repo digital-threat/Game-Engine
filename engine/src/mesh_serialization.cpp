@@ -3,7 +3,7 @@
 #include <mesh_serialization.h>
 #include <mesh_structs.h>
 
-bool SerializeMesh(const MeshData &meshData, std::filesystem::path &path)
+bool SerializeMesh(const CpuMesh &meshData, std::filesystem::path &path)
 {
 	std::ofstream file;
 	file.open(path, std::ios::out | std::ios::binary);
@@ -38,7 +38,7 @@ bool SerializeMesh(const MeshData &meshData, std::filesystem::path &path)
 	return true;
 }
 
-bool DeserializeMesh(std::filesystem::path &path, MeshData &outMeshData)
+bool DeserializeMesh(std::filesystem::path &path, CpuMesh &outMeshData)
 {
 	std::ifstream file;
 	file.open(path, std::ios::in | std::ios::binary);

@@ -4,14 +4,14 @@
 #include <imgui_impl_vulkan.h>
 
 
-void Engine::RenderImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView)
+void Engine::RenderImgui(VkCommandBuffer cmd, VkImageView targetImageView)
 {
-	VkRenderingAttachmentInfo colorAttachment = ColorAttachmentInfo(pTargetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	VkRenderingAttachmentInfo colorAttachment = ColorAttachmentInfo(targetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	VkRenderingInfo renderInfo = RenderingInfo(mVkbSwapchain.extent, &colorAttachment, nullptr);
 
-	vkCmdBeginRendering(pCmd, &renderInfo);
+	vkCmdBeginRendering(cmd, &renderInfo);
 
-	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), pCmd);
+	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
 
-	vkCmdEndRendering(pCmd);
+	vkCmdEndRendering(cmd);
 }

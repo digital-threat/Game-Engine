@@ -2,7 +2,7 @@
 #include <vk_helpers.h>
 #include <vk_pipelines.h>
 
-void Engine::InitializeBackgroundPipeline()
+void Engine::InitBackgroundPipeline()
 {
 	VkPushConstantRange pushConstant{};
 	pushConstant.offset = 0;
@@ -49,14 +49,14 @@ void Engine::InitializeBackgroundPipeline()
 	vkDestroyShaderModule(mDevice, gradientShader, nullptr);
 }
 
-void Engine::RenderBackground(VkCommandBuffer pCmd)
+void Engine::RenderBackground(VkCommandBuffer cmd)
 {
 	ComputeEffect& effect = mBackground.effects[mBackground.currentEffect];
 
-	vkCmdBindPipeline(pCmd, VK_PIPELINE_BIND_POINT_COMPUTE, effect.pipeline);
-	vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_COMPUTE, mBackground.pipelineLayout, 0, 1, &mBackground.descriptorSet, 0, nullptr);
+	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, effect.pipeline);
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mBackground.pipelineLayout, 0, 1, &mBackground.descriptorSet, 0, nullptr);
 
-	vkCmdPushConstants(pCmd, mBackground.pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.data);
+	vkCmdPushConstants(cmd, mBackground.pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.data);
 
-	vkCmdDispatch(pCmd, std::ceil(mRenderExtent.width / 16.0), std::ceil(mRenderExtent.height / 16.0), 1);
+	vkCmdDispatch(cmd, std::ceil(mRenderExtent.width / 16.0), std::ceil(mRenderExtent.height / 16.0), 1);
 }

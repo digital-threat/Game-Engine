@@ -7,28 +7,25 @@
 #include <string>
 #include <vector>
 
-struct MeshBuffers
-{
-	VulkanBuffer indexBuffer;
-	VulkanBuffer vertexBuffer;
-	VkDeviceAddress vertexBufferAddress;
-};
-
 struct Submesh
 {
 	u32 startIndex;
 	size_t count;
 };
 
-struct MeshData
+struct CpuMesh
 {
 	std::string name;
 	std::vector<Vertex> vertices;
 	std::vector<u32> indices;
 };
 
-struct Mesh
+struct GpuMesh
 {
 	u32 indexCount;
-	MeshBuffers meshBuffers;
+	u32 vertexCount;
+	VulkanBuffer indexBuffer;
+	VulkanBuffer vertexBuffer;
+	VkDeviceAddress vertexBufferAddress;
+	VkDeviceAddress indexBufferAddress;
 };

@@ -27,11 +27,11 @@ public:
 private:
 	void ProcessMessage(Message *pMessage) override;
 
-	Mesh GetMesh(const char* pPath);
-	Mesh LoadMesh(const char* pPath);
+	GpuMesh GetMesh(const char* pPath);
+	GpuMesh LoadMesh(const char* pPath);
 
 private:
 	Engine& mEngine;
 	static MeshManager* mInstance;
-	std::unordered_map<const char*, Mesh> mMeshes;
+	std::unordered_map<const char*, GpuMesh> mMeshes;
 };

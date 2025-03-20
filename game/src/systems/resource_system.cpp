@@ -22,7 +22,7 @@ void ResourceSystem::ProcessMessage(Message* message)
 				auto meshMessage = static_cast<MeshMessage*>(message);
 
 				Renderer& renderer = mCoordinator.GetComponent<Renderer>(meshMessage->entity);
-				renderer.mesh = new Mesh(meshMessage->param);
+				renderer.mesh = new GpuMesh(meshMessage->param);
 			}
 		} break;
 	}

@@ -3,7 +3,7 @@
 #include <vk_pipelines.h>
 #include <glm/gtc/quaternion.hpp>
 
-void Engine::InitializeRasterizedPipeline()
+void Engine::InitRasterizedPipeline()
 {
     VkShaderModule vertexShader;
     LoadShaderModule("assets/shaders/lit_phong_vert.spv", mDevice, &vertexShader);
@@ -42,16 +42,16 @@ void Engine::InitializeRasterizedPipeline()
     vkDestroyShaderModule(mDevice, fragmentShader, nullptr);
 }
 
-void Engine::RenderRasterized(VkCommandBuffer pCmd, FrameData& currentFrame)
+void Engine::RenderRasterized(VkCommandBuffer cmd, FrameData& currentFrame)
 {
     VkRenderingAttachmentInfo colorAttachment = ColorAttachmentInfo(mColorTarget.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingAttachmentInfo depthAttachment = DepthAttachmentInfo(mDepthTarget.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
     VkRenderingInfo renderInfo = RenderingInfo(mRenderExtent, &colorAttachment, &depthAttachment);
 
-    vkCmdBeginRendering(pCmd, &renderInfo);
+    vkCmdBeginRendering(cmd, &renderInfo);
 
-    vkCmdBindPipeline(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipeline);
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipeline);
 
     VkViewport viewport{};
     viewport.x = 0;
@@ -61,7 +61,7 @@ void Engine::RenderRasterized(VkCommandBuffer pCmd, FrameData& currentFrame)
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
-    vkCmdSetViewport(pCmd, 0, 1, &viewport);
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
 
     VkRect2D scissor{};
     scissor.offset.x = 0;
@@ -69,7 +69,7 @@ void Engine::RenderRasterized(VkCommandBuffer pCmd, FrameData& currentFrame)
     scissor.extent.width = mRenderExtent.width;
     scissor.extent.height = mRenderExtent.height;
 
-    vkCmdSetScissor(pCmd, 0, 1, &scissor);
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
 
     float aspect = static_cast<float>(mRenderExtent.width) / static_cast<float>(mRenderExtent.height);
 
@@ -99,7 +99,7 @@ void Engine::RenderRasterized(VkCommandBuffer pCmd, FrameData& currentFrame)
     writer.WriteImage(1, mShadowmapTarget.imageView, TextureManager::Get().GetSampler("NEAREST_MIPMAP_LINEAR"), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     writer.UpdateSet(mDevice, sceneSet);
 
-    vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 0, 1, &sceneSet, 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 0, 1, &sceneSet, 0, nullptr);
 
     for (auto& model : mApplication->mRenderContext.renderObjects)
     {
@@ -108,12 +108,12 @@ void Engine::RenderRasterized(VkCommandBuffer pCmd, FrameData& currentFrame)
         pushConstants.matrixITM = glm::transpose(glm::inverse(model.transform));
         pushConstants.vertexBuffer = model.vertexBufferAddress;
 
-        vkCmdPushConstants(pCmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GeometryPushConstants), &pushConstants);
-        vkCmdBindDescriptorSets(pCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 1, 1, &model.materialSet, 0, nullptr);
-        vkCmdBindIndexBuffer(pCmd, model.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdPushConstants(cmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GeometryPushConstants), &pushConstants);
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 1, 1, &model.materialSet, 0, nullptr);
+        vkCmdBindIndexBuffer(cmd, model.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdDrawIndexed(pCmd, model.indexCount, 1, 0, 0, 0);
+        vkCmdDrawIndexed(cmd, model.indexCount, 1, 0, 0, 0);
     }
 
-    vkCmdEndRendering(pCmd);
+    vkCmdEndRendering(cmd);
 }

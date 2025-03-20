@@ -2,10 +2,10 @@
 
 #include <material_structs.h>
 
-struct Mesh;
+struct GpuMesh;
 
 struct Renderer
 {
-	Mesh* mesh;
+	GpuMesh* mesh;
 	MaterialHandle material;
 };

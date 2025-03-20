@@ -116,7 +116,8 @@ void Engine::InitVulkan(FrameData* frames)
     CreateCommandObjects(vkbDevice, frames);
     InitDescriptors(frames);
     InitBuffers(frames);
-    InitializePipelines();
+    InitRaytracing();
+    InitPipelines();
 }
 
 void Engine::MainLoop(FrameData* frames)
@@ -378,12 +379,12 @@ void Engine::CreateSwapchain(u32 width, u32 height)
     }
 }
 
-void Engine::InitializePipelines()
+void Engine::InitPipelines()
 {
-    InitializeBackgroundPipeline();
-    InitializeRasterizedPipeline();
-    InitializeShadowmapPipeline();
-    InitializeRaytracingPipeline();
+    InitBackgroundPipeline();
+    InitRasterizedPipeline();
+    InitShadowmapPipeline();
+    InitRaytracingPipeline();
 }
 
 void Engine::CreateCommandObjects(vkb::Device& device, FrameData* frames)
@@ -616,37 +617,44 @@ void Engine::Render(FrameData& currentFrame)
     }
 }
 
-MeshBuffers Engine::UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVertices)
+void Engine::UploadMesh(std::span<u32> indices, std::span<Vertex> vertices, GpuMesh& mesh)
 {
-    const size_t vertexBufferSize = pVertices.size() * sizeof(Vertex);
-    const size_t indexBufferSize = pIndices.size() * sizeof(u32);
+    mesh.indexCount = indices.size();
+    mesh.vertexCount = vertices.size();
 
-    MeshBuffers newSurface;
+    const size_t vertexBufferSize = vertices.size() * sizeof(Vertex);
+    const size_t indexBufferSize = indices.size() * sizeof(u32);
 
     VkBufferUsageFlags vertexBufferUsage{};
     vertexBufferUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     vertexBufferUsage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     vertexBufferUsage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
-    newSurface.vertexBuffer = CreateBuffer(mAllocator, vertexBufferSize, vertexBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
+    mesh.vertexBuffer = CreateBuffer(mAllocator, vertexBufferSize, vertexBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
 
-    VkBufferDeviceAddressInfo deviceAddressInfo{};
-    deviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-    deviceAddressInfo.buffer = newSurface.vertexBuffer.buffer;
-    newSurface.vertexBufferAddress = vkGetBufferDeviceAddress(mDevice, &deviceAddressInfo);
+    VkBufferDeviceAddressInfo vertexAddressInfo{};
+    vertexAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    vertexAddressInfo.buffer = mesh.vertexBuffer.buffer;
+    mesh.vertexBufferAddress = vkGetBufferDeviceAddress(mDevice, &vertexAddressInfo);
 
     VkBufferUsageFlags indexBufferUsage{};
     indexBufferUsage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
     indexBufferUsage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    indexBufferUsage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
-    newSurface.indexBuffer = CreateBuffer(mAllocator, indexBufferSize, indexBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
+    mesh.indexBuffer = CreateBuffer(mAllocator, indexBufferSize, indexBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
+
+    VkBufferDeviceAddressInfo indexAddressInfo{};
+    indexAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    indexAddressInfo.buffer = mesh.indexBuffer.buffer;
+    mesh.indexBufferAddress = vkGetBufferDeviceAddress(mDevice, &indexAddressInfo);
 
     VulkanBuffer stagingBuffer = CreateBuffer(mAllocator, vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
 
     void* data = stagingBuffer.info.pMappedData;
 
-    memcpy(data, pVertices.data(), vertexBufferSize);
-    memcpy(static_cast<char *>(data) + vertexBufferSize, pIndices.data(), indexBufferSize);
+    memcpy(data, vertices.data(), vertexBufferSize);
+    memcpy(static_cast<char *>(data) + vertexBufferSize, indices.data(), indexBufferSize);
 
     auto func = [&](VkCommandBuffer pCmd)
     {
@@ -655,19 +663,17 @@ MeshBuffers Engine::UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVerti
         vertexCopy.srcOffset = 0;
         vertexCopy.size = vertexBufferSize;
 
-        vkCmdCopyBuffer(pCmd, stagingBuffer.buffer, newSurface.vertexBuffer.buffer, 1, &vertexCopy);
+        vkCmdCopyBuffer(pCmd, stagingBuffer.buffer, mesh.vertexBuffer.buffer, 1, &vertexCopy);
 
         VkBufferCopy indexCopy{};
         indexCopy.dstOffset = 0;
         indexCopy.srcOffset = vertexBufferSize;
         indexCopy.size = indexBufferSize;
 
-        vkCmdCopyBuffer(pCmd, stagingBuffer.buffer, newSurface.indexBuffer.buffer, 1, &indexCopy);
+        vkCmdCopyBuffer(pCmd, stagingBuffer.buffer, mesh.indexBuffer.buffer, 1, &indexCopy);
     };
 
     ImmediateSubmit(mDevice, mGraphicsQueue, mImmediate, func);
 
     DestroyBuffer(mAllocator, stagingBuffer);
-
-    return newSurface;
 }

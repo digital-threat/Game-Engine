@@ -35,10 +35,10 @@ void RenderSystem::Update(EntityManager& entityManager, ComponentManager& compon
 
 		if (renderer.mesh != nullptr)
 		{
-			renderObject.indexBuffer = renderer.mesh->meshBuffers.indexBuffer;
+			renderObject.indexBuffer = renderer.mesh->indexBuffer;
 			renderObject.indexCount = renderer.mesh->indexCount;
-			renderObject.vertexBuffer = renderer.mesh->meshBuffers.vertexBuffer;
-			renderObject.vertexBufferAddress = renderer.mesh->meshBuffers.vertexBufferAddress;
+			renderObject.vertexBuffer = renderer.mesh->vertexBuffer;
+			renderObject.vertexBufferAddress = renderer.mesh->vertexBufferAddress;
 
 			if (renderer.material.index != -1)
 			{

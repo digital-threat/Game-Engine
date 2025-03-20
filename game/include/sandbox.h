@@ -3,6 +3,7 @@
 #include <application.h>
 #include <components/camera.h>
 #include <message_queue.h>
+#include <vk_raytracing.h>
 #include <ecs/coordinator.h>
 #include <systems/resource_system.h>
 
@@ -19,6 +20,8 @@ private:
 	bool isSimulating = true;
 	ResourceSystem mResourceSystem;
 
+	RaytracingBuilder mRtBuilder;
+
 public:
 	Sandbox();
 	void Awake() override;
@@ -26,6 +29,9 @@ public:
 	void PhysicsUpdate(f64 deltaTime) override;
 	void Render() override;
 	void Destroy() override;
+
+private:
+	void CreateBlas();
 
 private:
 	void ImGuiApplication();

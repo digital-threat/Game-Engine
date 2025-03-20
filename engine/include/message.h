@@ -28,9 +28,9 @@ struct StringMessage : Message
 
 struct MeshMessage : Message
 {
-	MeshMessage(std::string pMessage, Mesh param, Entity entity, MessageQueue *sender = nullptr);
+	MeshMessage(std::string pMessage, GpuMesh param, Entity entity, MessageQueue *sender = nullptr);
 
 	MessageQueue *sender;
 	Entity entity;
-	Mesh param;
+	GpuMesh param;
 };

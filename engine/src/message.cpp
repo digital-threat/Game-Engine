@@ -14,7 +14,7 @@ StringMessage::StringMessage(std::string pMessage, std::string param, Entity ent
 {
 }
 
-MeshMessage::MeshMessage(std::string pMessage, Mesh param, Entity entity, MessageQueue *sender)
+MeshMessage::MeshMessage(std::string pMessage, GpuMesh param, Entity entity, MessageQueue *sender)
 	: Message(MessageType::MESH, pMessage), sender(sender), entity(entity), param(param)
 {
 }

@@ -27,7 +27,7 @@ MeshManager& MeshManager::Get()
 	return *mInstance;
 }
 
-Mesh MeshManager::GetMesh(const char* pPath)
+GpuMesh MeshManager::GetMesh(const char* pPath)
 {
 	auto it = mMeshes.find(pPath);
 	if (it != mMeshes.end())
@@ -35,24 +35,23 @@ Mesh MeshManager::GetMesh(const char* pPath)
 		return it->second;
 	}
 
-	return Mesh();
+	return GpuMesh();
 }
 
-Mesh MeshManager::LoadMesh(const char* pPath)
+GpuMesh MeshManager::LoadMesh(const char* pPath)
 {
-	MeshData meshData{};
-	Mesh meshAsset{};
+	CpuMesh cpuMesh{};
+	GpuMesh gpuMesh{};
 
 	std::filesystem::path path = pPath;
-	if (DeserializeMesh(path, meshData))
+	if (DeserializeMesh(path, cpuMesh))
 	{
-		MeshBuffers meshBuffers = mEngine.UploadMesh(meshData.indices, meshData.vertices);
-		meshAsset.meshBuffers = meshBuffers;
-		meshAsset.indexCount = meshData.indices.size();
-		mMeshes[pPath] = meshAsset;
+		mEngine.UploadMesh(cpuMesh.indices, cpuMesh.vertices, gpuMesh);
+
+		mMeshes[pPath] = gpuMesh;
 	}
 
-	return meshAsset;
+	return gpuMesh;
 }
 
 void MeshManager::Update(std::atomic_bool &pCancellationToken)
@@ -75,7 +74,7 @@ void MeshManager::ProcessMessage(Message *pMessage)
 				auto stringMsg = static_cast<StringMessage*>(pMessage);
 				std::string& path = stringMsg->param;
 
-				Mesh mesh = GetMesh(path.c_str());
+				GpuMesh mesh = GetMesh(path.c_str());
 				if (mesh.indexCount == 0)
 				{
 					mesh = LoadMesh(path.c_str());

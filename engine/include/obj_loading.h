@@ -19,9 +19,9 @@ struct std::hash<Vertex>
 	}
 };
 
-inline MeshData ParseOBJ(std::filesystem::path path)
+inline CpuMesh ParseOBJ(std::filesystem::path path)
 {
-	MeshData mesh;
+	CpuMesh mesh;
 
 	std::ifstream file(path);
 	std::string line;

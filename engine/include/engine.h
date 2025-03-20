@@ -144,6 +144,9 @@ private:
     void CreateCommandObjects(vkb::Device& device, FrameData* frames);
     void InitSyncObjects(FrameData* frames);
 
+    // Ray tracing
+    void InitRaytracing();
+
     // Descriptors
     void InitDescriptors(FrameData* frames);
     void InitGlobalDescriptorAllocator();
@@ -157,18 +160,18 @@ private:
 
     // Drawing
     void Render(FrameData& currentFrame);
-    void RenderBackground(VkCommandBuffer pCmd);
-    void RenderImgui(VkCommandBuffer pCmd, VkImageView pTargetImageView);
-    void RenderRasterized(VkCommandBuffer pCmd, FrameData& currentFrame);
-    void RenderShadowmap(VkCommandBuffer pCmd);
-    void RenderRaytracing(VkCommandBuffer pCmd);
+    void RenderBackground(VkCommandBuffer cmd);
+    void RenderImgui(VkCommandBuffer cmd, VkImageView targetImageView);
+    void RenderRasterized(VkCommandBuffer cmd, FrameData& currentFrame);
+    void RenderShadowmap(VkCommandBuffer cmd);
+    void RenderRaytracing(VkCommandBuffer cmd);
 
     // Pipelines
-    void InitializePipelines();
-    void InitializeBackgroundPipeline();
-    void InitializeRasterizedPipeline();
-    void InitializeShadowmapPipeline();
-    void InitializeRaytracingPipeline();
+    void InitPipelines();
+    void InitBackgroundPipeline();
+    void InitRasterizedPipeline();
+    void InitShadowmapPipeline();
+    void InitRaytracingPipeline();
 
     // ImGui
     void InitImGui();
@@ -180,5 +183,5 @@ private:
     }
 
 public:
-    MeshBuffers UploadMesh(std::span<u32> pIndices, std::span<Vertex> pVertices);
+    void UploadMesh(std::span<u32> indices, std::span<Vertex> vertices, GpuMesh& mesh);
 };
