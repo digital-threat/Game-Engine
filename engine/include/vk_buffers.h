@@ -7,6 +7,6 @@
 
 class Engine;
 
-VulkanBuffer CreateBuffer(VmaAllocator pAllocator, size_t pAllocSize, VkBufferUsageFlags pUsage, VmaMemoryUsage pMemoryUsage);
-void DestroyBuffer(VmaAllocator pAllocator, const VulkanBuffer& pBuffer);
-void CopyBuffer(const Engine& pEngine, VkBuffer pSrcBuffer, VkBuffer pDstBuffer, VkDeviceSize pSize);
+VulkanBuffer CreateBuffer(VmaAllocator allocator, size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
+void DestroyBuffer(VmaAllocator allocator, const VulkanBuffer& buffer);
+void CopyBuffer(const Engine& engine, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);

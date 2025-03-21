@@ -10,7 +10,6 @@
 #include <utility.h>
 
 #include <functional>
-#include <thread>
 #include <iostream>
 #include <stdexcept>
 #include <chrono>
@@ -124,10 +123,6 @@ void Engine::MainLoop(FrameData* frames)
 {
     u32 currentFrame = 0;
 
-    MeshManager &meshManger = MeshManager::Get();
-    std::atomic<bool> cancellationToken;
-    std::thread meshManagerThread(&MeshManager::Update, &meshManger, std::ref(cancellationToken));
-
     TextureManager::Get().Awake();
     mApplication->Awake();
 
@@ -158,9 +153,6 @@ void Engine::MainLoop(FrameData* frames)
         Render(frames[currentFrame % MAX_FRAMES_IN_FLIGHT]);
         currentFrame++;
     }
-
-    cancellationToken = true;
-    meshManagerThread.join();
 
     vkDeviceWaitIdle(mDevice);
 

@@ -10,4 +10,4 @@ struct ImmediateData
 	VkCommandPool cmdPool = VK_NULL_HANDLE;
 };
 
-void ImmediateSubmit(const VkDevice& pDevice, const VkQueue& pQueue, const ImmediateData& pData, std::function<void(VkCommandBuffer cmd)>&& pFunction);
+void ImmediateSubmit(VkDevice device, VkQueue queue, const ImmediateData& data, std::function<void(VkCommandBuffer cmd)> func);

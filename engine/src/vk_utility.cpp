@@ -1,23 +1,23 @@
 #include <vk_utility.h>
 #include <vk_helpers.h>
 
-void ImmediateSubmit(const VkDevice& pDevice, const VkQueue& pQueue, const ImmediateData& pData, std::function<void(VkCommandBuffer cmd)> &&pFunction)
+void ImmediateSubmit(VkDevice device, VkQueue queue, const ImmediateData& data, std::function<void(VkCommandBuffer cmd)> func)
 {
-	vkResetFences(pDevice, 1, &pData.fence);
-	vkResetCommandBuffer(pData.cmd, 0);
+	vkResetFences(device, 1, &data.fence);
+	vkResetCommandBuffer(data.cmd, 0);
 
 	VkCommandBufferBeginInfo cmdBeginInfo = CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-	vkBeginCommandBuffer(pData.cmd, &cmdBeginInfo);
+	vkBeginCommandBuffer(data.cmd, &cmdBeginInfo);
 
-	pFunction(pData.cmd);
+	func(data.cmd);
 
-	vkEndCommandBuffer(pData.cmd);
+	vkEndCommandBuffer(data.cmd);
 
-	VkCommandBufferSubmitInfo cmdInfo = CommandBufferSubmitInfo(pData.cmd);
+	VkCommandBufferSubmitInfo cmdInfo = CommandBufferSubmitInfo(data.cmd);
 	VkSubmitInfo2 submit = SubmitInfo(&cmdInfo, nullptr, nullptr);
 
-	vkQueueSubmit2(pQueue, 1, &submit, pData.fence);
+	vkQueueSubmit2(queue, 1, &submit, data.fence);
 
-	vkWaitForFences(pDevice, 1, &pData.fence, true, UINT64_MAX);
+	vkWaitForFences(device, 1, &data.fence, true, UINT64_MAX);
 }

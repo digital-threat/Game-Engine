@@ -3,20 +3,20 @@
 #include <engine.h>
 #include <stdexcept>
 
-VulkanBuffer CreateBuffer(VmaAllocator pAllocator, size_t pAllocSize, VkBufferUsageFlags pUsage, VmaMemoryUsage pMemoryUsage)
+VulkanBuffer CreateBuffer(VmaAllocator allocator, size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage)
 {
 	VkBufferCreateInfo bufferInfo{};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	bufferInfo.pNext = nullptr;
-	bufferInfo.size = pAllocSize;
-	bufferInfo.usage = pUsage;
+	bufferInfo.size = allocSize;
+	bufferInfo.usage = usage;
 
 	VmaAllocationCreateInfo vmaAllocationInfo{};
-	vmaAllocationInfo.usage = pMemoryUsage;
+	vmaAllocationInfo.usage = memoryUsage;
 	vmaAllocationInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
 	VulkanBuffer buffer;
-	if (vmaCreateBuffer(pAllocator, &bufferInfo, &vmaAllocationInfo, &buffer.buffer, &buffer.allocation, &buffer.info) != VK_SUCCESS)
+	if (vmaCreateBuffer(allocator, &bufferInfo, &vmaAllocationInfo, &buffer.buffer, &buffer.allocation, &buffer.info) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create buffer.");
 	}
@@ -25,14 +25,14 @@ VulkanBuffer CreateBuffer(VmaAllocator pAllocator, size_t pAllocSize, VkBufferUs
 
 }
 
-void DestroyBuffer(VmaAllocator pAllocator, const VulkanBuffer &pBuffer)
+void DestroyBuffer(VmaAllocator allocator, const VulkanBuffer &buffer)
 {
-	vmaDestroyBuffer(pAllocator, pBuffer.buffer, pBuffer.allocation);
+	vmaDestroyBuffer(allocator, buffer.buffer, buffer.allocation);
 }
 
-void CopyBuffer(VkCommandBuffer pCmd, VkBuffer pSrcBuffer, VkBuffer pDstBuffer, VkDeviceSize pSize)
+void CopyBuffer(VkCommandBuffer cmd, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
 	VkBufferCopy copyRegion{};
-	copyRegion.size = pSize;
-	vkCmdCopyBuffer(pCmd, pSrcBuffer, pDstBuffer, 1, &copyRegion);
+	copyRegion.size = size;
+	vkCmdCopyBuffer(cmd, srcBuffer, dstBuffer, 1, &copyRegion);
 }

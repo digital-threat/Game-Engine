@@ -6,7 +6,7 @@
 
 class Engine;
 
-class MeshManager : public MessageQueue
+class MeshManager
 {
 public:
 	MeshManager() = delete;
@@ -19,16 +19,11 @@ public:
 	explicit MeshManager(Engine& engine);
 
 public:
-	void Update(std::atomic_bool& pCancellationToken);
-
 	static MeshManager& Allocate(Engine &engine);
-	static MeshManager& Get();
+	static MeshManager& Instance();
 
-private:
-	void ProcessMessage(Message *pMessage) override;
-
-	GpuMesh GetMesh(const char* pPath);
-	GpuMesh LoadMesh(const char* pPath);
+	GpuMesh* GetMesh(const char* path);
+	GpuMesh* LoadMesh(const char* path);
 
 private:
 	Engine& mEngine;

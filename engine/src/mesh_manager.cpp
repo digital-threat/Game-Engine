@@ -22,79 +22,34 @@ MeshManager& MeshManager::Allocate(Engine &engine)
 	return *mInstance;
 }
 
-MeshManager& MeshManager::Get()
+MeshManager& MeshManager::Instance()
 {
 	return *mInstance;
 }
 
-GpuMesh MeshManager::GetMesh(const char* pPath)
+GpuMesh* MeshManager::GetMesh(const char* path)
 {
-	auto it = mMeshes.find(pPath);
+	auto it = mMeshes.find(path);
 	if (it != mMeshes.end())
 	{
-		return it->second;
+		return &it->second;
 	}
 
-	return GpuMesh();
+	return LoadMesh(path);
 }
 
-GpuMesh MeshManager::LoadMesh(const char* pPath)
+GpuMesh* MeshManager::LoadMesh(const char* path)
 {
 	CpuMesh cpuMesh{};
 	GpuMesh gpuMesh{};
 
-	std::filesystem::path path = pPath;
-	if (DeserializeMesh(path, cpuMesh))
+	std::filesystem::path systemPath = path;
+	if (DeserializeMesh(systemPath, cpuMesh))
 	{
 		mEngine.UploadMesh(cpuMesh.indices, cpuMesh.vertices, gpuMesh);
 
-		mMeshes[pPath] = gpuMesh;
+		mMeshes[path] = gpuMesh;
 	}
 
-	return gpuMesh;
-}
-
-void MeshManager::Update(std::atomic_bool &pCancellationToken)
-{
-	while(!pCancellationToken)
-	{
-		ProcessMessages();
-	}
-}
-
-void MeshManager::ProcessMessage(Message *pMessage)
-{
-	std::string& message = pMessage->message;
-	switch(pMessage->type)
-	{
-		case MessageType::STRING:
-		{
-			if (message == "LoadMesh")
-			{
-				auto stringMsg = static_cast<StringMessage*>(pMessage);
-				std::string& path = stringMsg->param;
-
-				GpuMesh mesh = GetMesh(path.c_str());
-				if (mesh.indexCount == 0)
-				{
-					mesh = LoadMesh(path.c_str());
-					if (mesh.indexCount == 0)
-					{
-						std::cerr << "Failed to load mesh from path: " << path << std::endl;
-						return;
-					}
-				}
-
-				if (stringMsg->sender != nullptr)
-				{
-					MeshMessage* reply = new MeshMessage("MeshLoaded", mesh, stringMsg->entity);
-					stringMsg->sender->QueueMessage(reply);
-				}
-			}
-		} break;
-		default:
-		{
-
-		} break;
-	}
+	return &mMeshes[path];
 }

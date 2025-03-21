@@ -10,7 +10,7 @@
 struct RayHit;
 struct Ray;
 
-class Sandbox : public Application, public MessageQueue
+class Sandbox : public Application
 {
 private:
 	Coordinator mCoordinator{};
@@ -42,7 +42,5 @@ private:
 	void LoadDefaultScene();
 
 	bool Raycast(Ray& ray, RayHit& hit);
-
-	void ProcessMessage(Message *pMessage) override;
 };
 

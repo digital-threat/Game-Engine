@@ -51,8 +51,6 @@ void Sandbox::Awake()
 
 void Sandbox::Update(f64 deltaTime)
 {
-    ProcessMessages();
-
     mResourceSystem.Update();
 
     CameraSystem::Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, mRenderContext.camera, deltaTime);
@@ -98,8 +96,9 @@ void Sandbox::CreateBlas()
 {
     std::vector<BlasInput> allBlas;
 
-    //auto blas = MeshToVkGeometryKHR(mesh);
-    //allBlas.emplace_back(blas);
+    GpuMesh* cube = MeshManager::Instance().GetMesh("assets/meshes/cube.bin");
+    auto blas = MeshToVkGeometryKHR(*cube);
+    allBlas.emplace_back(blas);
 
     mRtBuilder.BuildBlas(allBlas, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
 }
@@ -148,7 +147,7 @@ void Sandbox::LoadDefaultScene()
     materialManager.SetTexture(whiteHandle, whiteTexture, 1);
 
 
-    MeshManager& meshManager = MeshManager::Get();
+    MeshManager& meshManager = MeshManager::Instance();
 
     for (i32 i = 0; i < 3; ++i)
     {
@@ -161,12 +160,9 @@ void Sandbox::LoadDefaultScene()
         mCoordinator.AddComponent<Transform>(entity, transform);
 
         Renderer renderer;
-        renderer.mesh = nullptr;
+        renderer.mesh = meshManager.GetMesh("assets/meshes/cube.bin");
         renderer.material = crateHandle;
         mCoordinator.AddComponent<Renderer>(entity, renderer);
-
-        StringMessage* message = new StringMessage("LoadMesh", "assets/meshes/cube.bin", entity, static_cast<MessageQueue *>(&mResourceSystem));
-        meshManager.QueueMessage(message);
     }
 
     Entity cameraEntity = mCoordinator.CreateEntity();
@@ -206,13 +202,4 @@ bool Sandbox::Raycast(Ray &ray, RayHit& hit)
     }
 
     return false;
-}
-
-void Sandbox::ProcessMessage(Message *pMessage)
-{
-    std::string& message = pMessage->message;
-    switch(pMessage->type)
-    {
-
-    }
 }
