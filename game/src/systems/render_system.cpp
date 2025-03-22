@@ -44,7 +44,7 @@ void RenderSystem::Update(EntityManager& entityManager, ComponentManager& compon
 			{
 				renderObject.materialSet = MaterialManager::Get().GetDescriptorSet(renderer.material);
 
-				context.renderObjects.emplace_back(renderObject);
+				context.renderObjects.push_back(renderObject);
 			}
 		}
 	};

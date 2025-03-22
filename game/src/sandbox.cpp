@@ -25,6 +25,7 @@
 
 Sandbox::Sandbox(): mResourceSystem(mCoordinator)
 {
+    mRenderContext.renderScale = 1.0f;
 }
 
 void Sandbox::Awake()

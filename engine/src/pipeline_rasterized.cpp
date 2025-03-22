@@ -78,19 +78,20 @@ void Engine::RenderRasterized(VkCommandBuffer cmd, FrameData& currentFrame)
     glm::mat4 mainLightV = glm::lookAt(sceneRenderData.mainLightPos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
 
     CameraRenderData& camera = mApplication->mRenderContext.camera;
-    mScene.matrixV = glm::lookAt(camera.pos, camera.pos + camera.forward, camera.up);
-    mScene.matrixP = glm::perspective(glm::radians(camera.fov), aspect, 100.0f, 0.1f);
-    mScene.matrixVP = mScene.matrixP * mScene.matrixV;
-    mScene.mainLightVP = mainLightP * mainLightV;
-    mScene.mainLightColor = sceneRenderData.mainLightColor;
-    mScene.mainLightDir = glm::normalize(glm::vec4(sceneRenderData.mainLightPos - glm::vec3(0.0f), 1.0f));
-    mScene.ambientColor = glm::vec4(sceneRenderData.ambientColor, 1.0f);
-    mScene.lightBuffer = mApplication->mRenderContext.light.lightBuffer;
-    mScene.lightCount =  mApplication->mRenderContext.light.lightCount;
-    mScene.cameraPos = glm::vec4(camera.pos, 0.0f);
+    SceneData scene{};
+    scene.matrixV = glm::lookAt(camera.pos, camera.pos + camera.forward, camera.up);
+    scene.matrixP = glm::perspective(glm::radians(camera.fov), aspect, 100.0f, 0.1f);
+    scene.matrixVP = scene.matrixP * scene.matrixV;
+    scene.mainLightVP = mainLightP * mainLightV;
+    scene.mainLightColor = sceneRenderData.mainLightColor;
+    scene.mainLightDir = glm::normalize(glm::vec4(sceneRenderData.mainLightPos - glm::vec3(0.0f), 1.0f));
+    scene.ambientColor = glm::vec4(sceneRenderData.ambientColor, 1.0f);
+    scene.lightBuffer = mApplication->mRenderContext.light.lightBuffer;
+    scene.lightCount =  mApplication->mRenderContext.light.lightCount;
+    scene.cameraPos = glm::vec4(camera.pos, 0.0f);
 
     SceneData* sceneUniformData = static_cast<SceneData*>(currentFrame.sceneDataBuffer.info.pMappedData);
-    *sceneUniformData = mScene;
+    *sceneUniformData = scene;
 
     VkDescriptorSet sceneSet = currentFrame.descriptorAllocator.Allocate(mDevice, mSceneDescriptorLayout);
 

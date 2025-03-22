@@ -97,7 +97,6 @@ public:
 
     BackgroundData mBackground{};
 
-    SceneData mScene{};
     VkDescriptorSetLayout mSceneDescriptorLayout;
 
     VkDescriptorSetLayout mMaterialDescriptorLayout;
