@@ -26,6 +26,10 @@
 Sandbox::Sandbox(): mResourceSystem(mCoordinator)
 {
     mRenderContext.renderScale = 1.0f;
+    mMainLightColor = glm::vec3(1, 1, 1);
+    mMainLightPosition = glm::vec3(0, 5, -10);
+    mMainLightIntensity = 1.0f;
+    isSimulating = true;
 }
 
 void Sandbox::Awake()

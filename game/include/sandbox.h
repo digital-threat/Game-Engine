@@ -13,12 +13,12 @@ struct Ray;
 class Sandbox : public Application
 {
 private:
-	Coordinator mCoordinator{};
-	glm::vec3 mMainLightColor = glm::vec3(1, 1, 1);
-	glm::vec3 mMainLightPosition = glm::vec3(0, 5, -10);
-	float mMainLightIntensity = 1.0f;
-	bool isSimulating = true;
+	Coordinator mCoordinator;
 	ResourceSystem mResourceSystem;
+	glm::vec3 mMainLightColor;
+	glm::vec3 mMainLightPosition;
+	float mMainLightIntensity;
+	bool isSimulating;
 
 	RaytracingBuilder mRtBuilder;
 

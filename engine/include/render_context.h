@@ -25,7 +25,7 @@ struct CameraRenderData
 struct LightRenderData
 {
 	std::array<LightData, MAX_LIGHTS> lightBuffer;
-	u32 lightCount = 0;
+	u32 lightCount;
 };
 
 struct RenderContext
@@ -34,5 +34,5 @@ struct RenderContext
 	SceneRenderData scene;
 	CameraRenderData camera;
 	LightRenderData light;
-	float renderScale = 1.0f;
+	float renderScale;
 };

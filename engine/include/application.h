@@ -12,5 +12,5 @@ public:
 	virtual void Destroy() = 0;
 
 public:
-	RenderContext mRenderContext{};
+	RenderContext mRenderContext;
 };
