@@ -1,7 +1,9 @@
+#include <engine.h>
 #include <mesh_structs.h>
 #include <vertex.h>
 #include <vk_buffers.h>
 #include <vk_raytracing.h>
+#include <vk_utility.h>
 
 BlasInput MeshToVkGeometryKHR(GpuMesh& mesh)
 {
@@ -27,7 +29,7 @@ BlasInput MeshToVkGeometryKHR(GpuMesh& mesh)
 	offset.primitiveOffset = 0;
 	offset.transformOffset = 0;
 
-	BlasInput input;
+	BlasInput input{};
 	input.asGeometry.emplace_back(asGeometry);
 	input.asBuildOffsetInfo.emplace_back(offset);
 	return input;
@@ -35,62 +37,87 @@ BlasInput MeshToVkGeometryKHR(GpuMesh& mesh)
 
 RaytracingBuilder::RaytracingBuilder()
 {
-	vkGetAccelerationStructureBuildSizesKHR = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(vkGetDeviceProcAddr(device, "vkGetAccelerationStructureBuildSizesKHR"));
+	vkGetAccelerationStructureBuildSizesKHR = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(vkGetDeviceProcAddr(mDevice, "vkGetAccelerationStructureBuildSizesKHR"));
 }
 
+// TODO(Sergei): Compact BLAS (could save over 50% memory)
+// TODO(Sergei): Split workload into batches (otherwise could stall the pipeline and "potentially create problems")
+// https://nvpro-samples.github.io/vk_raytracing_tutorial_KHR
 void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelerationStructureFlagsKHR flags)
 {
-	VkDeviceSize asTotalSize{0};
-	VkDeviceSize maxScratchSize{0};
+	std::vector<VulkanBuffer> scratchBuffers;
+	scratchBuffers.reserve(input.size());
 
 	u32 blasCount = static_cast<u32>(input.size());
 	for (u32 i = 0; i < blasCount; i++)
 	{
-		VkAccelerationStructureBuildGeometryInfoKHR info{};
-		info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
-		info.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-		info.flags = input[i].flags | flags; // VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-		info.geometryCount = static_cast<u32>(input[i].asGeometry.size());
-		info.pGeometries = input[i].asGeometry.data();
+		//Build geometry info
+		VkAccelerationStructureBuildGeometryInfoKHR buildInfo{};
+		buildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+		buildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+		buildInfo.flags = input[i].flags | flags; // VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+		buildInfo.geometryCount = static_cast<u32>(input[i].asGeometry.size());
+		buildInfo.pGeometries = input[i].asGeometry.data();
 
-		// Range info
+		// Build range info
 		std::vector<VkAccelerationStructureBuildRangeInfoKHR> rangeInfos = input[i].asBuildOffsetInfo;
 
-		// Sizes info
+		// Build sizes info
 		VkAccelerationStructureBuildSizesInfoKHR sizesInfo{};
 		sizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-
-		std::vector<u32> maxPrimitiveCounts(input[i].asBuildOffsetInfo.size());
-		for(u32 j = 0; j < input[i].asBuildOffsetInfo.size(); j++)
-		{
-			maxPrimitiveCounts[j] = input[i].asBuildOffsetInfo[j].primitiveCount;
-		}
-
+		std::vector<u32> primitiveCounts = input[i].GetPrimitiveCounts();
 		auto buildType = VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR;
-		vkGetAccelerationStructureBuildSizesKHR(device, buildType, &info, maxPrimitiveCounts.data(), &sizesInfo);
+		vkGetAccelerationStructureBuildSizesKHR(mDevice, buildType, &buildInfo, primitiveCounts.data(), &sizesInfo);
 
-		asTotalSize += sizesInfo.accelerationStructureSize;
-		maxScratchSize = std::max(maxScratchSize, sizesInfo.buildScratchSize);
+		// Create scratch buffer
+		VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		VulkanBuffer scratchBuffer = CreateBuffer(mAllocator, sizesInfo.accelerationStructureSize, bufferUsage, VMA_MEMORY_USAGE_AUTO);
+		scratchBuffers.push_back(scratchBuffer);
+
+		// Get device address of scratch buffer
+		VkBufferDeviceAddressInfo bufferInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+		bufferInfo.buffer = scratchBuffer.buffer;
+		VkDeviceAddress scratchAddress = vkGetBufferDeviceAddress(mDevice, &bufferInfo);
+
+		// Create info
+		VkAccelerationStructureCreateInfoKHR createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+		createInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+		createInfo.size = sizesInfo.accelerationStructureSize;
+		buildAs[idx].as = m_alloc->createAcceleration(createInfo);
+		NAME_IDX_VK(buildAs[idx].as.accel, idx);
+		NAME_IDX_VK(buildAs[idx].as.buffer.buffer, idx);
+
+		// Build info (cont.)
+		buildInfo.scratchData.deviceAddress = scratchAddress;
+		//info.dstAccelerationStructure =
 	}
 
-	VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-	VulkanBuffer scratchBuffer = CreateBuffer(allocator, maxScratchSize, bufferUsage, VMA_MEMORY_USAGE_AUTO);
-	VkBufferDeviceAddressInfo bufferInfo{};
-	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-	bufferInfo.buffer = scratchBuffer.buffer;
-	VkDeviceAddress scratchAddress = vkGetBufferDeviceAddress(device, &bufferInfo);
 
 
-	// VkCommandBuffer cmdBuf = m_cmdPool.createCommandBuffer();
-	// cmdCreateBlas(cmdBuf, indices, buildAs, scratchAddress, queryPool);
-	// m_cmdPool.submitAndWait(cmdBuf);
+	auto func = [&](VkCommandBuffer cmd)
+	{
+		for (u32 i = 0; i < blasCount; i++)
+		{
+
+
+			// Range info
+			std::vector<VkAccelerationStructureBuildRangeInfoKHR*> rangeInfos;
+			rangeInfos.push_back(input[i].asBuildOffsetInfo.data());
+
+			vkCmdBuildAccelerationStructuresKHR(cmd, 1, &buildInfo, rangeInfos.data());
+		}
+	};
+
+	ImmediateSubmit(mEngine.mDevice, mEngine.mGraphicsQueue, mEngine.mImmediate, func);
 
 	// for(auto& b : buildAs)
 	// {
 	// 	m_blas.emplace_back(b.as);
 	// }
 
-	DestroyBuffer(allocator, scratchBuffer);
+	DestroyBuffer(mAllocator, scratchBuffer);
 }
 
 void RaytracingBuilder::BuildTlas(std::vector<VkAccelerationStructureInstanceKHR>& instances,
