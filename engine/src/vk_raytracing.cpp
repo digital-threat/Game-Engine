@@ -70,8 +70,8 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 		vkGetAccelerationStructureBuildSizesKHR(mDevice, buildType, &buildInfo, primitiveCounts.data(), &sizesInfo);
 
 		// Create scratch buffer
-		VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		VulkanBuffer scratchBuffer = CreateBuffer(mAllocator, sizesInfo.accelerationStructureSize, bufferUsage, VMA_MEMORY_USAGE_AUTO);
+		VkBufferUsageFlags scratchBufferUsage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		VulkanBuffer scratchBuffer = CreateBuffer(mAllocator, sizesInfo.accelerationStructureSize, scratchBufferUsage, VMA_MEMORY_USAGE_AUTO);
 		scratchBuffers.push_back(scratchBuffer);
 
 		// Get device address of scratch buffer
@@ -80,11 +80,18 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 		bufferInfo.buffer = scratchBuffer.buffer;
 		VkDeviceAddress scratchAddress = vkGetBufferDeviceAddress(mDevice, &bufferInfo);
 
+		// Create acceleration structure buffer
+		VkBufferUsageFlags asBufferUsage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+		VulkanBuffer asBuffer = CreateBuffer(mEngine.mAllocator, sizesInfo.accelerationStructureSize, asBufferUsage, VMA_MEMORY_USAGE_AUTO);
+
 		// Create info
 		VkAccelerationStructureCreateInfoKHR createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
 		createInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
 		createInfo.size = sizesInfo.accelerationStructureSize;
+		createInfo.buffer = asBuffer.buffer;
+		vkCreateAccelerationStructureKHR(mEngine.mDevice, &createInfo, nullptr, &asBuffer.handle);
+
 		buildAs[idx].as = m_alloc->createAcceleration(createInfo);
 		NAME_IDX_VK(buildAs[idx].as.accel, idx);
 		NAME_IDX_VK(buildAs[idx].as.buffer.buffer, idx);

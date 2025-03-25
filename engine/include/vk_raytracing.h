@@ -31,6 +31,14 @@ struct AccelerationStructureBuildData
 	VkAccelerationStructureBuildSizesInfoKHR sizesInfo{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};
 };
 
+struct AccelerationStructure
+{
+	VkAccelerationStructureKHR handle;
+	u64 deviceAddress = 0;
+	VkDeviceMemory memory;
+	VkBuffer buffer;
+};
+
 
 BlasInput MeshToVkGeometryKHR(GpuMesh& mesh);
 
@@ -48,6 +56,9 @@ public:
 				VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
 
 private:
+
+	std::vector<AccelerationStructure> bottomLevelAS;
+
 	Engine& mEngine;
 	VkDevice mDevice;
 	VkQueue mQueue;
