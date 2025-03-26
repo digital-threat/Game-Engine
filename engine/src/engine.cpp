@@ -75,8 +75,9 @@ void Engine::InitImGui()
     ImGui_ImplVulkan_CreateFontsTexture();
 }
 
-void Engine::Run()
+void Engine::Run(Application* application)
 {
+    mApplication = application;
     FrameData frames[MAX_FRAMES_IN_FLIGHT]{};
 
     InitWindow();

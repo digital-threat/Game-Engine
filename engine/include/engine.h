@@ -116,14 +116,14 @@ public:
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR mRtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 
 public:
-    Engine(Application* application) : mApplication(application)
+    Engine()
     {
         MeshManager::Allocate(*this);
         TextureManager::Allocate(*this);
         MaterialManager::Allocate(*this);
     }
 
-    void Run();
+    void Run(Application* application);
 
 private:
     void InitWindow();

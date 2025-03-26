@@ -23,7 +23,7 @@ private:
 	RaytracingBuilder mRtBuilder;
 
 public:
-	Sandbox();
+	explicit Sandbox(Engine& engine);
 	void Awake() override;
 	void Update(f64 deltaTime) override;
 	void PhysicsUpdate(f64 deltaTime) override;

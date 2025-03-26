@@ -1,4 +1,5 @@
 #include <sandbox.h>
+#include <engine.h>
 
 #include <iostream>
 #include <filesystem>
@@ -23,7 +24,7 @@
 #include <systems/physics_system.h>
 #include <systems/render_system.h>
 
-Sandbox::Sandbox(): mResourceSystem(mCoordinator)
+Sandbox::Sandbox(Engine& engine): Application(engine), mResourceSystem(mCoordinator), mRtBuilder(engine)
 {
     mRenderContext.renderScale = 1.0f;
     mMainLightColor = glm::vec3(1, 1, 1);

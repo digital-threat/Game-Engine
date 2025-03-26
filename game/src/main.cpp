@@ -5,12 +5,12 @@
 
 int main()
 {
-	Application* application = new Sandbox();
-	Engine* engine = new Engine(application);
+	Engine* engine = new Engine();
+	Application* application = new Sandbox(*engine);
 
 	try
 	{
-		engine->Run();
+		engine->Run(application);
 	}
 	catch (const std::exception& e)
 	{
