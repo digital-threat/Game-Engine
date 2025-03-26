@@ -109,6 +109,31 @@ void Sandbox::CreateBlas()
     mRtBuilder.BuildBlas(allBlas, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
 }
 
+void Sandbox::CreateTlas()
+{
+    std::vector<VkAccelerationStructureInstanceKHR> tlas;
+
+    Transform transform;
+    transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
+    transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+    transform.scale = 1;
+
+    glm::mat4 matrixM = glm::translate(glm::mat4(1.0f), transform.position);
+    matrixM *= glm::mat4_cast(transform.rotation);
+    matrixM = glm::scale(matrixM, glm::vec3(transform.scale));
+
+    VkAccelerationStructureInstanceKHR instance{};
+    instance.transform = ToVkTransformMatrixKHR(matrixM);
+    instance.instanceCustomIndex = 0;
+    instance.accelerationStructureReference = mRtBuilder.GetBlasDeviceAddress(0);
+    instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+    instance.mask = 0xFF;
+    instance.instanceShaderBindingTableRecordOffset = 0;
+    tlas.emplace_back(instance);
+
+    mRtBuilder.BuildTlas(tlas, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
+}
+
 void Sandbox::LoadDefaultScene()
 {
     TextureManager& textureManager = TextureManager::Get();

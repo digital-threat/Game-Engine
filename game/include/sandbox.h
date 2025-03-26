@@ -32,6 +32,7 @@ public:
 
 private:
 	void CreateBlas();
+	void CreateTlas();
 
 private:
 	void ImGuiApplication();

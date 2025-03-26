@@ -4,7 +4,7 @@
 #include <vk_buffers.h>
 #include <vk_helpers.h>
 #include <vk_types.h>
-#include <vk_utility.h>
+#include <vk_immediate.h>
 #include <stdexcept>
 
 

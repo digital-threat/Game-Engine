@@ -35,7 +35,7 @@ struct AccelerationStructure
 {
 	VkAccelerationStructureKHR handle;
 	VulkanBuffer buffer;
-	VkDeviceAddress address;
+	VkDeviceAddress deviceAddress;
 };
 
 
@@ -47,22 +47,30 @@ public:
 	PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR;
 	PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR;
 	PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR;
+	PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR;
 
 	RaytracingBuilder() = delete;
 	explicit RaytracingBuilder(Engine& engine);
 
-	void BuildBlas(std::vector<BlasInput>& input,
-				VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
+	void BuildBlas(std::vector<BlasInput>& input, VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
+	void BuildTlas(std::vector<VkAccelerationStructureInstanceKHR>& instances, VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR, bool update = false);
 
-	void BuildTlas(std::vector<VkAccelerationStructureInstanceKHR>& instances,
-				VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
+	VkDeviceAddress GetBlasDeviceAddress(u32 index);
 
 private:
 
 	std::vector<AccelerationStructure> mBlas;
+	AccelerationStructure mTlas;
 
 	Engine& mEngine;
-	VkDevice mDevice;
-	VkQueue mQueue;
-	VmaAllocator mAllocator;
 };
+
+
+inline VkTransformMatrixKHR ToVkTransformMatrixKHR(glm::mat4 matrix)
+{
+	// NOTE(Sergei): Transpose because GLM is column-major and VkTransformMatrixKHR is row-major
+	glm::mat4 transposed = glm::transpose(matrix);
+	VkTransformMatrixKHR result;
+	memcpy(&result, &transposed, sizeof(VkTransformMatrixKHR));
+	return result;
+}

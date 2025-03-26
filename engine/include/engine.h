@@ -22,7 +22,7 @@
 #include <mesh_manager.h>
 #include <vk_images.h>
 #include <texture_manager.h>
-#include <vk_utility.h>
+#include <vk_immediate.h>
 #include <types.h>
 #include <vk_types.h>
 #include <vk_descriptors.h>
