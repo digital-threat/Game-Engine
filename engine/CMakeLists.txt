@@ -23,6 +23,8 @@ set_target_properties(imgui PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_
 file(GLOB_RECURSE ENGINE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 add_library(${PROJECT_NAME} STATIC ${ENGINE_SOURCES})
 
+add_compile_definitions(PLATFORM_WINDOWS)
+add_compile_definitions(BUILD_DLL)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC

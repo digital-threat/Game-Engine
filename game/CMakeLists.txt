@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 20)
 file(GLOB_RECURSE SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
+add_compile_definitions(PLATFORM_WINDOWS)
+
 # Address Sanitizer
 # target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
 # target_link_directories(${PROJECT_NAME} PRIVATE $ENV{ProgramFiles}/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/lib/clang/19/lib/windows)

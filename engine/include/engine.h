@@ -56,7 +56,7 @@ public:
     bool mResizeRequested = false;
     bool mFramebufferResized = false;
 
-    GLFWwindow *mWindow = nullptr;
+    GLFWwindow* mWindow = nullptr;
 
     VmaAllocator mAllocator{};
 
