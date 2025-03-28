@@ -94,15 +94,12 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
 	bufferInfo.buffer = scratchBuffer.buffer;
 	VkDeviceAddress scratchAddress = vkGetBufferDeviceAddress(mEngine.mDevice, &bufferInfo);
+	scratchAddress = AlignUp(scratchAddress, 128);
 
 	auto func = [&](VkCommandBuffer cmd)
 	{
 		for (u32 i = 0; i < blasCount; i++)
 		{
-			// Build geometry info (cont.)
-			buildData[i].geometryInfo.scratchData.deviceAddress = scratchAddress;
-			buildData[i].geometryInfo.dstAccelerationStructure = mBlas[i].handle;
-
 			// Create acceleration structure buffer
 			VkBufferUsageFlags asBufferUsage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 			mBlas[i].buffer = CreateBuffer(mEngine.mAllocator, buildData[i].sizesInfo.accelerationStructureSize, asBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
@@ -114,6 +111,10 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 			createInfo.size = buildData[i].sizesInfo.accelerationStructureSize;
 			createInfo.buffer = mBlas[i].buffer.buffer;
 			mEngine.mVkbDispatchTable.fp_vkCreateAccelerationStructureKHR(mEngine.mDevice, &createInfo, nullptr, &mBlas[i].handle);
+
+			// Build geometry info (cont.)
+			buildData[i].geometryInfo.scratchData.deviceAddress = scratchAddress;
+			buildData[i].geometryInfo.dstAccelerationStructure = mBlas[i].handle;
 
 			// Range info
 			std::vector<VkAccelerationStructureBuildRangeInfoKHR*> rangeInfos = { buildData[i].rangeInfos.data() };
@@ -191,13 +192,15 @@ void RaytracingBuilder::BuildTlas(std::vector<VkAccelerationStructureInstanceKHR
 
 	// Create scratch buffer
 	VkBufferUsageFlags scratchBufferUsage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-	VulkanBuffer scratchBuffer = CreateBuffer(mEngine.mAllocator, sizesInfo.buildScratchSize, scratchBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
+	VkDeviceSize scratchSize = AlignUp(sizesInfo.buildScratchSize, 128);
+	VulkanBuffer scratchBuffer = CreateBuffer(mEngine.mAllocator, scratchSize, scratchBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
 
 	// Get device address of scratch buffer
 	VkBufferDeviceAddressInfo scratchBufferInfo{};
 	scratchBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
 	scratchBufferInfo.buffer = scratchBuffer.buffer;
 	VkDeviceAddress scratchAddress = vkGetBufferDeviceAddress(mEngine.mDevice, &scratchBufferInfo);
+	scratchAddress = AlignUp(scratchAddress, 128);
 
 	// Build geometry info (cont.)
 	buildInfo.srcAccelerationStructure = VK_NULL_HANDLE;

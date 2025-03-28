@@ -624,6 +624,7 @@ void Engine::Render(FrameData& currentFrame)
     }
 }
 
+// TODO(Sergei): Not every vertex and index buffer needs VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
 void Engine::UploadMesh(std::span<u32> indices, std::span<Vertex> vertices, GpuMesh& mesh)
 {
     mesh.indexCount = indices.size();
@@ -633,9 +634,11 @@ void Engine::UploadMesh(std::span<u32> indices, std::span<Vertex> vertices, GpuM
     const size_t indexBufferSize = indices.size() * sizeof(u32);
 
     VkBufferUsageFlags vertexBufferUsage{};
-    vertexBufferUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    vertexBufferUsage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
     vertexBufferUsage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     vertexBufferUsage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    vertexBufferUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    vertexBufferUsage |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
 
     mesh.vertexBuffer = CreateBuffer(mAllocator, vertexBufferSize, vertexBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
 
@@ -648,6 +651,8 @@ void Engine::UploadMesh(std::span<u32> indices, std::span<Vertex> vertices, GpuM
     indexBufferUsage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
     indexBufferUsage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     indexBufferUsage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    indexBufferUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    indexBufferUsage |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
 
     mesh.indexBuffer = CreateBuffer(mAllocator, indexBufferSize, indexBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
 
