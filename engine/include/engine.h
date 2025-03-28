@@ -61,6 +61,7 @@ public:
     VmaAllocator mAllocator{};
 
     vkb::Swapchain mVkbSwapchain;
+    vkb::DispatchTable mVkbDispatchTable;
 
     VkInstance mInstance = VK_NULL_HANDLE;
     VkSurfaceKHR mSurface = VK_NULL_HANDLE;
@@ -137,6 +138,7 @@ private:
     void CreateSurface();
     static vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance& vkbInstance, VkSurfaceKHR vkSurface);
     vkb::Device CreateDevice(vkb::PhysicalDevice& vkbPhysicalDevice);
+    void CreateDispatchTable(vkb::Device vkbDevice);
     void GetQueues(vkb::Device& device);
     void CreateAllocator();
     void CreateSwapchain(u32 width, u32 height);

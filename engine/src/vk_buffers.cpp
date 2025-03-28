@@ -25,6 +25,8 @@ VulkanBuffer CreateBuffer(VmaAllocator allocator, VkDeviceSize size, VkBufferUsa
 
 }
 
+// TODO(Sergei): Create a staging memory manager to avoid having to use immediate submit.
+// Just get some staging memory and release it sometime after.
 VulkanBuffer CreateBufferAndUploadData(Engine& engine, VkDeviceSize size, void* data, VkBufferUsageFlags usage)
 {
 	VulkanBuffer stagingBuffer = CreateBuffer(engine.mAllocator, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);

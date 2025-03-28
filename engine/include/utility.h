@@ -82,3 +82,9 @@ inline void rtrim(std::string &s)
 
 	s.erase(std::find_if(s.rbegin(), s.rend(), pred).base(), s.end());
 }
+
+template <class T>
+constexpr T AlignUp(T x, size_t a) noexcept
+{
+	return T((x + (T(a) - 1)) & ~T(a - 1));
+}

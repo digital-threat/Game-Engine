@@ -107,8 +107,8 @@ void Engine::InitVulkan(FrameData* frames)
     CreateSurface();
     auto vkbPhysicalDevice = SelectPhysicalDevice(vkbInstance, mSurface);
     mPhysicalDevice = vkbPhysicalDevice.physical_device;
-
     auto vkbDevice = CreateDevice(vkbPhysicalDevice);
+    CreateDispatchTable(vkbDevice);
     GetQueues(vkbDevice);
     CreateAllocator();
     CreateSwapchain(WIDTH, HEIGHT);
@@ -193,7 +193,6 @@ vkb::Instance Engine::CreateInstance()
     builder.use_default_debug_messenger();
     //builder.enable_layer("VK_LAYER_LUNARG_api_dump");
     builder.enable_layer("VK_LAYER_KHRONOS_validation");
-
     builder.require_api_version(1,3,0);
 
     auto instance = builder.build();
@@ -229,6 +228,14 @@ vkb::PhysicalDevice Engine::SelectPhysicalDevice(vkb::Instance& vkbInstance, VkS
     features_13.dynamicRendering = true;
     features_13.synchronization2 = true;
 
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
+    accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    accelerationStructureFeatures.accelerationStructure = VK_TRUE;
+
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{};
+    rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+    rayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
+
     vkb::PhysicalDeviceSelector selector(vkbInstance);
     selector.set_surface(vkSurface);
     selector.set_minimum_version(1, 3);
@@ -238,6 +245,8 @@ vkb::PhysicalDevice Engine::SelectPhysicalDevice(vkb::Instance& vkbInstance, VkS
     selector.add_required_extension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
     selector.add_required_extension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
     selector.add_required_extension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+    selector.add_required_extension_features(rayTracingPipelineFeatures);
+    selector.add_required_extension_features(accelerationStructureFeatures);
 
     auto physicalDevice = selector.select();
 
@@ -263,6 +272,11 @@ vkb::Device Engine::CreateDevice(vkb::PhysicalDevice& vkbPhysicalDevice)
     mDevice = device.value().device;
 
     return device.value();
+}
+
+void Engine::CreateDispatchTable(vkb::Device vkbDevice)
+{
+    mVkbDispatchTable = vkbDevice.make_table();
 }
 
 void Engine::GetQueues(vkb::Device& device)

@@ -41,16 +41,19 @@ void Sandbox::Awake()
     mCoordinator.RegisterComponent<BoxCollider>();
     mCoordinator.RegisterComponent<Camera>();
 
-    std::filesystem::path path = "assets/meshes/";
-    for (const auto &entry : std::filesystem::directory_iterator(path))
-    {
-        if (entry.path().extension() == ".obj")
-        {
-            CpuMesh meshData = ParseOBJ(entry.path());
-            std::filesystem::path path2 = "assets/meshes/" + meshData.name + ".bin";
-            SerializeMesh(meshData, path2);
-        }
-    }
+    // std::filesystem::path path = "assets/meshes/";
+    // for (const auto &entry : std::filesystem::directory_iterator(path))
+    // {
+    //     if (entry.path().extension() == ".obj")
+    //     {
+    //         CpuMesh meshData = ParseOBJ(entry.path());
+    //         std::filesystem::path path2 = "assets/meshes/" + meshData.name + ".bin";
+    //         SerializeMesh(meshData, path2);
+    //     }
+    // }
+
+    CreateBlas();
+    CreateTlas();
 
     LoadDefaultScene();
 }
