@@ -7,6 +7,7 @@ file(GLOB_RECURSE SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
 add_compile_definitions(PLATFORM_WINDOWS)
+add_compile_definitions(GRAPHICS_API_VULKAN)
 
 # Address Sanitizer
 # target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address)

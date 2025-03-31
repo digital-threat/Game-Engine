@@ -11,3 +11,11 @@
 //}
 //
 //#endif
+
+#ifdef GRAPHICS_API_VULKAN
+	#include <vulkan/buffer.h>
+	#include <vulkan/command_buffer.h>
+	#include <vulkan/texture.h>
+#elif GRAPHICS_API_D3D12
+	#error D3D12 is not supported!
+#endif
