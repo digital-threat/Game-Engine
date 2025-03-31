@@ -2,6 +2,22 @@
 #include <vk_helpers.h>
 #include <vk_pipelines.h>
 
+void Engine::InitBackgroundDescriptorLayout()
+{
+	DescriptorLayoutBuilder builder;
+	builder.AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+	mBackground.descriptorLayout = builder.Build(mDevice, VK_SHADER_STAGE_COMPUTE_BIT);
+}
+
+void Engine::UpdateBackgroundDescriptorSet()
+{
+	mBackground.descriptorSet = mGlobalDescriptorAllocator.Allocate(mDevice, mBackground.descriptorLayout);
+
+	DescriptorWriter writer;
+	writer.WriteImage(0, mColorTarget.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+	writer.UpdateSet(mDevice, mBackground.descriptorSet);
+}
+
 void Engine::InitBackgroundPipeline()
 {
 	VkPushConstantRange pushConstant{};
@@ -59,4 +75,11 @@ void Engine::RenderBackground(VkCommandBuffer cmd)
 	vkCmdPushConstants(cmd, mBackground.pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.data);
 
 	vkCmdDispatch(cmd, std::ceil(mRenderExtent.width / 16.0), std::ceil(mRenderExtent.height / 16.0), 1);
+}
+
+void Engine::Render(FrameData& currentFrame)
+{
+	//TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	//RenderBackground(cmd);
 }

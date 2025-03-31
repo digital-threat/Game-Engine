@@ -51,6 +51,8 @@ void Engine::RenderRasterized(VkCommandBuffer cmd, FrameData& currentFrame)
 
     vkCmdBeginRendering(cmd, &renderInfo);
 
+    //vkCmdClearColorImage(cmd, mColorTarget.image)
+
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipeline);
 
     VkViewport viewport{};

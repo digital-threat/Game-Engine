@@ -155,6 +155,8 @@ private:
     void InitBackgroundDescriptorLayout();
     void InitSceneDescriptorLayout();
     void InitMaterialDescriptorLayout();
+    void InitRaytracingDescriptorLayout();
+    void UpdateBackgroundDescriptorSet();
 
     // Buffers
     void InitBuffers(FrameData* frames);

@@ -388,7 +388,6 @@ void Engine::CreateSwapchain(u32 width, u32 height)
 
 void Engine::InitPipelines()
 {
-    InitBackgroundPipeline();
     InitRasterizedPipeline();
     InitShadowmapPipeline();
     InitRaytracingPipeline();
@@ -461,13 +460,6 @@ void Engine::InitFrameDescriptorAllocators(FrameData* frames)
     }
 }
 
-void Engine::InitBackgroundDescriptorLayout()
-{
-    DescriptorLayoutBuilder builder;
-    builder.AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    mBackground.descriptorLayout = builder.Build(mDevice, VK_SHADER_STAGE_COMPUTE_BIT);
-}
-
 void Engine::InitSceneDescriptorLayout()
 {
     DescriptorLayoutBuilder builder;
@@ -489,15 +481,8 @@ void Engine::InitDescriptors(FrameData* frames)
     InitGlobalDescriptorAllocator();
     InitFrameDescriptorAllocators(frames);
 
-    InitBackgroundDescriptorLayout();
     InitSceneDescriptorLayout();
     InitMaterialDescriptorLayout();
-
-    mBackground.descriptorSet = mGlobalDescriptorAllocator.Allocate(mDevice, mBackground.descriptorLayout);
-
-    DescriptorWriter writer;
-    writer.WriteImage(0, mColorTarget.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    writer.UpdateSet(mDevice, mBackground.descriptorSet);
 }
 
 void Engine::InitBuffers(FrameData* frames)
@@ -563,15 +548,11 @@ void Engine::Render(FrameData& currentFrame)
         throw std::runtime_error("Failed to begin recording command buffer.");
     }
 
-    TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-    RenderBackground(cmd);
-
     TransitionImageLayout(cmd, mShadowmapTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
     RenderShadowmap(cmd);
     TransitionImageLayout(cmd, mShadowmapTarget.image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-    TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     TransitionImageLayout(cmd, mDepthTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
     RenderRasterized(cmd, currentFrame);
@@ -583,7 +564,6 @@ void Engine::Render(FrameData& currentFrame)
 
     TransitionImageLayout(cmd, mSwapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     RenderImgui(cmd, mSwapchainImageViews[imageIndex]);
-
 
     TransitionImageLayout(cmd, mSwapchainImages[imageIndex],VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
