@@ -37,8 +37,9 @@ struct DescriptorWriter
 	std::deque<VkDescriptorBufferInfo> mBufferInfos;
 	std::vector<VkWriteDescriptorSet> mWrites;
 
-	void WriteImage(u32 pBinding, VkImageView pImage, VkSampler pSampler, VkImageLayout pLayout, VkDescriptorType pType);
-	void WriteBuffer(u32 pBinding, VkBuffer pBuffer, size_t pSize, size_t pOffset, VkDescriptorType pType);
+	void WriteImage(u32 binding, VkImageView image, VkSampler sampler, VkImageLayout layout, VkDescriptorType type);
+	void WriteBuffer(u32 binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type);
+	void WriteTlas(u32 binding, VkAccelerationStructureKHR tlas);
 
 	void Clear();
 	void UpdateSet(VkDevice pDevice, VkDescriptorSet pSet);

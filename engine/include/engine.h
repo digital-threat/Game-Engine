@@ -99,7 +99,6 @@ public:
     BackgroundData mBackground{};
 
     VkDescriptorSetLayout mSceneDescriptorLayout;
-
     VkDescriptorSetLayout mMaterialDescriptorLayout;
 
     VkExtent2D mRenderExtent{};
@@ -115,6 +114,7 @@ public:
 
     // Ray tracing
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR mRtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+    VkDescriptorSetLayout mRaytracingDescriptorLayout;
 
 public:
     Engine()
@@ -167,7 +167,7 @@ private:
     void RenderImgui(VkCommandBuffer cmd, VkImageView targetImageView);
     void RenderRasterized(VkCommandBuffer cmd, FrameData& currentFrame);
     void RenderShadowmap(VkCommandBuffer cmd);
-    void RenderRaytracing(VkCommandBuffer cmd);
+    void RenderRaytracing(VkCommandBuffer cmd, FrameData& currentFrame);
 
     // Pipelines
     void InitPipelines();

@@ -89,43 +89,62 @@ VkDescriptorSet DescriptorAllocator::Allocate(const VkDevice pDevice, const VkDe
 }
 
 void
-DescriptorWriter::WriteImage(u32 pBinding, VkImageView pImage, VkSampler pSampler, VkImageLayout pLayout, VkDescriptorType pType)
+DescriptorWriter::WriteImage(u32 binding, VkImageView image, VkSampler sampler, VkImageLayout layout, VkDescriptorType type)
 {
 	VkDescriptorImageInfo imageInfo{};
-	imageInfo.sampler = pSampler;
-	imageInfo.imageView = pImage;
-	imageInfo.imageLayout = pLayout;
+	imageInfo.sampler = sampler;
+	imageInfo.imageView = image;
+	imageInfo.imageLayout = layout;
 
 	VkDescriptorImageInfo& info = mImageInfos.emplace_back(imageInfo);
 
 	VkWriteDescriptorSet write{};
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.dstBinding = pBinding;
+	write.dstBinding = binding;
 	write.dstSet = VK_NULL_HANDLE; //left empty for now until we need to write it
 	write.descriptorCount = 1;
-	write.descriptorType = pType;
+	write.descriptorType = type;
 	write.pImageInfo = &info;
 
 	mWrites.push_back(write);
 }
 
 void
-DescriptorWriter::WriteBuffer(u32 pBinding, VkBuffer pBuffer, size_t pSize, size_t pOffset, VkDescriptorType pType)
+DescriptorWriter::WriteBuffer(u32 binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type)
 {
 	VkDescriptorBufferInfo bufferInfo{};
-	bufferInfo.buffer = pBuffer;
-	bufferInfo.offset = pOffset;
-	bufferInfo.range = pSize;
+	bufferInfo.buffer = buffer;
+	bufferInfo.offset = offset;
+	bufferInfo.range = size;
 
 	VkDescriptorBufferInfo& info = mBufferInfos.emplace_back(bufferInfo);
 
 	VkWriteDescriptorSet write{};
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.dstBinding = pBinding;
+	write.dstBinding = binding;
 	write.dstSet = VK_NULL_HANDLE; //left empty for now until we need to write it
 	write.descriptorCount = 1;
-	write.descriptorType = pType;
+	write.descriptorType = type;
 	write.pBufferInfo = &info;
+
+	mWrites.push_back(write);
+}
+
+void DescriptorWriter::WriteTlas(u32 binding, VkAccelerationStructureKHR tlas)
+{
+	VkWriteDescriptorSetAccelerationStructureKHR writeAS{};
+	writeAS.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+	writeAS.accelerationStructureCount = 1;
+	writeAS.pAccelerationStructures = &tlas;
+
+	VkWriteDescriptorSet write{};
+	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	// NOTE(Sergei): If you ever forget - the specialized descriptor has to be chained.
+	write.pNext = &writeAS;
+	write.dstBinding = binding;
+	write.dstSet = VK_NULL_HANDLE;
+	write.descriptorCount = 1;
+	write.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 
 	mWrites.push_back(write);
 }

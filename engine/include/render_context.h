@@ -6,6 +6,7 @@
 
 #include <array>
 #include <vector>
+#include <vk_raytracing.h>
 
 struct SceneRenderData
 {
@@ -28,11 +29,17 @@ struct LightRenderData
 	u32 lightCount;
 };
 
+struct RaytracingData
+{
+	VkAccelerationStructureKHR tlas;
+};
+
 struct RenderContext
 {
 	std::vector<RenderObject> renderObjects;
 	SceneRenderData scene;
 	CameraRenderData camera;
 	LightRenderData light;
+	RaytracingData raytracing;
 	float renderScale;
 };
