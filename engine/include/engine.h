@@ -145,39 +145,47 @@ private:
     void CreateCommandObjects(vkb::Device& device, FrameData* frames);
     void InitSyncObjects(FrameData* frames);
 
-    // Ray tracing
-    void InitRaytracing();
-
     // Descriptors
     void InitDescriptors(FrameData* frames);
     void InitGlobalDescriptorAllocator();
     void InitFrameDescriptorAllocators(FrameData* frames);
-    void InitBackgroundDescriptorLayout();
-    void InitSceneDescriptorLayout();
-    void InitMaterialDescriptorLayout();
-    void InitRaytracingDescriptorLayout();
-    void UpdateBackgroundDescriptorSet();
 
     // Buffers
     void InitBuffers(FrameData* frames);
 
     // Drawing
     void Render(FrameData& currentFrame);
-    void RenderBackground(VkCommandBuffer cmd);
-    void RenderImgui(VkCommandBuffer cmd, VkImageView targetImageView);
-    void RenderRasterized(VkCommandBuffer cmd, FrameData& currentFrame);
-    void RenderShadowmap(VkCommandBuffer cmd);
-    void RenderRaytracing(VkCommandBuffer cmd, FrameData& currentFrame);
 
     // Pipelines
     void InitPipelines();
-    void InitBackgroundPipeline();
-    void InitRasterizedPipeline();
-    void InitShadowmapPipeline();
-    void InitRaytracingPipeline();
 
     // ImGui
     void InitImGui();
+    void RenderImgui(VkCommandBuffer cmd, VkImageView targetImageView);
+
+    // Rasterized
+    void InitSceneDescriptorLayout();
+    void InitMaterialDescriptorLayout();
+    void InitRasterizedPipeline();
+    void RenderRasterized(VkCommandBuffer cmd, FrameData& currentFrame);
+
+    // Rasterized shadow mapping
+    void InitShadowmapPipeline();
+    void RenderShadowmap(VkCommandBuffer cmd);
+
+    // Ray tracing
+    void InitRaytracing();
+    void InitRaytracingDescriptorLayout();
+    void InitRaytracingSceneDescriptorLayout();
+    void InitRaytracingMaterialDescriptorLayout();
+    void InitRaytracingPipeline();
+    void RenderRaytracing(VkCommandBuffer cmd, FrameData& currentFrame);
+
+    // Compute background
+    void InitBackgroundDescriptorLayout();
+    void UpdateBackgroundDescriptorSet();
+    void InitBackgroundPipeline();
+    void RenderBackground(VkCommandBuffer cmd);
 
     static void FramebufferResizeCallback(GLFWwindow* window, int width, int height)
     {

@@ -16,6 +16,29 @@ void Engine::InitRaytracingDescriptorLayout()
 	mRaytracingDescriptorLayout = builder.Build(mDevice, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 }
 
+void Engine::InitRaytracingSceneDescriptorLayout()
+{
+	// Camera matrices (global uniforms)
+	//m_descSetLayoutBind.addBinding(SceneBindings::eGlobals, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+	// Obj descriptions (vertex buffer address, index buffer address, material buffer address, material index address)
+	//m_descSetLayoutBind.addBinding(SceneBindings::eObjDescs, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+	// Textures
+	//m_descSetLayoutBind.addBinding(SceneBindings::eTextures, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, nbTxt, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+
+	DescriptorLayoutBuilder builder;
+	builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	mSceneDescriptorLayout = builder.Build(mDevice, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+}
+
+void Engine::InitRaytracingMaterialDescriptorLayout()
+{
+	DescriptorLayoutBuilder builder;
+	builder.AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	mMaterialDescriptorLayout = builder.Build(mDevice, VK_SHADER_STAGE_FRAGMENT_BIT);
+}
+
 void Engine::InitRaytracingPipeline()
 {
 
