@@ -5,8 +5,8 @@
 void Engine::InitBackgroundDescriptorLayout()
 {
 	DescriptorLayoutBuilder builder;
-	builder.AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-	mBackground.descriptorLayout = builder.Build(mDevice, VK_SHADER_STAGE_COMPUTE_BIT);
+	builder.AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT);
+	mBackground.descriptorLayout = builder.Build(mDevice);
 }
 
 void Engine::UpdateBackgroundDescriptorSet()

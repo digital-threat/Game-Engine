@@ -10,9 +10,9 @@ struct DescriptorLayoutBuilder
 {
 	std::vector<VkDescriptorSetLayoutBinding> mBindings;
 
-	void AddBinding(u32 pBinding, VkDescriptorType pType);
+	void AddBinding(u32 binding, VkDescriptorType type, VkShaderStageFlags stageFlags);
 	void Clear();
-	VkDescriptorSetLayout Build(VkDevice pDevice, VkShaderStageFlags pShaderStages, const void* pNext = nullptr, VkDescriptorSetLayoutCreateFlags pFlags = 0);
+	VkDescriptorSetLayout Build(VkDevice device, const void* pNext = nullptr, VkDescriptorSetLayoutCreateFlags flags = 0);
 };
 
 struct DescriptorAllocator
@@ -25,10 +25,10 @@ struct DescriptorAllocator
 
 	VkDescriptorPool mPool;
 
-	void InitializePool(VkDevice pDevice, u32 pMaxSets, std::span<PoolSizeRatio> pPoolRatios);
-	void ClearDescriptors(VkDevice pDevice);
-	void DestroyPool(VkDevice pDevice);
-	VkDescriptorSet Allocate(VkDevice pDevice, VkDescriptorSetLayout pLayout);
+	void InitializePool(VkDevice device, u32 maxSets, std::span<PoolSizeRatio> poolRatios);
+	void ClearDescriptors(VkDevice device);
+	void DestroyPool(VkDevice device);
+	VkDescriptorSet Allocate(VkDevice device, VkDescriptorSetLayout layout);
 };
 
 struct DescriptorWriter
@@ -42,5 +42,5 @@ struct DescriptorWriter
 	void WriteTlas(u32 binding, VkAccelerationStructureKHR tlas);
 
 	void Clear();
-	void UpdateSet(VkDevice pDevice, VkDescriptorSet pSet);
+	void UpdateSet(VkDevice device, VkDescriptorSet set);
 };

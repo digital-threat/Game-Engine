@@ -12,10 +12,9 @@ struct std::hash<Vertex>
 	size_t operator()(const Vertex& v) const
 	{
 		size_t h1 = std::hash<glm::vec3>()(v.position);
-		size_t h2 = std::hash<float>()(v.u);
-		size_t h3 = std::hash<float>()(v.v);
-		size_t h4 = std::hash<glm::vec3>()(v.normal);
-		return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3);
+		size_t h2 = std::hash<glm::vec3>()(v.normal);
+		size_t h3 = std::hash<glm::vec2>()(v.uv);
+		return h1 ^ (h2 << 1) ^ (h3 << 2);
 	}
 };
 
@@ -108,8 +107,7 @@ inline CpuMesh ParseOBJ(std::filesystem::path path)
 				if (tIndex != 0)
 				{
 					tIndex = (tIndex > 0) ? tIndex - 1 : uvs.size() + tIndex;
-					vertex.u = uvs[tIndex].x;
-					vertex.v = uvs[tIndex].y;
+					vertex.uv = uvs[tIndex];
 				}
 				if (nIndex != 0)
 				{

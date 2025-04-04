@@ -222,6 +222,7 @@ vkb::PhysicalDevice Engine::SelectPhysicalDevice(vkb::Instance& vkbInstance, VkS
     features_12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
     features_12.bufferDeviceAddress = true;
     features_12.descriptorIndexing = true;
+    features_12.scalarBlockLayout = true;
 
     VkPhysicalDeviceVulkan13Features features_13{};
     features_13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
@@ -463,17 +464,17 @@ void Engine::InitFrameDescriptorAllocators(FrameData* frames)
 void Engine::InitSceneDescriptorLayout()
 {
     DescriptorLayoutBuilder builder;
-    builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-    mSceneDescriptorLayout = builder.Build(mDevice, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+    builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+    builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    mSceneDescriptorLayout = builder.Build(mDevice);
 }
 
 void Engine::InitMaterialDescriptorLayout()
 {
     DescriptorLayoutBuilder builder;
-    builder.AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-    builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-    mMaterialDescriptorLayout = builder.Build(mDevice, VK_SHADER_STAGE_FRAGMENT_BIT);
+    builder.AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    mMaterialDescriptorLayout = builder.Build(mDevice);
 }
 
 void Engine::InitDescriptors(FrameData* frames)

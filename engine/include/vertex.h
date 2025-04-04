@@ -1,19 +1,19 @@
 #pragma once
 
 #include <glm/vec3.hpp>
+#include <glm/vec2.hpp>
 
+// TODO(Sergei): Deinterleave
 struct Vertex
 {
 	glm::vec3 position;
-	float u;
 	glm::vec3 normal;
-	float v;
+	glm::vec2 uv;
 
 	bool operator==(const Vertex& other) const
 	{
 		return position == other.position &&
-			   u == other.u &&
-			   v == other.v &&
-			   normal == other.normal;
+			   normal == other.normal &&
+			   uv == other.uv;
 	}
 };

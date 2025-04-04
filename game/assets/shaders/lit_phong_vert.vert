@@ -1,5 +1,6 @@
 #version 460
 #extension GL_EXT_buffer_reference : require
+#extension GL_EXT_scalar_block_layout : enable
 
 #include "input.glsl"
 
@@ -11,12 +12,11 @@ layout (location = 3) out vec4 outShadowCoord;
 struct Vertex
 {
     vec3 position;
-    float uvX;
     vec3 normal;
-    float uvY;
+    vec2 uv;
 };
 
-layout(buffer_reference, std430) readonly buffer VertexBuffer
+layout(buffer_reference, scalar) readonly buffer VertexBuffer
 {
     Vertex vertices[];
 };
@@ -34,7 +34,6 @@ void main()
     gl_Position = matrixVP * matrixM * vec4(v.position, 1.0f);
     outPosition = gl_Position.xyz;
     outNormal = mat3(matrixITM) * v.normal;
-    outUV.x = v.uvX;
-    outUV.y = v.uvY;
+    outUV = v.uv;
     outShadowCoord = mainLightVP * matrixM * vec4(v.position, 1.0f);
 }

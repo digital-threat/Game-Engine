@@ -23,6 +23,7 @@
 #include <systems/camera_system.h>
 #include <systems/physics_system.h>
 #include <systems/render_system.h>
+#include <rapidobj/rapidobj.hpp>
 
 Sandbox::Sandbox(Engine& engine): Application(engine), mResourceSystem(mCoordinator), mRtBuilder(engine)
 {
@@ -40,6 +41,14 @@ void Sandbox::Awake()
     mCoordinator.RegisterComponent<SphereCollider>();
     mCoordinator.RegisterComponent<BoxCollider>();
     mCoordinator.RegisterComponent<Camera>();
+
+    rapidobj::Result result = rapidobj::ParseFile("assets/meshes/cube.obj");
+    rapidobj::Triangulate(result);
+
+    // for (u32 i = 0; i < result.shapes.size(); i++)
+    // {
+    //     std::vector<Vertex> vertices = std::vector<Vertex>(result.shapes[i].mesh.indices.size());
+    // }
 
     // std::filesystem::path path = "assets/meshes/";
     // for (const auto &entry : std::filesystem::directory_iterator(path))
@@ -188,7 +197,7 @@ void Sandbox::LoadDefaultScene()
         Entity entity = mCoordinator.CreateEntity();
 
         Transform transform;
-        transform.position = glm::vec3(static_cast<float>(i - 1) * 1.5f, 0.0f, 0.0f);
+        transform.position = glm::vec3(static_cast<float>(i - 1) * 1.5f, i, 0.0f);
         transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
         transform.scale = 1;
         mCoordinator.AddComponent<Transform>(entity, transform);
