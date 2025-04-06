@@ -8,6 +8,20 @@ struct LightData
     vec4 attenuation;
 };
 
+struct Material
+{
+    vec3  ambient;
+    vec3  diffuse;
+    vec3  specular;
+    vec3  transmittance;
+    vec3  emission;
+    float shininess;
+    float ior;
+    float dissolve;
+    int   illum;
+    int   textureId;
+};
+
 layout(set = 0, binding = 0) uniform Scene
 {
     mat4 matrixV;

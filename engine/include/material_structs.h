@@ -4,6 +4,7 @@
 #include <string>
 #include <texture_structs.h>
 #include <types.h>
+#include <glm/vec3.hpp>
 
 struct MaterialHandle
 {
@@ -18,4 +19,18 @@ struct Material
 	float shininess;
 	Texture textures[2];
 	VkDescriptorSet materialSet;
+};
+
+struct CpuMaterial
+{
+	glm::vec3 ambient;
+	glm::vec3 diffuse;
+	glm::vec3 specular;
+	glm::vec3 transmittance;
+	glm::vec3 emission;
+	float shininess;
+	float ior;       // index of refraction
+	float dissolve;  // 1 == opaque; 0 == fully transparent
+	int illum;     // illumination model (see http://www.fileformat.info/format/material/)
+	int textureId;
 };

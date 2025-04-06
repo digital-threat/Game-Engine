@@ -42,13 +42,48 @@ void Sandbox::Awake()
     mCoordinator.RegisterComponent<BoxCollider>();
     mCoordinator.RegisterComponent<Camera>();
 
-    rapidobj::Result result = rapidobj::ParseFile("assets/meshes/cube.obj");
+    rapidobj::Result result = rapidobj::ParseFile("assets/meshes/cube.obj", rapidobj::MaterialLibrary::Ignore());
     rapidobj::Triangulate(result);
 
-    // for (u32 i = 0; i < result.shapes.size(); i++)
-    // {
-    //     std::vector<Vertex> vertices = std::vector<Vertex>(result.shapes[i].mesh.indices.size());
-    // }
+    for (u32 i = 0; i < result.shapes.size(); i++)
+    {
+        size_t indexCount = result.shapes[i].mesh.indices.size();
+        size_t matIdCount = result.shapes[i].mesh.material_ids.size();
+
+        CpuMesh mesh{};
+        mesh.name = result.shapes[i].name;
+        mesh.vertices.reserve(indexCount);
+        mesh.indices.reserve(indexCount);
+        for (u32 j = 0; j < indexCount; j++)
+        {
+            rapidobj::Index index = result.shapes[i].mesh.indices[j];
+            auto positionIndex = index.position_index * 3;
+            auto normalIndex = index.normal_index * 3;
+            auto uvIndex = index.texcoord_index * 2;
+
+            Vertex vertex{};
+            vertex.position.x = result.attributes.positions[positionIndex];
+            vertex.position.y = result.attributes.positions[positionIndex + 1];
+            vertex.position.z = result.attributes.positions[positionIndex + 2];
+            vertex.normal.x = result.attributes.normals[normalIndex];
+            vertex.normal.y = result.attributes.normals[normalIndex + 1];
+            vertex.normal.z = result.attributes.normals[normalIndex + 2];
+            vertex.uv.x = result.attributes.texcoords[uvIndex];
+            vertex.uv.y = result.attributes.texcoords[uvIndex + 1];
+
+            mesh.vertices.push_back(vertex);
+            mesh.indices.push_back(j);
+        }
+
+        mesh.matIds.reserve(matIdCount);
+        for (u32 j = 0; j < matIdCount; j++)
+        {
+            mesh.matIds.push_back(result.shapes[i].mesh.material_ids[j]);
+        }
+
+        std::filesystem::path path = "assets/meshes/" + mesh.name + ".bin";
+        SerializeMesh(mesh, path);
+    }
 
     // std::filesystem::path path = "assets/meshes/";
     // for (const auto &entry : std::filesystem::directory_iterator(path))

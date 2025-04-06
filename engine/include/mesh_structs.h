@@ -1,5 +1,6 @@
 #pragma once
 
+#include <material_structs.h>
 #include <vk_structs.h>
 #include <vertex.h>
 #include <types.h>
@@ -7,17 +8,12 @@
 #include <string>
 #include <vector>
 
-struct Submesh
-{
-	u32 startIndex;
-	size_t count;
-};
-
 struct CpuMesh
 {
 	std::string name;
 	std::vector<Vertex> vertices;
 	std::vector<u32> indices;
+	std::vector<u32> matIds;
 };
 
 struct GpuMesh

@@ -647,7 +647,7 @@ void Engine::UploadMesh(std::span<u32> indices, std::span<Vertex> vertices, GpuM
     void* data = stagingBuffer.info.pMappedData;
 
     memcpy(data, vertices.data(), vertexBufferSize);
-    memcpy(static_cast<char *>(data) + vertexBufferSize, indices.data(), indexBufferSize);
+    memcpy(static_cast<char*>(data) + vertexBufferSize, indices.data(), indexBufferSize);
 
     auto func = [&](VkCommandBuffer pCmd)
     {
