@@ -40,7 +40,8 @@ enum class RenderQueue : u8
 	TRANSPARENT,
 };
 
-struct GeometryPushConstants
+// TODO(Sergei): AMD cards (some? most? all?) on Windows have a maxPushConstantsSize of 128 bytes.
+struct RasterPushConstants
 {
 	glm::mat4 matrixM;
 	glm::mat4 matrixITM;

@@ -164,10 +164,10 @@ private:
     void RenderImgui(VkCommandBuffer cmd, VkImageView targetImageView);
 
     // Rasterized
-    void InitSceneDescriptorLayout();
-    void InitMaterialDescriptorLayout();
-    void InitRasterizedPipeline();
-    void RenderRasterized(VkCommandBuffer cmd, FrameData& currentFrame);
+    void InitRasterSceneDescriptorLayout();
+    void InitRasterMaterialDescriptorLayout();
+    void InitRasterPipeline();
+    void RenderRaster(VkCommandBuffer cmd, FrameData& currentFrame);
 
     // Rasterized shadow mapping
     void InitShadowmapPipeline();

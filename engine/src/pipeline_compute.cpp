@@ -39,7 +39,7 @@ void Engine::InitBackgroundPipeline()
 	}
 
 	VkShaderModule gradientShader;
-	LoadShaderModule("assets/shaders/gradient_color.spv", mDevice, &gradientShader);
+	LoadShaderModule("shaders/gradient_color.spv", mDevice, &gradientShader);
 
 	VkPipelineShaderStageCreateInfo stageInfo = PipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT, gradientShader, "main");
 

@@ -23,8 +23,9 @@ target_include_directories(${PROJECT_NAME}
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders)
-set(SHADER_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/assets/shaders)
+# Compile shaders and output result to build folder
+set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
+set(SHADER_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/shaders)
 
 file(MAKE_DIRECTORY ${SHADER_BINARY_DIR})
 
@@ -48,31 +49,13 @@ endforeach()
 
 target_sources(${PROJECT_NAME} PRIVATE ${SHADER_BINARIES})
 
-
-# Copy textures
-set(TEXTURES_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets/textures)
-set(TEXTURES_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/assets/textures)
-
-file(MAKE_DIRECTORY ${TEXTURES_BINARY_DIR})
+# Copy assets to build directory
+set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+set(BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/assets)
+file(MAKE_DIRECTORY ${BINARY_DIR})
 
 add_custom_command(
         TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${TEXTURES_SOURCE_DIR}
-        ${TEXTURES_BINARY_DIR}
-        COMMENT Copying textures to build directory
-)
-
-# Copy meshes
-set(MESHES_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets/meshes)
-set(MESHES_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/assets/meshes)
-
-file(MAKE_DIRECTORY ${MESHES_BINARY_DIR})
-
-add_custom_command(
-        TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${MESHES_SOURCE_DIR}
-        ${MESHES_BINARY_DIR}
-        COMMENT Copying meshes to build directory
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR} ${BINARY_DIR}
+        COMMENT Copying assets to build directory
 )

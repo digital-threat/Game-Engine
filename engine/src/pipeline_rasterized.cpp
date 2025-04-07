@@ -3,17 +3,34 @@
 #include <vk_pipelines.h>
 #include <glm/gtc/quaternion.hpp>
 
-void Engine::InitRasterizedPipeline()
+void Engine::InitRasterSceneDescriptorLayout()
+{
+    DescriptorLayoutBuilder builder;
+    builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+    builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    mSceneDescriptorLayout = builder.Build(mDevice);
+}
+
+void Engine::InitRasterMaterialDescriptorLayout()
+{
+    DescriptorLayoutBuilder builder;
+    builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    builder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    mMaterialDescriptorLayout = builder.Build(mDevice);
+}
+
+void Engine::InitRasterPipeline()
 {
     VkShaderModule vertexShader;
-    LoadShaderModule("assets/shaders/lit_phong_vert.spv", mDevice, &vertexShader);
+    LoadShaderModule("shaders/lit_phong_vert.spv", mDevice, &vertexShader);
 
     VkShaderModule fragmentShader;
-    LoadShaderModule("assets/shaders/lit_phong_frag.spv", mDevice, &fragmentShader);
+    LoadShaderModule("shaders/lit_phong_frag.spv", mDevice, &fragmentShader);
 
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(GeometryPushConstants);
+    pushConstantRange.size = sizeof(RasterPushConstants);
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
     std::array<VkDescriptorSetLayout, 2> descriptorSets = { mSceneDescriptorLayout, mMaterialDescriptorLayout };
@@ -42,7 +59,7 @@ void Engine::InitRasterizedPipeline()
     vkDestroyShaderModule(mDevice, fragmentShader, nullptr);
 }
 
-void Engine::RenderRasterized(VkCommandBuffer cmd, FrameData& currentFrame)
+void Engine::RenderRaster(VkCommandBuffer cmd, FrameData& currentFrame)
 {
     VkClearValue clear{};
     clear.color = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -107,12 +124,12 @@ void Engine::RenderRasterized(VkCommandBuffer cmd, FrameData& currentFrame)
 
     for (auto& model : mApplication->mRenderContext.renderObjects)
     {
-        GeometryPushConstants pushConstants;
+        RasterPushConstants pushConstants;
         pushConstants.matrixM = model.transform;
         pushConstants.matrixITM = glm::transpose(glm::inverse(model.transform));
         pushConstants.vertexBuffer = model.vertexBufferAddress;
 
-        vkCmdPushConstants(cmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GeometryPushConstants), &pushConstants);
+        vkCmdPushConstants(cmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(RasterPushConstants), &pushConstants);
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 1, 1, &model.materialSet, 0, nullptr);
         vkCmdBindIndexBuffer(cmd, model.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 

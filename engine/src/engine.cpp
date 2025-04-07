@@ -389,7 +389,7 @@ void Engine::CreateSwapchain(u32 width, u32 height)
 
 void Engine::InitPipelines()
 {
-    InitRasterizedPipeline();
+    InitRasterPipeline();
     InitShadowmapPipeline();
     InitRaytracingPipeline();
 }
@@ -461,29 +461,13 @@ void Engine::InitFrameDescriptorAllocators(FrameData* frames)
     }
 }
 
-void Engine::InitSceneDescriptorLayout()
-{
-    DescriptorLayoutBuilder builder;
-    builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-    builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    mSceneDescriptorLayout = builder.Build(mDevice);
-}
-
-void Engine::InitMaterialDescriptorLayout()
-{
-    DescriptorLayoutBuilder builder;
-    builder.AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    mMaterialDescriptorLayout = builder.Build(mDevice);
-}
-
 void Engine::InitDescriptors(FrameData* frames)
 {
     InitGlobalDescriptorAllocator();
     InitFrameDescriptorAllocators(frames);
 
-    InitSceneDescriptorLayout();
-    InitMaterialDescriptorLayout();
+    InitRasterSceneDescriptorLayout();
+    InitRasterMaterialDescriptorLayout();
 }
 
 void Engine::InitBuffers(FrameData* frames)
@@ -556,7 +540,7 @@ void Engine::Render(FrameData& currentFrame)
     TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     TransitionImageLayout(cmd, mDepthTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-    RenderRasterized(cmd, currentFrame);
+    RenderRaster(cmd, currentFrame);
 
     TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     TransitionImageLayout(cmd, mSwapchainImages[imageIndex],VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);

@@ -6,7 +6,7 @@
 void Engine::InitShadowmapPipeline()
 {
 	VkShaderModule vertexShader;
-	LoadShaderModule("assets/shaders/shadowmap_vert.spv", mDevice, &vertexShader);
+	LoadShaderModule("shaders/shadowmap_vert.spv", mDevice, &vertexShader);
 
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.offset = 0;

@@ -11,16 +11,6 @@ layout (location = 3) in vec4 inShadowCoord;
 
 layout (location = 0) out vec4 outColor;
 
-layout(buffer_reference, scalar) readonly buffer Materials
-{
-    Material materials[];
-};
-
-layout(buffer_reference, scalar) readonly buffer MatIds
-{
-    int matIds[];
-};
-
 float ShadowCalculation(vec4 shadowCoord, vec3 normal, vec3 lightDir)
 {
     vec3 sampleCoords = shadowCoord.xyz / shadowCoord.w;
@@ -41,11 +31,11 @@ void main()
     mainLight.direction = normalize(mainLightDir.xyz);
     mainLight.attenuation = 1.0f;
 
-    vec3 lightingColor = CalculateLighting(mainLight, normal, viewDir, 16.0f, specularIntensity);
+    vec3 lightingColor = CalculateLighting(mainLight, material, normal, viewDir);
     for (uint i = 0; i < min(lightCount, MAX_LIGHTS); i++)
     {
         Light light = GetLight(i, inPosition);
-        lightingColor += CalculateLighting(light, normal, viewDir, 16.0f, specularIntensity);
+        lightingColor += CalculateLighting(light, material, normal, viewDir);
     }
 
     float shadowAttenuation = ShadowCalculation(inShadowCoord, normal, mainLight.direction);

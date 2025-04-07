@@ -73,7 +73,7 @@ void Sandbox::ImGuiMaterials()
                         {
                             texture = textureManager.LoadTexture(file.path().string().c_str());
                             Texture albedoTexture = { texture->imageView, VK_NULL_HANDLE };
-                            materialManager.SetTexture(materials[currentMaterial].handle, albedoTexture, 0);
+                            materialManager.SetTexture(materials[currentMaterial].handle, albedoTexture, 1);
 
                         }
                         catch (const std::exception& e)
@@ -110,7 +110,7 @@ void Sandbox::ImGuiMaterials()
                         {
                             texture = textureManager.LoadTexture(file.path().string().c_str());
                             Texture specularTexture = { texture->imageView, VK_NULL_HANDLE };
-                            materialManager.SetTexture(materials[currentMaterial].handle, specularTexture, 1);
+                            materialManager.SetTexture(materials[currentMaterial].handle, specularTexture, 2);
 
                         }
                         catch (const std::exception& e)
@@ -142,8 +142,8 @@ void Sandbox::ImGuiMaterials()
                 {
                     Texture diffuseTexture = { VK_NULL_HANDLE, sampler.second };
                     Texture specularTexture = { VK_NULL_HANDLE, sampler.second };
-                    materialManager.SetTexture(materials[currentMaterial].handle, diffuseTexture, 0);
-                    materialManager.SetTexture(materials[currentMaterial].handle, specularTexture, 1);
+                    materialManager.SetTexture(materials[currentMaterial].handle, diffuseTexture, 1);
+                    materialManager.SetTexture(materials[currentMaterial].handle, specularTexture, 2);
                     ImGui::CloseCurrentPopup();
                 }
             }

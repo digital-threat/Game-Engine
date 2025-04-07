@@ -33,5 +33,6 @@ private:
 	static MaterialManager* mInstance;
 
 	std::vector<Material> mMaterials;
+	//std::vector<GpuMaterial> mMaterials;
 	const u16 MAX_MATERIALS = 256;
 };

@@ -45,6 +45,22 @@ void Sandbox::Awake()
     rapidobj::Result result = rapidobj::ParseFile("assets/meshes/cube.obj", rapidobj::MaterialLibrary::Ignore());
     rapidobj::Triangulate(result);
 
+    for (u32 i = 0; i < result.materials.size(); i++)
+    {
+        CpuMaterial material;
+        material.ambient = glm::vec3(result.materials[i].ambient[0], result.materials[i].ambient[1], result.materials[i].ambient[2]);
+        material.diffuse = glm::vec3(result.materials[i].diffuse[0], result.materials[i].diffuse[1], result.materials[i].diffuse[2]);
+        material.specular = glm::vec3(result.materials[i].specular[0], result.materials[i].specular[1], result.materials[i].specular[2]);
+        material.transmittance = glm::vec3(result.materials[i].transmittance[0], result.materials[i].transmittance[1], result.materials[i].transmittance[2]);
+        material.emission = glm::vec3(result.materials[i].emission[0], result.materials[i].emission[1], result.materials[i].emission[2]);
+        material.shininess = result.materials[i].shininess;
+        material.ior = result.materials[i].ior;
+        material.dissolve = result.materials[i].dissolve;
+        material.illum = result.materials[i].illum;
+        material.diffuseTexture = result.materials[i].diffuse_texname;
+
+    }
+
     for (u32 i = 0; i < result.shapes.size(); i++)
     {
         size_t indexCount = result.shapes[i].mesh.indices.size();
@@ -84,17 +100,6 @@ void Sandbox::Awake()
         std::filesystem::path path = "assets/meshes/" + mesh.name + ".bin";
         SerializeMesh(mesh, path);
     }
-
-    // std::filesystem::path path = "assets/meshes/";
-    // for (const auto &entry : std::filesystem::directory_iterator(path))
-    // {
-    //     if (entry.path().extension() == ".obj")
-    //     {
-    //         CpuMesh meshData = ParseOBJ(entry.path());
-    //         std::filesystem::path path2 = "assets/meshes/" + meshData.name + ".bin";
-    //         SerializeMesh(meshData, path2);
-    //     }
-    // }
 
     CreateBlas();
     CreateTlas();
@@ -215,14 +220,14 @@ void Sandbox::LoadDefaultScene()
 
     MaterialManager& materialManager = MaterialManager::Get();
     MaterialHandle crateHandle = materialManager.CreateMaterial("Crate");
-    materialManager.SetTexture(crateHandle, albedoTexture, 0);
-    materialManager.SetTexture(crateHandle, specularTexture, 1);
+    materialManager.SetTexture(crateHandle, albedoTexture, 1);
+    materialManager.SetTexture(crateHandle, specularTexture, 2);
 
     MaterialHandle whiteHandle = materialManager.CreateMaterial("White");
     VulkanImage* whiteImage = textureManager.LoadTexture("assets/textures/white.png");
     Texture whiteTexture = { whiteImage->imageView, textureManager.GetSampler("LINEAR_MIPMAP_LINEAR") };
-    materialManager.SetTexture(whiteHandle, whiteTexture, 0);
     materialManager.SetTexture(whiteHandle, whiteTexture, 1);
+    materialManager.SetTexture(whiteHandle, whiteTexture, 2);
 
 
     MeshManager& meshManager = MeshManager::Instance();

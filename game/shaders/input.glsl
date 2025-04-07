@@ -19,7 +19,6 @@ struct Material
     float ior;
     float dissolve;
     int   illum;
-    int   textureId;
 };
 
 layout(set = 0, binding = 0) uniform Scene
@@ -38,10 +37,12 @@ layout(set = 0, binding = 0) uniform Scene
 
 layout(set = 0, binding = 1) uniform sampler2D shadowMap;
 
-//layout(set = 1, binding = 0) uniform Material
-//{
-//    float shininess;
-//};
 
-layout(set = 1, binding = 0) uniform sampler2D albedoMap;
-layout(set = 1, binding = 1) uniform sampler2D specularMap;
+layout(set = 1, binding = 0, scalar) uniform Material_
+{
+    Material material;
+};
+
+layout(set = 1, binding = 1) uniform sampler2D albedoMap;
+layout(set = 1, binding = 2) uniform sampler2D specularMap;
+
