@@ -5,6 +5,7 @@
 #include <unordered_map>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
+#include <rapidobj/rapidobj.hpp>
 
 template <>
 struct std::hash<Vertex>
@@ -46,7 +47,7 @@ inline CpuMesh ParseOBJ(std::filesystem::path path)
 		iss >> prefix;
 		if (prefix == "o")
 		{
-			iss >> mesh.name;
+			//iss >> mesh.name;
 		}
 		else if (prefix == "v")
 		{
@@ -130,4 +131,59 @@ inline CpuMesh ParseOBJ(std::filesystem::path path)
 
 	file.close();
 	return mesh;
+}
+
+inline CpuMesh LoadMesh(std::filesystem::path path)
+{
+	rapidobj::Result result = rapidobj::ParseFile(path, rapidobj::MaterialLibrary::SearchPath("../materials"));
+    rapidobj::Triangulate(result);
+
+    CpuMesh mesh{};
+    mesh.materials.reserve(result.materials.size());
+
+    for (u32 i = 0; i < result.materials.size(); i++)
+    {
+        Material material;
+        material.ambient = glm::vec3(result.materials[i].ambient[0], result.materials[i].ambient[1], result.materials[i].ambient[2]);
+        material.diffuse = glm::vec3(result.materials[i].diffuse[0], result.materials[i].diffuse[1], result.materials[i].diffuse[2]);
+        material.specular = glm::vec3(result.materials[i].specular[0], result.materials[i].specular[1], result.materials[i].specular[2]);
+        material.transmittance = glm::vec3(result.materials[i].transmittance[0], result.materials[i].transmittance[1], result.materials[i].transmittance[2]);
+        material.emission = glm::vec3(result.materials[i].emission[0], result.materials[i].emission[1], result.materials[i].emission[2]);
+        material.shininess = result.materials[i].shininess;
+        material.ior = result.materials[i].ior;
+        material.dissolve = result.materials[i].dissolve;
+        material.illum = result.materials[i].illum;
+        material.diffuseTexture = result.materials[i].diffuse_texname;
+        mesh.materials.push_back(material);
+    }
+
+    for (u32 i = 0; i < result.shapes.size(); i++)
+    {
+        size_t indexCount = result.shapes[i].mesh.indices.size();
+
+        mesh.vertices.reserve(indexCount + mesh.vertices.size());
+        mesh.indices.reserve(indexCount + mesh.indices.size());
+        mesh.matIds.insert(mesh.matIds.end(), result.shapes[i].mesh.material_ids.begin(), result.shapes[i].mesh.material_ids.end());
+
+        for (u32 j = 0; j < indexCount; j++)
+        {
+            rapidobj::Index index = result.shapes[i].mesh.indices[j];
+            auto positionIndex = index.position_index * 3;
+            auto normalIndex = index.normal_index * 3;
+            auto uvIndex = index.texcoord_index * 2;
+
+            Vertex vertex{};
+            vertex.position.x = result.attributes.positions[positionIndex];
+            vertex.position.y = result.attributes.positions[positionIndex + 1];
+            vertex.position.z = result.attributes.positions[positionIndex + 2];
+            vertex.normal.x = result.attributes.normals[normalIndex];
+            vertex.normal.y = result.attributes.normals[normalIndex + 1];
+            vertex.normal.z = result.attributes.normals[normalIndex + 2];
+            vertex.uv.x = result.attributes.texcoords[uvIndex];
+            vertex.uv.y = result.attributes.texcoords[uvIndex + 1];
+
+            mesh.vertices.push_back(vertex);
+            mesh.indices.push_back(j);
+        }
+    }
 }

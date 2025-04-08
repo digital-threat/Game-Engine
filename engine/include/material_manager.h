@@ -23,7 +23,8 @@ public:
 
 public:
 	MaterialHandle CreateMaterial(const std::string &name);
-	const std::vector<Material>& GetAll();
+	void WriteMaterial(Material& material);
+	const std::vector<Material_>& GetAll();
 
 	void SetTexture(MaterialHandle handle, Texture texture, u32 slot);
 	VkDescriptorSet GetDescriptorSet(MaterialHandle handle);
@@ -32,7 +33,7 @@ private:
 	Engine& mEngine;
 	static MaterialManager* mInstance;
 
-	std::vector<Material> mMaterials;
+	std::vector<Material_> mMaterials;
 	//std::vector<GpuMaterial> mMaterials;
 	const u16 MAX_MATERIALS = 256;
 };

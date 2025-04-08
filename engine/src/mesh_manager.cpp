@@ -41,14 +41,11 @@ GpuMesh* MeshManager::GetMesh(const char* path)
 GpuMesh* MeshManager::LoadMesh(const char* path)
 {
 	CpuMesh cpuMesh{};
-	GpuMesh gpuMesh{};
 
 	std::filesystem::path systemPath = path;
 	if (DeserializeMesh(systemPath, cpuMesh))
 	{
-		mEngine.UploadMesh(cpuMesh.indices, cpuMesh.vertices, gpuMesh);
-
-		mMeshes[path] = gpuMesh;
+		mEngine.UploadMesh(cpuMesh, mMeshes[path]);
 	}
 
 	return &mMeshes[path];

@@ -58,3 +58,11 @@ void CopyBuffer(VkCommandBuffer cmd, VkBuffer srcBuffer, VkBuffer dstBuffer, VkD
 	copyRegion.size = size;
 	vkCmdCopyBuffer(cmd, srcBuffer, dstBuffer, 1, &copyRegion);
 }
+
+VkDeviceAddress GetBufferDeviceAddress(VkDevice device, VkBuffer buffer)
+{
+	VkBufferDeviceAddressInfo addressInfo{};
+	addressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+	addressInfo.buffer = buffer;
+	return vkGetBufferDeviceAddress(device, &addressInfo);
+}

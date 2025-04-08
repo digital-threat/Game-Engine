@@ -590,64 +590,69 @@ void Engine::Render(FrameData& currentFrame)
 }
 
 // TODO(Sergei): Not every vertex and index buffer needs VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
-void Engine::UploadMesh(std::span<u32> indices, std::span<Vertex> vertices, GpuMesh& mesh)
+void Engine::UploadMesh(CpuMesh& inMesh, GpuMesh& outMesh)
 {
-    mesh.indexCount = indices.size();
-    mesh.vertexCount = vertices.size();
+    outMesh.indexCount = inMesh.indices.size();
+    outMesh.vertexCount = inMesh.vertices.size();
 
-    const size_t vertexBufferSize = vertices.size() * sizeof(Vertex);
-    const size_t indexBufferSize = indices.size() * sizeof(u32);
+    size_t vertexBufferSize = inMesh.vertices.size() * sizeof(Vertex);
+    size_t indexBufferSize = inMesh.indices.size() * sizeof(u32);
+    size_t materialBufferSize = inMesh.materials.size() * sizeof(Material);
+    size_t matIdBufferSize = inMesh.matIds.size() * sizeof(i32);
+    size_t totalSize = vertexBufferSize + indexBufferSize + materialBufferSize + matIdBufferSize;
 
-    VkBufferUsageFlags vertexBufferUsage{};
-    vertexBufferUsage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    vertexBufferUsage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    vertexBufferUsage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-    vertexBufferUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    vertexBufferUsage |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+    VkBufferUsageFlags commonFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    VkBufferUsageFlags raytracingFlags = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
 
-    mesh.vertexBuffer = CreateBuffer(mAllocator, vertexBufferSize, vertexBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
+    // Vertex buffer
+    VkBufferUsageFlags vertexBufferUsage = commonFlags | raytracingFlags;
+    outMesh.vertexBuffer = CreateBuffer(mAllocator, vertexBufferSize, vertexBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
+    outMesh.vertexBufferAddress = GetBufferDeviceAddress(mDevice, outMesh.vertexBuffer.buffer);
 
-    VkBufferDeviceAddressInfo vertexAddressInfo{};
-    vertexAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-    vertexAddressInfo.buffer = mesh.vertexBuffer.buffer;
-    mesh.vertexBufferAddress = vkGetBufferDeviceAddress(mDevice, &vertexAddressInfo);
+    // Index buffer
+    VkBufferUsageFlags indexBufferUsage = commonFlags | raytracingFlags | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    outMesh.indexBuffer = CreateBuffer(mAllocator, indexBufferSize, indexBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
+    outMesh.indexBufferAddress = GetBufferDeviceAddress(mDevice, outMesh.indexBuffer.buffer);
 
-    VkBufferUsageFlags indexBufferUsage{};
-    indexBufferUsage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    indexBufferUsage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    indexBufferUsage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-    indexBufferUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    indexBufferUsage |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+    // Material buffer
+    outMesh.materialBuffer = CreateBuffer(mAllocator, materialBufferSize, commonFlags, VMA_MEMORY_USAGE_GPU_ONLY);
+    outMesh.materialBufferAddress = GetBufferDeviceAddress(mDevice, outMesh.materialBuffer.buffer);
 
-    mesh.indexBuffer = CreateBuffer(mAllocator, indexBufferSize, indexBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
+    // Material index buffer
+    outMesh.matIdBuffer = CreateBuffer(mAllocator, matIdBufferSize, commonFlags, VMA_MEMORY_USAGE_GPU_ONLY);
+    outMesh.matIdBufferAddress = GetBufferDeviceAddress(mDevice, outMesh.matIdBuffer.buffer);
 
-    VkBufferDeviceAddressInfo indexAddressInfo{};
-    indexAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-    indexAddressInfo.buffer = mesh.indexBuffer.buffer;
-    mesh.indexBufferAddress = vkGetBufferDeviceAddress(mDevice, &indexAddressInfo);
-
-    VulkanBuffer stagingBuffer = CreateBuffer(mAllocator, vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+    // Staging
+    VulkanBuffer stagingBuffer = CreateBuffer(mAllocator, totalSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
 
     void* data = stagingBuffer.info.pMappedData;
 
-    memcpy(data, vertices.data(), vertexBufferSize);
-    memcpy(static_cast<char*>(data) + vertexBufferSize, indices.data(), indexBufferSize);
+    memcpy(data, inMesh.vertices.data(), vertexBufferSize);
+    memcpy(static_cast<char*>(data) + vertexBufferSize, inMesh.indices.data(), indexBufferSize);
+    memcpy(static_cast<char*>(data) + vertexBufferSize + indexBufferSize, inMesh.materials.data(), materialBufferSize);
+    memcpy(static_cast<char*>(data) + vertexBufferSize + indexBufferSize + materialBufferSize, inMesh.matIds.data(), matIdBufferSize);
 
-    auto func = [&](VkCommandBuffer pCmd)
+    auto func = [&](VkCommandBuffer cmd)
     {
         VkBufferCopy vertexCopy{};
-        vertexCopy.dstOffset = 0;
         vertexCopy.srcOffset = 0;
         vertexCopy.size = vertexBufferSize;
-
-        vkCmdCopyBuffer(pCmd, stagingBuffer.buffer, mesh.vertexBuffer.buffer, 1, &vertexCopy);
+        vkCmdCopyBuffer(cmd, stagingBuffer.buffer, outMesh.vertexBuffer.buffer, 1, &vertexCopy);
 
         VkBufferCopy indexCopy{};
-        indexCopy.dstOffset = 0;
         indexCopy.srcOffset = vertexBufferSize;
         indexCopy.size = indexBufferSize;
+        vkCmdCopyBuffer(cmd, stagingBuffer.buffer, outMesh.indexBuffer.buffer, 1, &indexCopy);
 
-        vkCmdCopyBuffer(pCmd, stagingBuffer.buffer, mesh.indexBuffer.buffer, 1, &indexCopy);
+        VkBufferCopy materialCopy{};
+        indexCopy.srcOffset = vertexBufferSize + indexBufferSize;
+        indexCopy.size = materialBufferSize;
+        vkCmdCopyBuffer(cmd, stagingBuffer.buffer, outMesh.materialBuffer.buffer, 1, &materialCopy);
+
+        VkBufferCopy matIdCopy{};
+        indexCopy.srcOffset = vertexBufferSize + indexBufferSize + materialBufferSize;
+        indexCopy.size = matIdBufferSize;
+        vkCmdCopyBuffer(cmd, stagingBuffer.buffer, outMesh.matIdBuffer.buffer, 1, &matIdCopy);
     };
 
     ImmediateSubmit(mDevice, mGraphicsQueue, mImmediate, func);

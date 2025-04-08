@@ -4,24 +4,29 @@
 #include <vk_structs.h>
 #include <vertex.h>
 #include <types.h>
-
-#include <string>
 #include <vector>
 
 struct CpuMesh
 {
-	std::string name;
 	std::vector<Vertex> vertices;
 	std::vector<u32> indices;
-	std::vector<u32> matIds;
+	std::vector<Material> materials;
+	std::vector<i32> matIds;
 };
 
+// NOTE(Sergei): I wonder if having just one big buffer of materials is worth it.
+// (as opposed to each mesh having its own materials buffer)
+// I don't think it'll save much memory, but are there other factors to consider?
 struct GpuMesh
 {
 	u32 indexCount;
 	u32 vertexCount;
 	VulkanBuffer indexBuffer;
 	VulkanBuffer vertexBuffer;
+	VulkanBuffer materialBuffer;
+	VulkanBuffer matIdBuffer;
 	VkDeviceAddress vertexBufferAddress;
 	VkDeviceAddress indexBufferAddress;
+	VkDeviceAddress materialBufferAddress;
+	VkDeviceAddress matIdBufferAddress;
 };

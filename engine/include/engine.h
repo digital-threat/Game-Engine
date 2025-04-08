@@ -194,5 +194,5 @@ private:
     }
 
 public:
-    void UploadMesh(std::span<u32> indices, std::span<Vertex> vertices, GpuMesh& mesh);
+    void UploadMesh(CpuMesh& inMesh, GpuMesh& outMesh);
 };

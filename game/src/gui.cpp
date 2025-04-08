@@ -46,7 +46,7 @@ void Sandbox::ImGuiMaterials()
     if (ImGui::Begin("Materials"))
     {
         auto& materialManager = MaterialManager::Get();
-        const std::vector<Material>& materials = materialManager.GetAll();
+        const std::vector<Material_>& materials = materialManager.GetAll();
 
         ImGui::SliderInt("Index", &currentMaterial,0, materials.size() - 1);
         ImGui::Text(materials[currentMaterial].name.c_str());

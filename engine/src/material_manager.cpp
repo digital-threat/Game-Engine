@@ -33,7 +33,12 @@ MaterialHandle MaterialManager::CreateMaterial(const std::string &name)
 	return handle;
 }
 
-const std::vector<Material> & MaterialManager::GetAll()
+void MaterialManager::WriteMaterial(Material& material)
+{
+
+}
+
+const std::vector<Material_> & MaterialManager::GetAll()
 {
 	return mMaterials;
 }

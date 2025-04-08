@@ -12,7 +12,7 @@ struct MaterialHandle
 	u16 index = -1;
 };
 
-struct Material
+struct Material_
 {
 	std::string name;
 	MaterialHandle handle;
@@ -30,20 +30,7 @@ struct GpuMaterial
 	uint32_t dataBufferOffset;
 };
 
-struct WaveformMaterial
-{
-	glm::vec3  ambient;
-	glm::vec3  diffuse;
-	glm::vec3  specular;
-	glm::vec3  transmittance;
-	glm::vec3  emission;
-	float shininess;
-	float ior;
-	float dissolve;
-	int   illum;
-};
-
-struct CpuMaterial
+struct Material
 {
 	glm::vec3 ambient;
 	glm::vec3 diffuse;
@@ -51,8 +38,8 @@ struct CpuMaterial
 	glm::vec3 transmittance;
 	glm::vec3 emission;
 	float shininess;
-	float ior;       // index of refraction
-	float dissolve;  // 1 == opaque; 0 == fully transparent
-	int illum;     // illumination model (see http://www.fileformat.info/format/material/)
-	std::string diffuseTexture;
+	float ior;
+	float dissolve;
+	int illum;
+	int diffuseTextureIndex;
 };
