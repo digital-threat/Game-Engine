@@ -124,7 +124,7 @@ void Engine::MainLoop(FrameData* frames)
 {
     u32 currentFrame = 0;
 
-    TextureManager::Get().Awake();
+    TextureManager::Instance().Awake();
     mApplication->Awake();
 
     double lastTime = 0;
@@ -592,6 +592,7 @@ void Engine::Render(FrameData& currentFrame)
 // TODO(Sergei): Not every vertex and index buffer needs VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
 void Engine::UploadMesh(CpuMesh& inMesh, GpuMesh& outMesh)
 {
+    outMesh.textureOffset = inMesh.textureOffset;
     outMesh.indexCount = inMesh.indices.size();
     outMesh.vertexCount = inMesh.vertices.size();
 

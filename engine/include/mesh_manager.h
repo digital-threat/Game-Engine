@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <mesh_structs.h>
 #include <unordered_map>
 #include <message_queue.h>
 
@@ -22,11 +23,11 @@ public:
 	static MeshManager& Allocate(Engine &engine);
 	static MeshManager& Instance();
 
-	GpuMesh* GetMesh(const char* path);
-	GpuMesh* LoadMesh(const char* path);
+	GpuMesh* GetMesh(MeshHandle handle);
+	MeshHandle LoadMesh(std::string path);
 
 private:
 	Engine& mEngine;
 	static MeshManager* mInstance;
-	std::unordered_map<const char*, GpuMesh> mMeshes;
+	std::vector<GpuMesh> mMeshes;
 };

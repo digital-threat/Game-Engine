@@ -1,18 +1,12 @@
 #include <sandbox.h>
 #include <engine.h>
 
-#include <iostream>
-#include <filesystem>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 #include <mesh_manager.h>
-#include <material_manager.h>
 #include <vk_images.h>
-#include <texture_manager.h>
 #include <collision.h>
-#include <mesh_serialization.h>
 #include <mesh_structs.h>
 #include <obj_loading.h>
 #include <vk_raytracing.h>
@@ -23,7 +17,6 @@
 #include <systems/camera_system.h>
 #include <systems/physics_system.h>
 #include <systems/render_system.h>
-#include <rapidobj/rapidobj.hpp>
 
 Sandbox::Sandbox(Engine& engine): Application(engine), mResourceSystem(mCoordinator), mRtBuilder(engine)
 {
@@ -41,10 +34,6 @@ void Sandbox::Awake()
     mCoordinator.RegisterComponent<SphereCollider>();
     mCoordinator.RegisterComponent<BoxCollider>();
     mCoordinator.RegisterComponent<Camera>();
-
-    CpuMesh mesh = LoadMesh("assets/meshes/cube.obj");
-    std::filesystem::path path = "assets/meshes/cube.bin";
-    SerializeMesh(mesh, path);
 
     CreateBlas();
     CreateTlas();
@@ -99,7 +88,8 @@ void Sandbox::CreateBlas()
 {
     std::vector<BlasInput> allBlas;
 
-    GpuMesh* cube = MeshManager::Instance().GetMesh("assets/meshes/cube.bin");
+    // TODO(Sergei): Get all renderer components and create blas
+    GpuMesh* cube = MeshManager::Instance().GetMesh(0);
     auto blas = MeshToVkGeometryKHR(*cube);
     allBlas.emplace_back(blas);
 
@@ -133,49 +123,7 @@ void Sandbox::CreateTlas()
 
 void Sandbox::LoadDefaultScene()
 {
-    TextureManager& textureManager = TextureManager::Get();
-    VulkanImage* boxAlbedo = textureManager.GetTexture("assets/textures/container2.png");
-    if (boxAlbedo == nullptr)
-    {
-        try
-        {
-            boxAlbedo = textureManager.LoadTexture("assets/textures/container2.png");
-        }
-        catch (const std::exception& e)
-        {
-            std::cerr << e.what() << std::endl;
-        }
-    }
-
-    VulkanImage* boxSpecular = textureManager.GetTexture("assets/textures/container2_specular.png");
-    if (boxSpecular == nullptr)
-    {
-        try
-        {
-            boxSpecular = textureManager.LoadTexture("assets/textures/container2_specular.png");
-        }
-        catch (const std::exception& e)
-        {
-            std::cerr << e.what() << std::endl;
-        }
-    }
-
-    Texture albedoTexture = { boxAlbedo->imageView, textureManager.GetSampler("LINEAR_MIPMAP_LINEAR") };
-    Texture specularTexture = { boxSpecular->imageView, textureManager.GetSampler("LINEAR_MIPMAP_LINEAR") };
-
-    MaterialManager& materialManager = MaterialManager::Get();
-    MaterialHandle crateHandle = materialManager.CreateMaterial("Crate");
-    materialManager.SetTexture(crateHandle, albedoTexture, 1);
-    materialManager.SetTexture(crateHandle, specularTexture, 2);
-
-    MaterialHandle whiteHandle = materialManager.CreateMaterial("White");
-    VulkanImage* whiteImage = textureManager.LoadTexture("assets/textures/white.png");
-    Texture whiteTexture = { whiteImage->imageView, textureManager.GetSampler("LINEAR_MIPMAP_LINEAR") };
-    materialManager.SetTexture(whiteHandle, whiteTexture, 1);
-    materialManager.SetTexture(whiteHandle, whiteTexture, 2);
-
-
-    MeshManager& meshManager = MeshManager::Instance();
+    MeshHandle cube = MeshManager::Instance().LoadMesh("assets/meshes/cube.obj");
 
     for (i32 i = 0; i < 3; ++i)
     {
@@ -188,8 +136,7 @@ void Sandbox::LoadDefaultScene()
         mCoordinator.AddComponent<Transform>(entity, transform);
 
         Renderer renderer;
-        renderer.mesh = meshManager.GetMesh("assets/meshes/cube.bin");
-        renderer.material = crateHandle;
+        renderer.meshHandle = cube;
         mCoordinator.AddComponent<Renderer>(entity, renderer);
     }
 

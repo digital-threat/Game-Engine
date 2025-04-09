@@ -117,23 +117,25 @@ void Engine::RenderRaster(VkCommandBuffer cmd, FrameData& currentFrame)
 
     DescriptorWriter writer;
     writer.WriteBuffer(0, currentFrame.sceneDataBuffer.buffer, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    writer.WriteImage(1, mShadowmapTarget.imageView, TextureManager::Get().GetSampler("NEAREST_MIPMAP_LINEAR"), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    writer.WriteImage(1, mShadowmapTarget.imageView, TextureManager::Instance().GetSampler("NEAREST_MIPMAP_LINEAR"), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     writer.UpdateSet(mDevice, sceneSet);
 
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 0, 1, &sceneSet, 0, nullptr);
 
-    for (auto& model : mApplication->mRenderContext.renderObjects)
+    for (auto& object : mApplication->mRenderContext.renderObjects)
     {
         RasterPushConstants pushConstants;
-        pushConstants.matrixM = model.transform;
-        pushConstants.matrixITM = glm::transpose(glm::inverse(model.transform));
-        pushConstants.vertexBuffer = model.vertexBufferAddress;
+        pushConstants.matrixM = object.transform;
+        pushConstants.matrixITM = glm::transpose(glm::inverse(object.transform));
+        pushConstants.meshHandle = object.meshHandle;
+
+        GpuMesh* mesh = MeshManager::Instance().GetMesh(object.meshHandle);
 
         vkCmdPushConstants(cmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(RasterPushConstants), &pushConstants);
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 1, 1, &model.materialSet, 0, nullptr);
-        vkCmdBindIndexBuffer(cmd, model.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 1, 1, &object.materialSet, 0, nullptr);
+        vkCmdBindIndexBuffer(cmd, mesh->indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdDrawIndexed(cmd, model.indexCount, 1, 0, 0, 0);
+        vkCmdDrawIndexed(cmd, mesh->indexCount, 1, 0, 0, 0);
     }
 
     vkCmdEndRendering(cmd);

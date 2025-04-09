@@ -45,7 +45,7 @@ struct RasterPushConstants
 {
 	glm::mat4 matrixM;
 	glm::mat4 matrixITM;
-	VkDeviceAddress vertexBuffer;
+	MeshHandle meshHandle;
 };
 
 struct ComputePushConstants

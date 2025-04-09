@@ -1,9 +1,10 @@
 #pragma once
 
+#include <vk_structs.h>
 #include <vulkan/vulkan_core.h>
 
 struct Texture
 {
-	VkImageView view;
+	VulkanImage image;
 	VkSampler sampler;
 };

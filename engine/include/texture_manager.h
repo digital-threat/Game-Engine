@@ -2,6 +2,9 @@
 #include <vk_structs.h>
 #include <unordered_map>
 #include <string>
+#include <texture_structs.h>
+#include <types.h>
+#include <vector>
 
 class Engine;
 
@@ -20,18 +23,20 @@ public:
 public:
 	void Awake();
 	static TextureManager& Allocate(Engine &engine);
-	static TextureManager& Get();
-	VulkanImage* GetTexture(const char* pPath);
-	VulkanImage* LoadTexture(const char *pPath);
+	static TextureManager& Instance();
+	void LoadTexture(std::string& name);
+	u32 GetTextureCount();
 	VkSampler GetSampler(const std::string& name);
-	std::unordered_map<std::string, VkSampler> GetSamplers();
 
 private:
 	void InitTextureSamplers();
+	std::unordered_map<std::string, VkSampler> GetSamplers();
+
+public:
+	std::vector<Texture> mTextures;
 
 private:
 	Engine& mEngine;
 	static TextureManager* mInstance;
-	std::unordered_map<const char*, VulkanImage*> mImages;
 	std::unordered_map<std::string, VkSampler> mSamplers;
 };

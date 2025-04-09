@@ -65,7 +65,7 @@ void Sandbox::ImGuiMaterials()
             {
                 if (ImGui::Selectable(file.path().filename().string().c_str()))
                 {
-                    TextureManager& textureManager = TextureManager::Get();
+                    TextureManager& textureManager = TextureManager::Instance();
                     VulkanImage* texture = textureManager.GetTexture(file.path().string().c_str());
                     if (texture == nullptr)
                     {
@@ -102,7 +102,7 @@ void Sandbox::ImGuiMaterials()
             {
                 if (ImGui::Selectable(file.path().filename().string().c_str()))
                 {
-                    TextureManager& textureManager = TextureManager::Get();
+                    TextureManager& textureManager = TextureManager::Instance();
                     VulkanImage* texture = textureManager.GetTexture(file.path().string().c_str());
                     if (texture == nullptr)
                     {
@@ -135,7 +135,7 @@ void Sandbox::ImGuiMaterials()
             ImGui::Text("SAMPLERS:");
             ImGui::Separator();
 
-            TextureManager& textureManager = TextureManager::Get();
+            TextureManager& textureManager = TextureManager::Instance();
             for (auto& sampler : textureManager.GetSamplers())
             {
                 if (ImGui::Selectable(sampler.first.c_str()))

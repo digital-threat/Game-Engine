@@ -133,7 +133,7 @@ inline CpuMesh ParseOBJ(std::filesystem::path path)
 	return mesh;
 }
 
-inline CpuMesh LoadMesh(std::filesystem::path path)
+inline CpuMesh ParseObj(std::filesystem::path path, std::vector<std::string>& textures)
 {
 	rapidobj::Result result = rapidobj::ParseFile(path, rapidobj::MaterialLibrary::SearchPath("../materials"));
     rapidobj::Triangulate(result);
@@ -153,7 +153,12 @@ inline CpuMesh LoadMesh(std::filesystem::path path)
         material.ior = result.materials[i].ior;
         material.dissolve = result.materials[i].dissolve;
         material.illum = result.materials[i].illum;
-        material.diffuseTexture = result.materials[i].diffuse_texname;
+    	if(!result.materials[i].diffuse_texname.empty())
+    	{
+    		textures.push_back(result.materials[i].diffuse_texname);
+    		material.diffuseTextureIndex = static_cast<int>(textures.size()) - 1;
+    	}
+
         mesh.materials.push_back(material);
     }
 

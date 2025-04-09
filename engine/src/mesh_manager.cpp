@@ -27,26 +27,26 @@ MeshManager& MeshManager::Instance()
 	return *mInstance;
 }
 
-GpuMesh* MeshManager::GetMesh(const char* path)
+GpuMesh* MeshManager::GetMesh(MeshHandle handle)
 {
-	auto it = mMeshes.find(path);
-	if (it != mMeshes.end())
-	{
-		return &it->second;
-	}
-
-	return LoadMesh(path);
+	return &mMeshes[handle];
 }
 
-GpuMesh* MeshManager::LoadMesh(const char* path)
+MeshHandle MeshManager::LoadMesh(std::string path)
 {
-	CpuMesh cpuMesh{};
+	std::vector<std::string> textures;
+	auto textureCount = TextureManager::Instance().GetTextureCount();
 
-	std::filesystem::path systemPath = path;
-	if (DeserializeMesh(systemPath, cpuMesh))
+	CpuMesh mesh = ParseObj(path, textures);
+	mesh.textureOffset = textureCount;
+
+	for (u32 i = 0; i < textureCount; i++)
 	{
-		mEngine.UploadMesh(cpuMesh, mMeshes[path]);
+		TextureManager::Instance().LoadTexture(textures[i]);
 	}
 
-	return &mMeshes[path];
+	mMeshes.emplace_back();
+	mEngine.UploadMesh(mesh, mMeshes.back());
+
+	return mMeshes.size() - 1;
 }

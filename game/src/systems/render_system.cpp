@@ -22,31 +22,15 @@ void RenderSystem::Update(EntityManager& entityManager, ComponentManager& compon
 		Transform& transform = componentManager.GetComponent<Transform>(entity);
 		Renderer& renderer = componentManager.GetComponent<Renderer>(entity);
 
-		RenderObject renderObject;
-
 		glm::mat4 matrixM = glm::translate(glm::mat4(1.0f), transform.position);
 		matrixM *= glm::mat4_cast(transform.rotation);
 		matrixM = glm::scale(matrixM, glm::vec3(transform.scale));
 
+		RenderObject renderObject{};
 		renderObject.transform = matrixM;
+		renderObject.meshHandle = renderer.meshHandle;
 
-		//assert(renderer.mesh.indexCount != 0);
-		//assert(renderer.material.index != -1);
-
-		if (renderer.mesh != nullptr)
-		{
-			renderObject.indexBuffer = renderer.mesh->indexBuffer;
-			renderObject.indexCount = renderer.mesh->indexCount;
-			renderObject.vertexBuffer = renderer.mesh->vertexBuffer;
-			renderObject.vertexBufferAddress = renderer.mesh->vertexBufferAddress;
-
-			if (renderer.material.index != -1)
-			{
-				renderObject.materialSet = MaterialManager::Get().GetDescriptorSet(renderer.material);
-
-				context.renderObjects.push_back(renderObject);
-			}
-		}
+		context.renderObjects.push_back(renderObject);
 	};
 
 	entityManager.Each(archetype, func);

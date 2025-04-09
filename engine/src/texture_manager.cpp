@@ -25,33 +25,18 @@ TextureManager & TextureManager::Allocate(Engine &engine)
 	return *mInstance;
 }
 
-TextureManager & TextureManager::Get()
+TextureManager & TextureManager::Instance()
 {
 	return *mInstance;
 }
 
-VulkanImage * TextureManager::GetTexture(const char *pPath)
+void TextureManager::LoadTexture(std::string& name)
 {
-	auto it = mImages.find(pPath);
-	if (it != mImages.end())
-	{
-		return it->second;
-	}
+	std::string path = "assets/textures/" + name;
 
-	return nullptr;
-}
-
-VulkanImage * TextureManager::LoadTexture(const char *pPath)
-{
 	i32 width, height, channels;
-	stbi_info(pPath, &width, &height, &channels);
-	u64 requiredBytes = width * height * channels * 4;
-	if (!HasEnoughMemory(requiredBytes))
-	{
-		throw std::runtime_error("Not enough memory to load texture.");
-	}
-
-	stbi_uc* pixels = stbi_load(pPath, &width, &height, &channels, STBI_rgb_alpha);
+	stbi_info(path.c_str(), &width, &height, &channels);
+	stbi_uc* pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
 	if (!pixels)
 	{
@@ -61,12 +46,19 @@ VulkanImage * TextureManager::LoadTexture(const char *pPath)
 	VkExtent3D extent = { static_cast<u32>(width), static_cast<u32>(height), 1};
 	VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
 	VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	auto newImage = CreateImage(mEngine, pixels, extent, format, usage, true);
-	mImages[pPath] = new VulkanImage(newImage);
+	auto image = CreateImage(mEngine, pixels, extent, format, usage, true);
 
 	stbi_image_free(pixels);
 
-	return mImages[pPath];
+	Texture texture;
+	texture.image = image;
+	texture.sampler = GetSampler("LINEAR_MIPMAP_LINEAR");
+	mTextures.push_back(texture);
+}
+
+u32 TextureManager::GetTextureCount()
+{
+	return mTextures.size();
 }
 
 VkSampler TextureManager::GetSampler(const std::string& name)
