@@ -5,19 +5,14 @@
 
 void Engine::InitRasterSceneDescriptorLayout()
 {
+    u32 textureCount = TextureManager::Instance().GetTextureCount();
+
     DescriptorLayoutBuilder builder;
     builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-    builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    builder.AddBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+    builder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, textureCount, VK_SHADER_STAGE_FRAGMENT_BIT);
+    builder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
     mSceneDescriptorLayout = builder.Build(mDevice);
-}
-
-void Engine::InitRasterMaterialDescriptorLayout()
-{
-    DescriptorLayoutBuilder builder;
-    builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    builder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    mMaterialDescriptorLayout = builder.Build(mDevice);
 }
 
 void Engine::InitRasterPipeline()
@@ -33,13 +28,11 @@ void Engine::InitRasterPipeline()
     pushConstantRange.size = sizeof(RasterPushConstants);
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    std::array<VkDescriptorSetLayout, 2> descriptorSets = { mSceneDescriptorLayout, mMaterialDescriptorLayout };
-
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = PipelineLayoutCreateInfo();
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
     pipelineLayoutInfo.pushConstantRangeCount = 1;
-    pipelineLayoutInfo.pSetLayouts = descriptorSets.data();
-    pipelineLayoutInfo.setLayoutCount = 2;
+    pipelineLayoutInfo.pSetLayouts = &mSceneDescriptorLayout;
+    pipelineLayoutInfo.setLayoutCount = 1;
     VK_CHECK(vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, nullptr, &mMeshPipelineLayout));
 
     PipelineBuilder builder;
@@ -57,6 +50,47 @@ void Engine::InitRasterPipeline()
 
     vkDestroyShaderModule(mDevice, vertexShader, nullptr);
     vkDestroyShaderModule(mDevice, fragmentShader, nullptr);
+}
+
+VkDescriptorSet Engine::UpdateSceneDescriptorSet(FrameData& currentFrame)
+{
+    VkDescriptorSet sceneSet = currentFrame.descriptorAllocator.Allocate(mDevice, mSceneDescriptorLayout);
+
+    float aspect = static_cast<float>(mRenderExtent.width) / static_cast<float>(mRenderExtent.height);
+
+    SceneRenderData sceneRenderData = mApplication->mRenderContext.scene;
+    glm::mat4 mainLightP = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 100.0f, 0.1f);
+    glm::mat4 mainLightV = glm::lookAt(sceneRenderData.mainLightPos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
+
+    CameraRenderData& camera = mApplication->mRenderContext.camera;
+    SceneData scene{};
+    scene.matrixV = glm::lookAt(camera.pos, camera.pos + camera.forward, camera.up);
+    scene.matrixP = glm::perspective(glm::radians(camera.fov), aspect, 100.0f, 0.1f);
+    scene.matrixVP = scene.matrixP * scene.matrixV;
+    scene.mainLightVP = mainLightP * mainLightV;
+    scene.mainLightColor = sceneRenderData.mainLightColor;
+    scene.mainLightDir = glm::normalize(glm::vec4(sceneRenderData.mainLightPos - glm::vec3(0.0f), 1.0f));
+    scene.ambientColor = glm::vec4(sceneRenderData.ambientColor, 1.0f);
+    scene.lightBuffer = mApplication->mRenderContext.light.lightBuffer;
+    scene.lightCount =  mApplication->mRenderContext.light.lightCount;
+    scene.cameraPos = glm::vec4(camera.pos, 0.0f);
+
+    SceneData* sceneUniformData = static_cast<SceneData*>(currentFrame.sceneDataBuffer.info.pMappedData);
+    *sceneUniformData = scene;
+
+    std::vector<ObjectData>* objectData = static_cast<std::vector<ObjectData>*>(currentFrame.objectDataBuffer.info.pMappedData);
+    *objectData = mApplication->mRenderContext.objects;
+
+    DescriptorWriter writer;
+    writer.WriteBuffer(0, currentFrame.sceneDataBuffer.buffer, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    writer.WriteBuffer(1, currentFrame.objectDataBuffer.buffer, sizeof(ObjectData) * mApplication->mRenderContext.objects.size(), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    for (u32 i = 0; i < TextureManager::Instance().mTextures.size(); i++)
+    {
+        Texture& texture = TextureManager::Instance().mTextures[i];
+        writer.WriteImage(2, texture.image.imageView, texture.sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    }
+    writer.WriteImage(3, mShadowmapTarget.imageView, TextureManager::Instance().GetSampler("NEAREST_MIPMAP_LINEAR"), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    writer.UpdateSet(mDevice, sceneSet);
 }
 
 void Engine::RenderRaster(VkCommandBuffer cmd, FrameData& currentFrame)
@@ -91,38 +125,11 @@ void Engine::RenderRaster(VkCommandBuffer cmd, FrameData& currentFrame)
 
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-    float aspect = static_cast<float>(mRenderExtent.width) / static_cast<float>(mRenderExtent.height);
-
-    SceneRenderData sceneRenderData = mApplication->mRenderContext.scene;
-    glm::mat4 mainLightP = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 100.0f, 0.1f);
-    glm::mat4 mainLightV = glm::lookAt(sceneRenderData.mainLightPos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
-
-    CameraRenderData& camera = mApplication->mRenderContext.camera;
-    SceneData scene{};
-    scene.matrixV = glm::lookAt(camera.pos, camera.pos + camera.forward, camera.up);
-    scene.matrixP = glm::perspective(glm::radians(camera.fov), aspect, 100.0f, 0.1f);
-    scene.matrixVP = scene.matrixP * scene.matrixV;
-    scene.mainLightVP = mainLightP * mainLightV;
-    scene.mainLightColor = sceneRenderData.mainLightColor;
-    scene.mainLightDir = glm::normalize(glm::vec4(sceneRenderData.mainLightPos - glm::vec3(0.0f), 1.0f));
-    scene.ambientColor = glm::vec4(sceneRenderData.ambientColor, 1.0f);
-    scene.lightBuffer = mApplication->mRenderContext.light.lightBuffer;
-    scene.lightCount =  mApplication->mRenderContext.light.lightCount;
-    scene.cameraPos = glm::vec4(camera.pos, 0.0f);
-
-    SceneData* sceneUniformData = static_cast<SceneData*>(currentFrame.sceneDataBuffer.info.pMappedData);
-    *sceneUniformData = scene;
-
-    VkDescriptorSet sceneSet = currentFrame.descriptorAllocator.Allocate(mDevice, mSceneDescriptorLayout);
-
-    DescriptorWriter writer;
-    writer.WriteBuffer(0, currentFrame.sceneDataBuffer.buffer, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    writer.WriteImage(1, mShadowmapTarget.imageView, TextureManager::Instance().GetSampler("NEAREST_MIPMAP_LINEAR"), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-    writer.UpdateSet(mDevice, sceneSet);
+    VkDescriptorSet sceneSet = UpdateSceneDescriptorSet(currentFrame);
 
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 0, 1, &sceneSet, 0, nullptr);
 
-    for (auto& object : mApplication->mRenderContext.renderObjects)
+    for (auto& object : mApplication->mRenderContext.instances)
     {
         RasterPushConstants pushConstants;
         pushConstants.matrixM = object.transform;
@@ -132,9 +139,7 @@ void Engine::RenderRaster(VkCommandBuffer cmd, FrameData& currentFrame)
         GpuMesh* mesh = MeshManager::Instance().GetMesh(object.meshHandle);
 
         vkCmdPushConstants(cmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(RasterPushConstants), &pushConstants);
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 1, 1, &object.materialSet, 0, nullptr);
         vkCmdBindIndexBuffer(cmd, mesh->indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-
         vkCmdDrawIndexed(cmd, mesh->indexCount, 1, 0, 0, 0);
     }
 

@@ -1,5 +1,6 @@
 #version 460
 #extension GL_EXT_buffer_reference : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 #extension GL_EXT_scalar_block_layout : enable
 
 #include "lighting.glsl"
@@ -10,6 +11,9 @@ layout (location = 2) in vec2 inUV;
 layout (location = 3) in vec4 inShadowCoord;
 
 layout (location = 0) out vec4 outColor;
+
+layout(buffer_reference, scalar) buffer Materials {Material m[]; };
+layout(buffer_reference, scalar) buffer MatIndices {int i[]; };
 
 float ShadowCalculation(vec4 shadowCoord, vec3 normal, vec3 lightDir)
 {

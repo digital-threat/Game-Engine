@@ -117,7 +117,6 @@ void Engine::InitVulkan(FrameData* frames)
     InitDescriptors(frames);
     InitBuffers(frames);
     InitRaytracing();
-    InitPipelines();
 }
 
 void Engine::MainLoop(FrameData* frames)
@@ -126,6 +125,12 @@ void Engine::MainLoop(FrameData* frames)
 
     TextureManager::Instance().Awake();
     mApplication->Awake();
+
+    InitRasterSceneDescriptorLayout();
+
+    InitRasterPipeline();
+    InitShadowmapPipeline();
+    InitRaytracingPipeline();
 
     double lastTime = 0;
 
@@ -389,9 +394,7 @@ void Engine::CreateSwapchain(u32 width, u32 height)
 
 void Engine::InitPipelines()
 {
-    InitRasterPipeline();
-    InitShadowmapPipeline();
-    InitRaytracingPipeline();
+
 }
 
 void Engine::CreateCommandObjects(vkb::Device& device, FrameData* frames)
@@ -465,9 +468,6 @@ void Engine::InitDescriptors(FrameData* frames)
 {
     InitGlobalDescriptorAllocator();
     InitFrameDescriptorAllocators(frames);
-
-    InitRasterSceneDescriptorLayout();
-    InitRasterMaterialDescriptorLayout();
 }
 
 void Engine::InitBuffers(FrameData* frames)
@@ -475,6 +475,8 @@ void Engine::InitBuffers(FrameData* frames)
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
         frames[i].sceneDataBuffer = CreateBuffer(mAllocator, sizeof(SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+        // TODO(Sergei): Find a solution for size that's not a hard-coded number
+        frames[i].objectDataBuffer = CreateBuffer(mAllocator, sizeof(ObjectData) * 128, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
     }
 }
 

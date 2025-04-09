@@ -15,7 +15,7 @@ void RenderSystem::Update(EntityManager& entityManager, ComponentManager& compon
 	archetype.set(componentManager.GetComponentType<Transform>());
 	archetype.set(componentManager.GetComponentType<Renderer>());
 
-	context.renderObjects.clear();
+	context.instances.clear();
 
 	auto func = [&](Entity entity)
 	{
@@ -26,11 +26,11 @@ void RenderSystem::Update(EntityManager& entityManager, ComponentManager& compon
 		matrixM *= glm::mat4_cast(transform.rotation);
 		matrixM = glm::scale(matrixM, glm::vec3(transform.scale));
 
-		RenderObject renderObject{};
+		RenderInstance renderObject{};
 		renderObject.transform = matrixM;
 		renderObject.meshHandle = renderer.meshHandle;
 
-		context.renderObjects.push_back(renderObject);
+		context.instances.push_back(renderObject);
 	};
 
 	entityManager.Each(archetype, func);

@@ -71,6 +71,7 @@ struct FrameData
 	VkCommandBuffer mainCommandBuffer;
 
 	VulkanBuffer sceneDataBuffer;
+	VulkanBuffer objectDataBuffer;
 
 	DeletionQueue deletionQueue;
 	DescriptorAllocator descriptorAllocator;

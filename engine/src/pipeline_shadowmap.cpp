@@ -60,7 +60,7 @@ void Engine::RenderShadowmap(VkCommandBuffer cmd)
 
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-	for (auto& model : mApplication->mRenderContext.renderObjects)
+	for (auto& model : mApplication->mRenderContext.instances)
 	{
 		ShadowmapPushConstants pushConstants;
 

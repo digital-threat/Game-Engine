@@ -13,6 +13,17 @@ void DescriptorLayoutBuilder::AddBinding(u32 binding, VkDescriptorType type, VkS
 	mBindings.push_back(layoutBinding);
 }
 
+void DescriptorLayoutBuilder::AddBinding(u32 binding, VkDescriptorType type, u32 count, VkShaderStageFlags stageFlags)
+{
+	VkDescriptorSetLayoutBinding layoutBinding{};
+	layoutBinding.binding = binding;
+	layoutBinding.descriptorCount = count;
+	layoutBinding.descriptorType = type;
+	layoutBinding.stageFlags = stageFlags;
+
+	mBindings.push_back(layoutBinding);
+}
+
 void DescriptorLayoutBuilder::Clear()
 {
 	mBindings.clear();

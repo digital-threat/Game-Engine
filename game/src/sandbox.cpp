@@ -73,7 +73,7 @@ void Sandbox::Render()
     mRenderContext.scene.ambientColor = glm::vec3(0.05f, 0.05f, 0.05f);
     mRenderContext.scene.mainLightPos = mMainLightPosition;
     mRenderContext.scene.mainLightColor = glm::vec4(mMainLightColor, mMainLightIntensity);
-    mRenderContext.renderObjects.clear();
+    mRenderContext.instances.clear();
     mRenderContext.light.lightCount = 0;
 
     RenderSystem::Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, mRenderContext);

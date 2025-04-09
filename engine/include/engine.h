@@ -99,7 +99,6 @@ public:
     BackgroundData mBackground{};
 
     VkDescriptorSetLayout mSceneDescriptorLayout;
-    VkDescriptorSetLayout mMaterialDescriptorLayout;
 
     VkExtent2D mRenderExtent{};
 
@@ -156,17 +155,14 @@ private:
     // Drawing
     void Render(FrameData& currentFrame);
 
-    // Pipelines
-    void InitPipelines();
-
     // ImGui
     void InitImGui();
     void RenderImgui(VkCommandBuffer cmd, VkImageView targetImageView);
 
     // Rasterized
     void InitRasterSceneDescriptorLayout();
-    void InitRasterMaterialDescriptorLayout();
     void InitRasterPipeline();
+    VkDescriptorSet UpdateSceneDescriptorSet(FrameData& currentFrame);
     void RenderRaster(VkCommandBuffer cmd, FrameData& currentFrame);
 
     // Rasterized shadow mapping

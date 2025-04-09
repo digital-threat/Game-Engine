@@ -8,6 +8,15 @@ struct LightData
     vec4 attenuation;
 };
 
+struct ObjectData
+{
+    int      txtOffset;
+    uint64_t vertexAddress;
+    uint64_t indexAddress;
+    uint64_t materialAddress;
+    uint64_t matIdAddress;
+};
+
 struct Material
 {
     vec3  ambient;
@@ -35,14 +44,11 @@ layout(set = 0, binding = 0) uniform Scene
     uint lightCount;
 };
 
-layout(set = 0, binding = 1) uniform sampler2D shadowMap;
-
-
-layout(set = 1, binding = 0, scalar) uniform Material_
+layout(set = 0, binding = 1, scalar) readonly buffer ObjectData_
 {
-    Material material;
-};
+    ObjectData i[];
+} objData;
 
-layout(set = 1, binding = 1) uniform sampler2D albedoMap;
-layout(set = 1, binding = 2) uniform sampler2D specularMap;
+layout(set = 0, binding = 2) uniform sampler2D[] textureSamplers;
 
+layout(set = 0, binding = 3) uniform sampler2D shadowMap;

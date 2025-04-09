@@ -30,4 +30,5 @@ private:
 	Engine& mEngine;
 	static MeshManager* mInstance;
 	std::vector<GpuMesh> mMeshes;
+
 };
