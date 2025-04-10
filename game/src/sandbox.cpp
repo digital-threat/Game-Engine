@@ -37,8 +37,8 @@ void Sandbox::Awake()
 
     LoadDefaultScene();
 
-    CreateBlas();
-    CreateTlas();
+    //CreateBlas();
+    //CreateTlas();
 }
 
 void Sandbox::Update(f64 deltaTime)
@@ -89,8 +89,8 @@ void Sandbox::CreateBlas()
     std::vector<BlasInput> allBlas;
 
     // TODO(Sergei): Get all renderer components and create blas
-    GpuMesh* cube = MeshManager::Instance().GetMesh(0);
-    auto blas = MeshToVkGeometryKHR(*cube);
+    GpuMesh cube = MeshManager::Instance().GetMesh(0);
+    auto blas = MeshToVkGeometryKHR(cube);
     allBlas.emplace_back(blas);
 
     mRtBuilder.BuildBlas(allBlas, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);

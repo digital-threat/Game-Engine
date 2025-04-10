@@ -11,9 +11,9 @@ struct RenderInstance
 
 struct ObjectData
 {
+	u32 textureOffset;
 	VkDeviceAddress vertexBufferAddress;
 	VkDeviceAddress indexBufferAddress;
 	VkDeviceAddress materialBufferAddress;
 	VkDeviceAddress matIdBufferAddress;
-	u32 textureOffset;
 };

@@ -1,9 +1,9 @@
 #version 460
-#extension GL_EXT_buffer_reference : require
-#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
-#extension GL_EXT_scalar_block_layout : enable
+//#extension GL_EXT_buffer_reference2 : require
+//#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+//#extension GL_EXT_scalar_block_layout : enable
 
-#include "lighting.glsl"
+//#include "lighting.glsl"
 
 layout (location = 0) in vec3 inPosition;
 layout (location = 1) in vec3 inNormal;
@@ -12,16 +12,16 @@ layout (location = 3) in vec4 inShadowCoord;
 
 layout (location = 0) out vec4 outColor;
 
-layout(buffer_reference, scalar) buffer Materials {Material m[]; };
-layout(buffer_reference, scalar) buffer MatIndices {int i[]; };
+//layout(buffer_reference, scalar) buffer Materials {Material m[]; };
+//layout(buffer_reference, scalar) buffer MatIndices {int i[]; };
 
-float ShadowCalculation(vec4 shadowCoord, vec3 normal, vec3 lightDir)
-{
-    vec3 sampleCoords = shadowCoord.xyz / shadowCoord.w;
-    sampleCoords.y = -sampleCoords.y;
-    sampleCoords.xy = sampleCoords.xy * 0.5f + 0.5f;
-    return texture(shadowMap, sampleCoords.xy).r > sampleCoords.z ? 0.0f : 1.0f;
-}
+//float ShadowCalculation(vec4 shadowCoord, vec3 normal, vec3 lightDir)
+//{
+//    vec3 sampleCoords = shadowCoord.xyz / shadowCoord.w;
+//    sampleCoords.y = -sampleCoords.y;
+//    sampleCoords.xy = sampleCoords.xy * 0.5f + 0.5f;
+//    return texture(shadowMap, sampleCoords.xy).r > sampleCoords.z ? 0.0f : 1.0f;
+//}
 
 void main()
 {

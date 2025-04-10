@@ -23,7 +23,7 @@ public:
 	static MeshManager& Allocate(Engine &engine);
 	static MeshManager& Instance();
 
-	GpuMesh* GetMesh(MeshHandle handle);
+	GpuMesh GetMesh(MeshHandle handle);
 	MeshHandle LoadMesh(std::string path);
 
 public:

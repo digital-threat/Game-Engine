@@ -64,19 +64,19 @@ void Engine::RenderShadowmap(VkCommandBuffer cmd)
 	{
 		ShadowmapPushConstants pushConstants;
 
-		GpuMesh* mesh = MeshManager::Instance().GetMesh(object.meshHandle);
+		GpuMesh mesh = MeshManager::Instance().GetMesh(object.meshHandle);
 
 		glm::vec3 lightPos = mApplication->mRenderContext.scene.mainLightPos;
 		glm::mat4 matrixP = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 100.0f, 0.1f);
 		glm::mat4 matrixV = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
 
 		pushConstants.depthMVP = matrixP * matrixV * object.transform;
-		pushConstants.vertexBuffer = mesh->vertexBufferAddress;
+		pushConstants.vertexBuffer = mesh.vertexBufferAddress;
 
 		vkCmdPushConstants(cmd, mShadowmapPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShadowmapPushConstants), &pushConstants);
-		vkCmdBindIndexBuffer(cmd, mesh->indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(cmd, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdDrawIndexed(cmd, mesh->indexCount, 1, 0, 0, 0);
+		vkCmdDrawIndexed(cmd, mesh.indexCount, 1, 0, 0, 0);
 	}
 
 	vkCmdEndRendering(cmd);

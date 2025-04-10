@@ -27,9 +27,9 @@ MeshManager& MeshManager::Instance()
 	return *mInstance;
 }
 
-GpuMesh* MeshManager::GetMesh(MeshHandle handle)
+GpuMesh MeshManager::GetMesh(MeshHandle handle)
 {
-	return &mMeshes[handle];
+	return mMeshes[handle];
 }
 
 MeshHandle MeshManager::LoadMesh(std::string path)

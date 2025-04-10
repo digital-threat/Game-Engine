@@ -17,18 +17,19 @@ struct ObjectData
     uint64_t matIdAddress;
 };
 
-struct Material
-{
-    vec3  ambient;
-    vec3  diffuse;
-    vec3  specular;
-    vec3  transmittance;
-    vec3  emission;
-    float shininess;
-    float ior;
-    float dissolve;
-    int   illum;
-};
+//struct Material
+//{
+//    vec3 ambient;
+//    vec3 diffuse;
+//    vec3 specular;
+//    vec3 transmittance;
+//    vec3 emission;
+//    float shininess;
+//    float ior;
+//    float dissolve;
+//    int illum;
+//    int diffuseTextureId;
+//};
 
 layout(set = 0, binding = 0) uniform Scene
 {
@@ -44,11 +45,11 @@ layout(set = 0, binding = 0) uniform Scene
     uint lightCount;
 };
 
-layout(set = 0, binding = 1, scalar) readonly buffer ObjectData_
+layout(set = 0, binding = 1, scalar) buffer ObjectData_
 {
     ObjectData i[];
 } objData;
 
-layout(set = 0, binding = 2) uniform sampler2D[] textureSamplers;
+//layout(set = 0, binding = 2) uniform sampler2D[] textureSamplers;
 
-layout(set = 0, binding = 3) uniform sampler2D shadowMap;
+//layout(set = 0, binding = 3) uniform sampler2D shadowMap;
