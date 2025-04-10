@@ -26,11 +26,11 @@ void RenderSystem::Update(EntityManager& entityManager, ComponentManager& compon
 		matrixM *= glm::mat4_cast(transform.rotation);
 		matrixM = glm::scale(matrixM, glm::vec3(transform.scale));
 
-		RenderInstance renderObject{};
-		renderObject.transform = matrixM;
-		renderObject.meshHandle = renderer.meshHandle;
+		RenderInstance instance{};
+		instance.transform = matrixM;
+		instance.meshHandle = renderer.meshHandle;
 
-		context.instances.push_back(renderObject);
+		context.instances.push_back(instance);
 	};
 
 	entityManager.Each(archetype, func);

@@ -135,7 +135,14 @@ inline CpuMesh ParseOBJ(std::filesystem::path path)
 
 inline CpuMesh ParseObj(std::filesystem::path path, std::vector<std::string>& textures)
 {
-	rapidobj::Result result = rapidobj::ParseFile(path, rapidobj::MaterialLibrary::SearchPath("../materials"));
+	rapidobj::MaterialLibrary mtllib = rapidobj::MaterialLibrary::SearchPathA("../materials");
+	rapidobj::Result result = rapidobj::ParseFile(path, mtllib);
+
+	if (result.error)
+	{
+		std::cout << result.error.code.message() << std::endl;
+	}
+
     rapidobj::Triangulate(result);
 
     CpuMesh mesh{};
@@ -191,4 +198,6 @@ inline CpuMesh ParseObj(std::filesystem::path path, std::vector<std::string>& te
             mesh.indices.push_back(j);
         }
     }
+
+	return mesh;
 }

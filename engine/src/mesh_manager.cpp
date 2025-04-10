@@ -40,7 +40,7 @@ MeshHandle MeshManager::LoadMesh(std::string path)
 	CpuMesh mesh = ParseObj(path, textures);
 	mesh.textureOffset = textureCount;
 
-	for (u32 i = 0; i < textureCount; i++)
+	for (u32 i = 0; i < textures.size(); i++)
 	{
 		TextureManager::Instance().LoadTexture(textures[i]);
 	}

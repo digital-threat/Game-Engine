@@ -26,9 +26,11 @@ public:
 	GpuMesh* GetMesh(MeshHandle handle);
 	MeshHandle LoadMesh(std::string path);
 
+public:
+	std::vector<GpuMesh> mMeshes;
+
 private:
 	Engine& mEngine;
 	static MeshManager* mInstance;
-	std::vector<GpuMesh> mMeshes;
 
 };

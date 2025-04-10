@@ -38,6 +38,7 @@ BlasInput MeshToVkGeometryKHR(GpuMesh& mesh)
 
 RaytracingBuilder::RaytracingBuilder(Engine& engine): mEngine(engine)
 {
+	mTlas.handle = VK_NULL_HANDLE;
 	//vkGetAccelerationStructureBuildSizesKHR = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(vkGetDeviceProcAddr(mEngine.mDevice, "vkGetAccelerationStructureBuildSizesKHR"));
 	//vkCmdBuildAccelerationStructuresKHR = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(vkGetDeviceProcAddr(mEngine.mDevice, "vkCmdBuildAccelerationStructuresKHR"));
 	//vkCreateAccelerationStructureKHR = reinterpret_cast<PFN_vkCreateAccelerationStructureKHR>(vkGetDeviceProcAddr(mEngine.mDevice, "vkCreateAccelerationStructureKHR"));

@@ -23,4 +23,6 @@ void DestroyBuffer(VmaAllocator allocator, const VulkanBuffer& buffer);
 
 void CopyBuffer(VkCommandBuffer cmd, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
+void CopyBuffer(VkCommandBuffer cmd, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize srcOffset, VkDeviceSize size);
+
 VkDeviceAddress GetBufferDeviceAddress(VkDevice device, VkBuffer buffer);

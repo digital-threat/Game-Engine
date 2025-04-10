@@ -26,11 +26,13 @@ layout(push_constant) uniform PushConstants
 {
     mat4 matrixM;
     mat4 matrixITM;
-    VertexBuffer vertexBuffer;
+    uint objIndex;
 };
 
 void main()
 {
+    ObjectData data = objData.i[objIndex];
+    VertexBuffer vertexBuffer = VertexBuffer(data.vertexAddress);
     Vertex v = vertexBuffer.vertices[gl_VertexIndex];
     gl_Position = matrixVP * matrixM * vec4(v.position, 1.0f);
     outPosition = gl_Position.xyz;

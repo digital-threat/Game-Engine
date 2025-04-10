@@ -25,25 +25,26 @@ float ShadowCalculation(vec4 shadowCoord, vec3 normal, vec3 lightDir)
 
 void main()
 {
-    vec3 color = texture(albedoMap, vec2(inUV.x, 1.0f - inUV.y)).xyz;
-    vec3 normal = normalize(inNormal);
-    vec3 viewDir = normalize(cameraPos.xyz - inPosition.xyz);
-    float specularIntensity = texture(specularMap, vec2(inUV.x, 1.0f - inUV.y)).r;
-
-    Light mainLight;
-    mainLight.color = mainLightColor.xyz * mainLightColor.w;
-    mainLight.direction = normalize(mainLightDir.xyz);
-    mainLight.attenuation = 1.0f;
-
-    vec3 lightingColor = CalculateLighting(mainLight, material, normal, viewDir);
-    for (uint i = 0; i < min(lightCount, MAX_LIGHTS); i++)
-    {
-        Light light = GetLight(i, inPosition);
-        lightingColor += CalculateLighting(light, material, normal, viewDir);
-    }
-
-    float shadowAttenuation = ShadowCalculation(inShadowCoord, normal, mainLight.direction);
-    lightingColor = lightingColor * shadowAttenuation;
-
-    outColor = vec4(color * (ambientColor.rgb + lightingColor), 1.0f);
+    outColor = vec4(1, 1, 1, 1);
+//    vec3 color = texture(albedoMap, vec2(inUV.x, 1.0f - inUV.y)).xyz;
+//    vec3 normal = normalize(inNormal);
+//    vec3 viewDir = normalize(cameraPos.xyz - inPosition.xyz);
+//    float specularIntensity = texture(specularMap, vec2(inUV.x, 1.0f - inUV.y)).r;
+//
+//    Light mainLight;
+//    mainLight.color = mainLightColor.xyz * mainLightColor.w;
+//    mainLight.direction = normalize(mainLightDir.xyz);
+//    mainLight.attenuation = 1.0f;
+//
+//    vec3 lightingColor = CalculateLighting(mainLight, material, normal, viewDir);
+//    for (uint i = 0; i < min(lightCount, MAX_LIGHTS); i++)
+//    {
+//        Light light = GetLight(i, inPosition);
+//        lightingColor += CalculateLighting(light, material, normal, viewDir);
+//    }
+//
+//    float shadowAttenuation = ShadowCalculation(inShadowCoord, normal, mainLight.direction);
+//    lightingColor = lightingColor * shadowAttenuation;
+//
+//    outColor = vec4(color * (ambientColor.rgb + lightingColor), 1.0f);
 }

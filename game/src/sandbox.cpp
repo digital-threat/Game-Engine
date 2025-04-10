@@ -35,10 +35,10 @@ void Sandbox::Awake()
     mCoordinator.RegisterComponent<BoxCollider>();
     mCoordinator.RegisterComponent<Camera>();
 
+    LoadDefaultScene();
+
     CreateBlas();
     CreateTlas();
-
-    LoadDefaultScene();
 }
 
 void Sandbox::Update(f64 deltaTime)
@@ -67,7 +67,7 @@ void Sandbox::Render()
 
 	ImGuiApplication();
     //ImGuiEntities();
-    ImGuiMaterials();
+    //ImGuiMaterials();
     ImGuiMainLight();
 
     mRenderContext.scene.ambientColor = glm::vec3(0.05f, 0.05f, 0.05f);
@@ -123,7 +123,8 @@ void Sandbox::CreateTlas()
 
 void Sandbox::LoadDefaultScene()
 {
-    MeshHandle cube = MeshManager::Instance().LoadMesh("assets/meshes/cube.obj");
+    MeshManager& meshManager = MeshManager::Instance();
+    MeshHandle cube = meshManager.LoadMesh("assets\\meshes\\cube.obj");
 
     for (i32 i = 0; i < 3; ++i)
     {

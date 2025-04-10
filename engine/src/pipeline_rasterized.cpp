@@ -78,12 +78,26 @@ VkDescriptorSet Engine::UpdateSceneDescriptorSet(FrameData& currentFrame)
     SceneData* sceneUniformData = static_cast<SceneData*>(currentFrame.sceneDataBuffer.info.pMappedData);
     *sceneUniformData = scene;
 
+    std::vector<ObjectData> renderObjects;
+    for (u32 i = 0; i < MeshManager::Instance().mMeshes.size(); i++)
+    {
+        GpuMesh& mesh = MeshManager::Instance().mMeshes[i];
+
+        ObjectData renderObject{};
+        renderObject.textureOffset = mesh.textureOffset;
+        renderObject.vertexBufferAddress = mesh.vertexBufferAddress;
+        renderObject.indexBufferAddress = mesh.indexBufferAddress;
+        renderObject.materialBufferAddress = mesh.materialBufferAddress;
+        renderObject.matIdBufferAddress = mesh.matIdBufferAddress;
+        renderObjects.push_back(renderObject);
+    }
+
     std::vector<ObjectData>* objectData = static_cast<std::vector<ObjectData>*>(currentFrame.objectDataBuffer.info.pMappedData);
-    *objectData = mApplication->mRenderContext.objects;
+    *objectData = renderObjects;
 
     DescriptorWriter writer;
     writer.WriteBuffer(0, currentFrame.sceneDataBuffer.buffer, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    writer.WriteBuffer(1, currentFrame.objectDataBuffer.buffer, sizeof(ObjectData) * mApplication->mRenderContext.objects.size(), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    writer.WriteBuffer(1, currentFrame.objectDataBuffer.buffer, sizeof(ObjectData) * renderObjects.size(), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     for (u32 i = 0; i < TextureManager::Instance().mTextures.size(); i++)
     {
         Texture& texture = TextureManager::Instance().mTextures[i];
@@ -91,6 +105,8 @@ VkDescriptorSet Engine::UpdateSceneDescriptorSet(FrameData& currentFrame)
     }
     writer.WriteImage(3, mShadowmapTarget.imageView, TextureManager::Instance().GetSampler("NEAREST_MIPMAP_LINEAR"), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     writer.UpdateSet(mDevice, sceneSet);
+
+    return sceneSet;
 }
 
 void Engine::RenderRaster(VkCommandBuffer cmd, FrameData& currentFrame)
@@ -129,19 +145,19 @@ void Engine::RenderRaster(VkCommandBuffer cmd, FrameData& currentFrame)
 
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mMeshPipelineLayout, 0, 1, &sceneSet, 0, nullptr);
 
-    for (auto& object : mApplication->mRenderContext.instances)
-    {
-        RasterPushConstants pushConstants;
-        pushConstants.matrixM = object.transform;
-        pushConstants.matrixITM = glm::transpose(glm::inverse(object.transform));
-        pushConstants.meshHandle = object.meshHandle;
+     for (auto& object : mApplication->mRenderContext.instances)
+     {
+         RasterPushConstants pushConstants;
+         pushConstants.matrixM = object.transform;
+         pushConstants.matrixITM = glm::transpose(glm::inverse(object.transform));
+         pushConstants.meshHandle = object.meshHandle;
 
-        GpuMesh* mesh = MeshManager::Instance().GetMesh(object.meshHandle);
+         GpuMesh* mesh = MeshManager::Instance().GetMesh(object.meshHandle);
 
-        vkCmdPushConstants(cmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(RasterPushConstants), &pushConstants);
-        vkCmdBindIndexBuffer(cmd, mesh->indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-        vkCmdDrawIndexed(cmd, mesh->indexCount, 1, 0, 0, 0);
-    }
+         vkCmdPushConstants(cmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(RasterPushConstants), &pushConstants);
+         vkCmdBindIndexBuffer(cmd, mesh->indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+         vkCmdDrawIndexed(cmd, mesh->indexCount, 1, 0, 0, 0);
+     }
 
     vkCmdEndRendering(cmd);
 }

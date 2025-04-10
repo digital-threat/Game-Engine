@@ -37,7 +37,6 @@ struct RaytracingData
 struct RenderContext
 {
 	std::vector<RenderInstance> instances;
-	std::vector<ObjectData> objects;
 	SceneRenderData scene;
 	CameraRenderData camera;
 	LightRenderData light;
