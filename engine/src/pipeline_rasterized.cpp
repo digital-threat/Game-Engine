@@ -3,6 +3,14 @@
 #include <vk_pipelines.h>
 #include <glm/gtc/quaternion.hpp>
 
+// TODO(Sergei): AMD cards (some? most? all?) on Windows have a maxPushConstantsSize of 128 bytes.
+struct RasterPushConstants
+{
+    glm::mat4 matrixM;
+    glm::mat4 matrixITM;
+    MeshHandle meshHandle;
+};
+
 void Engine::InitRasterSceneDescriptorLayout()
 {
     // TODO(Sergei): This requires all textures to be preloaded, should a build a new layout when a scene loads?

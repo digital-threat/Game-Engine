@@ -29,7 +29,14 @@ set(SHADER_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/shaders)
 
 file(MAKE_DIRECTORY ${SHADER_BINARY_DIR})
 
-file(GLOB_RECURSE SHADER_FILES ${SHADER_SOURCE_DIR}/*.vert ${SHADER_SOURCE_DIR}/*.frag ${SHADER_SOURCE_DIR}/*.comp)
+file(GLOB_RECURSE SHADER_FILES
+        ${SHADER_SOURCE_DIR}/*.vert
+        ${SHADER_SOURCE_DIR}/*.frag
+        ${SHADER_SOURCE_DIR}/*.comp
+        ${SHADER_SOURCE_DIR}/*.rchit
+        ${SHADER_SOURCE_DIR}/*.rmiss
+        ${SHADER_SOURCE_DIR}/*.rgen
+)
 
 # Shader files must not have the same name, even if they have different extensions
 foreach(SHADER ${SHADER_FILES})
@@ -38,7 +45,7 @@ foreach(SHADER ${SHADER_FILES})
 
     add_custom_command(
             OUTPUT ${SHADER_BINARY}
-            COMMAND ${Vulkan_GLSLC_EXECUTABLE} ${SHADER} -o ${SHADER_BINARY}
+            COMMAND ${Vulkan_GLSLC_EXECUTABLE} --target-env=vulkan1.3 ${SHADER} -o ${SHADER_BINARY}
             DEPENDS ${SHADER}
             COMMENT Compiling ${SHADER} to ${SHADER_BINARY}
             VERBATIM

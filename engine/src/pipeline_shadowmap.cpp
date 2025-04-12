@@ -3,6 +3,12 @@
 #include <vk_pipelines.h>
 #include <glm/gtc/quaternion.hpp>
 
+struct ShadowmapPushConstants
+{
+	glm::mat4 depthMVP;
+	VkDeviceAddress vertexBuffer;
+};
+
 void Engine::InitShadowmapPipeline()
 {
 	VkShaderModule vertexShader;

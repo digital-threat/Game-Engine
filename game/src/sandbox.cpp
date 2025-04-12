@@ -126,7 +126,7 @@ void Sandbox::LoadDefaultScene()
     MeshManager& meshManager = MeshManager::Instance();
     MeshHandle cube = meshManager.LoadMesh("assets\\meshes\\cube.obj");
 
-    for (i32 i = 0; i < 3; ++i)
+    for (i32 i = 0; i < 3; i++)
     {
         Entity entity = mCoordinator.CreateEntity();
 

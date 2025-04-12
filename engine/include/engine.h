@@ -27,7 +27,6 @@
 #include <vk_types.h>
 #include <vk_descriptors.h>
 
-
 constexpr u32 WIDTH = 1280;
 constexpr u32 HEIGHT = 720;
 
@@ -38,16 +37,6 @@ constexpr bool enableValidationLayers = false;
 #else
 constexpr bool enableValidationLayers = true;
 #endif
-
-struct ComputeEffect
-{
-    const char* name;
-
-    VkPipeline pipeline;
-    VkPipelineLayout layout;
-
-    ComputePushConstants data;
-};
 
 class Engine
 {
@@ -84,19 +73,7 @@ public:
     VulkanImage mDepthTarget{};
     VulkanImage mShadowmapTarget{};
 
-
     DescriptorAllocator mGlobalDescriptorAllocator{};
-
-    struct BackgroundData
-    {
-        VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-        VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
-        VkDescriptorSetLayout descriptorLayout = VK_NULL_HANDLE;
-        std::vector<ComputeEffect> effects;
-        int currentEffect = 0;
-    };
-
-    BackgroundData mBackground{};
 
     VkDescriptorSetLayout mSceneDescriptorLayout;
 

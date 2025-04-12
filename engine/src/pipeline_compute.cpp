@@ -2,6 +2,35 @@
 #include <vk_helpers.h>
 #include <vk_pipelines.h>
 
+struct ComputePushConstants
+{
+	glm::vec4 data1;
+	glm::vec4 data2;
+	glm::vec4 data3;
+	glm::vec4 data4;
+};
+
+struct ComputeEffect
+{
+	const char* name;
+
+	VkPipeline pipeline;
+	VkPipelineLayout layout;
+
+	ComputePushConstants data;
+};
+
+struct BackgroundData
+{
+	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+	VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+	VkDescriptorSetLayout descriptorLayout = VK_NULL_HANDLE;
+	std::vector<ComputeEffect> effects;
+	int currentEffect = 0;
+};
+
+BackgroundData mBackground{};
+
 void Engine::InitBackgroundDescriptorLayout()
 {
 	DescriptorLayoutBuilder builder;
