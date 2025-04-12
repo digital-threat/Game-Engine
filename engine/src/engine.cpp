@@ -132,18 +132,6 @@ void Engine::MainLoop(FrameData* frames)
     InitShadowmapPipeline();
     InitRaytracingPipeline();
 
-    GpuMesh& mesh = MeshManager::Instance().mMeshes[0];
-
-    ObjectData renderObject{};
-    renderObject.textureOffset = mesh.textureOffset;
-    renderObject.vertexBufferAddress = mesh.vertexBufferAddress;
-    renderObject.indexBufferAddress = mesh.indexBufferAddress;
-    renderObject.materialBufferAddress = mesh.materialBufferAddress;
-    renderObject.matIdBufferAddress = mesh.matIdBufferAddress;
-
-    ObjectData* objectData = static_cast<ObjectData*>(mObjectDataBuffer.info.pMappedData);
-    *objectData = renderObject;
-
     double lastTime = 0;
 
     while (!glfwWindowShouldClose(mWindow))
@@ -235,17 +223,20 @@ vkb::PhysicalDevice Engine::SelectPhysicalDevice(vkb::Instance& vkbInstance, VkS
     VkPhysicalDeviceFeatures features{};
     features.samplerAnisotropy = VK_TRUE;
     features.shaderInt64 = VK_TRUE;
+    features.geometryShader = VK_TRUE;
 
     VkPhysicalDeviceVulkan12Features features_12{};
     features_12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-    features_12.bufferDeviceAddress = true;
-    features_12.descriptorIndexing = true;
-    features_12.scalarBlockLayout = true;
+    features_12.bufferDeviceAddress = VK_TRUE;
+    features_12.descriptorIndexing = VK_TRUE;
+    features_12.scalarBlockLayout = VK_TRUE;
+    features_12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    features_12.runtimeDescriptorArray = VK_TRUE;
 
     VkPhysicalDeviceVulkan13Features features_13{};
     features_13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-    features_13.dynamicRendering = true;
-    features_13.synchronization2 = true;
+    features_13.dynamicRendering = VK_TRUE;
+    features_13.synchronization2 = VK_TRUE;
 
     VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
     accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
@@ -484,10 +475,8 @@ void Engine::InitBuffers(FrameData* frames)
     {
         frames[i].sceneDataBuffer = CreateBuffer(mAllocator, sizeof(SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
         // TODO(Sergei): Find a solution for size that's not a hard-coded number
+        frames[i].objectDataBuffer = CreateBuffer(mAllocator, sizeof(ObjectData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
     }
-
-    mObjectDataBuffer = CreateBuffer(mAllocator, sizeof(ObjectData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-
 }
 
 void Engine::InitSyncObjects(FrameData* frames)

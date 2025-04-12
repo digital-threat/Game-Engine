@@ -22,13 +22,6 @@ layout(buffer_reference, scalar) buffer VertexBuffer
     Vertex vertices[];
 };
 
-layout(push_constant) uniform PushConstants
-{
-    mat4 matrixM;
-    mat4 matrixITM;
-    uint objIndex;
-};
-
 void main()
 {
     ObjectData data = objData.i[objIndex];

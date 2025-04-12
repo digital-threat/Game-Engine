@@ -5,13 +5,14 @@
 
 void Engine::InitRasterSceneDescriptorLayout()
 {
+    // TODO(Sergei): This requires all textures to be preloaded, should a build a new layout when a scene loads?
     u32 textureCount = TextureManager::Instance().GetTextureCount();
 
     DescriptorLayoutBuilder builder;
     builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
     builder.AddBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-    //builder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, textureCount, VK_SHADER_STAGE_FRAGMENT_BIT);
-    //builder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    builder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, textureCount, VK_SHADER_STAGE_FRAGMENT_BIT);
+    builder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
     mSceneDescriptorLayout = builder.Build(mDevice);
 }
 
@@ -26,7 +27,7 @@ void Engine::InitRasterPipeline()
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.offset = 0;
     pushConstantRange.size = sizeof(RasterPushConstants);
-    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = PipelineLayoutCreateInfo();
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
@@ -73,18 +74,38 @@ void Engine::UpdateSceneDescriptorSet(VkDescriptorSet sceneSet, FrameData& curre
     scene.lightCount =  mApplication->mRenderContext.light.lightCount;
     scene.cameraPos = glm::vec4(camera.pos, 0.0f);
 
-    SceneData* sceneUniformData = static_cast<SceneData*>(currentFrame.sceneDataBuffer.info.pMappedData);
-    *sceneUniformData = scene;
+    memcpy(currentFrame.sceneDataBuffer.info.pMappedData, &scene, sizeof(SceneData));
+
+    // TODO(Sergei): Object data buffer shouldn't be updated every frame, only on scene load.
+    u32 meshCount = MeshManager::Instance().mMeshes.size();
+    std::vector<ObjectData> objects;
+    objects.reserve(meshCount);
+
+    for (u32 j = 0; j < meshCount; j++)
+    {
+        GpuMesh& mesh = MeshManager::Instance().mMeshes[j];
+
+        ObjectData renderObject{};
+        renderObject.textureOffset = mesh.textureOffset;
+        renderObject.vertexBufferAddress = mesh.vertexBufferAddress;
+        renderObject.indexBufferAddress = mesh.indexBufferAddress;
+        renderObject.materialBufferAddress = mesh.materialBufferAddress;
+        renderObject.matIdBufferAddress = mesh.matIdBufferAddress;
+
+        objects.push_back(renderObject);
+    }
+
+    memcpy(currentFrame.objectDataBuffer.info.pMappedData, objects.data(), objects.size() * sizeof(ObjectData));
 
     DescriptorWriter writer;
     writer.WriteBuffer(0, currentFrame.sceneDataBuffer.buffer, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    writer.WriteBuffer(1, mObjectDataBuffer.buffer, sizeof(ObjectData), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    // for (u32 i = 0; i < TextureManager::Instance().mTextures.size(); i++)
-    // {
-    //     Texture& texture = TextureManager::Instance().mTextures[i];
-    //     writer.WriteImage(2, texture.image.imageView, texture.sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-    // }
-    // writer.WriteImage(3, mShadowmapTarget.imageView, TextureManager::Instance().GetSampler("NEAREST_MIPMAP_LINEAR"), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    writer.WriteBuffer(1, currentFrame.objectDataBuffer.buffer, objects.size() * sizeof(ObjectData), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    for (u32 i = 0; i < TextureManager::Instance().mTextures.size(); i++)
+    {
+        Texture& texture = TextureManager::Instance().mTextures[i];
+        writer.WriteImage(2, texture.image.imageView, texture.sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    }
+    writer.WriteImage(3, mShadowmapTarget.imageView, TextureManager::Instance().GetSampler("NEAREST_MIPMAP_LINEAR"), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     writer.UpdateSet(mDevice, sceneSet);
 }
 
@@ -134,7 +155,7 @@ void Engine::RenderRaster(VkCommandBuffer cmd, FrameData& currentFrame)
 
          GpuMesh mesh = MeshManager::Instance().GetMesh(object.meshHandle);
 
-         vkCmdPushConstants(cmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(RasterPushConstants), &pushConstants);
+         vkCmdPushConstants(cmd, mMeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(RasterPushConstants), &pushConstants);
          vkCmdBindIndexBuffer(cmd, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
          vkCmdDrawIndexed(cmd, mesh.indexCount, 1, 0, 0, 0);
      }

@@ -70,8 +70,9 @@ struct FrameData
 	VkCommandPool commandPool;
 	VkCommandBuffer mainCommandBuffer;
 
+	// NOTE(Sergei): Would it be beneficial to use dynamic buffers instead?
 	VulkanBuffer sceneDataBuffer;
-	//VulkanBuffer objectDataBuffer;
+	VulkanBuffer objectDataBuffer;
 
 	DeletionQueue deletionQueue;
 	DescriptorAllocator descriptorAllocator;

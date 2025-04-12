@@ -188,16 +188,39 @@ inline CpuMesh ParseObj(std::filesystem::path path, std::vector<std::string>& te
             vertex.position.x = result.attributes.positions[positionIndex];
             vertex.position.y = result.attributes.positions[positionIndex + 1];
             vertex.position.z = result.attributes.positions[positionIndex + 2];
-            vertex.normal.x = result.attributes.normals[normalIndex];
-            vertex.normal.y = result.attributes.normals[normalIndex + 1];
-            vertex.normal.z = result.attributes.normals[normalIndex + 2];
-            vertex.uv.x = result.attributes.texcoords[uvIndex];
-            vertex.uv.y = result.attributes.texcoords[uvIndex + 1];
+
+        	if(!result.attributes.normals.empty() && normalIndex >= 0)
+        	{
+        		vertex.normal.x = result.attributes.normals[normalIndex];
+        		vertex.normal.y = result.attributes.normals[normalIndex + 1];
+        		vertex.normal.z = result.attributes.normals[normalIndex + 2];
+        	}
+
+        	if(!result.attributes.texcoords.empty() && uvIndex >= 0)
+        	{
+        		vertex.uv.x = result.attributes.texcoords[uvIndex];
+        		vertex.uv.y = result.attributes.texcoords[uvIndex + 1];
+        	}
 
             mesh.vertices.push_back(vertex);
             mesh.indices.push_back(j);
         }
     }
+
+	if(result.attributes.normals.empty())
+	{
+		for(size_t i = 0; i < mesh.indices.size(); i += 3)
+		{
+			Vertex& v0 = mesh.vertices[mesh.indices[i + 0]];
+			Vertex& v1 = mesh.vertices[mesh.indices[i + 1]];
+			Vertex& v2 = mesh.vertices[mesh.indices[i + 2]];
+
+			glm::vec3 n = glm::normalize(glm::cross((v1.position - v0.position), (v2.position - v0.position)));
+			v0.normal = n;
+			v1.normal = n;
+			v2.normal = n;
+		}
+	}
 
 	return mesh;
 }

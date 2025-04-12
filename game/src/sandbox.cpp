@@ -23,7 +23,7 @@ Sandbox::Sandbox(Engine& engine): Application(engine), mResourceSystem(mCoordina
     mRenderContext.renderScale = 1.0f;
     mMainLightColor = glm::vec3(1, 1, 1);
     mMainLightPosition = glm::vec3(0, 5, -10);
-    mMainLightIntensity = 1.0f;
+    mMainLightIntensity = 0.5f;
     isSimulating = true;
 }
 

@@ -115,8 +115,6 @@ public:
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR mRtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
     VkDescriptorSetLayout mRaytracingDescriptorLayout;
 
-    VulkanBuffer mObjectDataBuffer;
-
 public:
     Engine()
     {

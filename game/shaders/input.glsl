@@ -10,26 +10,33 @@ struct LightData
 
 struct ObjectData
 {
-    int      txtOffset;
+    int txtOffset;
     uint64_t vertexAddress;
     uint64_t indexAddress;
     uint64_t materialAddress;
     uint64_t matIdAddress;
 };
 
-//struct Material
-//{
-//    vec3 ambient;
-//    vec3 diffuse;
-//    vec3 specular;
-//    vec3 transmittance;
-//    vec3 emission;
-//    float shininess;
-//    float ior;
-//    float dissolve;
-//    int illum;
-//    int diffuseTextureId;
-//};
+struct Material
+{
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    vec3 transmittance;
+    vec3 emission;
+    float shininess;
+    float ior;
+    float dissolve;
+    int illum;
+    int diffuseTextureId;
+};
+
+layout(push_constant) uniform PushConstants
+{
+    mat4 matrixM;
+    mat4 matrixITM;
+    uint objIndex;
+};
 
 layout(set = 0, binding = 0) uniform Scene
 {
@@ -45,11 +52,11 @@ layout(set = 0, binding = 0) uniform Scene
     uint lightCount;
 };
 
-layout(set = 0, binding = 1, scalar) buffer ObjectData_
+layout(set = 0, binding = 1, scalar) readonly buffer ObjectData_
 {
     ObjectData i[];
 } objData;
 
-//layout(set = 0, binding = 2) uniform sampler2D[] textureSamplers;
+layout(set = 0, binding = 2) uniform sampler2D[] textures;
 
-//layout(set = 0, binding = 3) uniform sampler2D shadowMap;
+layout(set = 0, binding = 3) uniform sampler2D shadowMap;
