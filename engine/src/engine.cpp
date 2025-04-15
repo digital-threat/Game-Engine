@@ -127,9 +127,11 @@ void Engine::MainLoop(FrameData* frames)
     mApplication->Awake();
 
     InitRasterSceneDescriptorLayout();
-
     InitRasterPipeline();
     InitShadowmapPipeline();
+
+    InitRaytracingDescriptorLayout();
+    InitRaytracingSceneDescriptorLayout();
     InitRaytracingPipeline();
 
     double lastTime = 0;

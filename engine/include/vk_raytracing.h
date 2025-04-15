@@ -44,11 +44,6 @@ BlasInput MeshToVkGeometryKHR(GpuMesh& mesh);
 class RaytracingBuilder
 {
 public:
-	//PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR;
-	//PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR;
-	//PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR;
-	//PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR;
-
 	RaytracingBuilder() = delete;
 	explicit RaytracingBuilder(Engine& engine);
 

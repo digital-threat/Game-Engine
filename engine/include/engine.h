@@ -90,7 +90,11 @@ public:
 
     // Ray tracing
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR mRtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
-    VkDescriptorSetLayout mRaytracingDescriptorLayout;
+    VkDescriptorSetLayout mRtDescriptorLayout;
+    VkDescriptorSetLayout mRtSceneDescriptorLayout;
+    std::vector<VkRayTracingShaderGroupCreateInfoKHR> mRtShaderGroups;
+    VkPipelineLayout mRtPipelineLayout;
+    VkPipeline mRtPipeline;
 
 public:
     Engine()
@@ -150,7 +154,6 @@ private:
     void InitRaytracing();
     void InitRaytracingDescriptorLayout();
     void InitRaytracingSceneDescriptorLayout();
-    void InitRaytracingMaterialDescriptorLayout();
     void InitRaytracingPipeline();
     void RenderRaytracing(VkCommandBuffer cmd, FrameData& currentFrame);
 

@@ -37,8 +37,8 @@ void Sandbox::Awake()
 
     LoadDefaultScene();
 
-    //CreateBlas();
-    //CreateTlas();
+    CreateBlas();
+    CreateTlas();
 }
 
 void Sandbox::Update(f64 deltaTime)

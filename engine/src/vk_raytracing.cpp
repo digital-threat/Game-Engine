@@ -39,10 +39,6 @@ BlasInput MeshToVkGeometryKHR(GpuMesh& mesh)
 RaytracingBuilder::RaytracingBuilder(Engine& engine): mEngine(engine)
 {
 	mTlas.handle = VK_NULL_HANDLE;
-	//vkGetAccelerationStructureBuildSizesKHR = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(vkGetDeviceProcAddr(mEngine.mDevice, "vkGetAccelerationStructureBuildSizesKHR"));
-	//vkCmdBuildAccelerationStructuresKHR = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(vkGetDeviceProcAddr(mEngine.mDevice, "vkCmdBuildAccelerationStructuresKHR"));
-	//vkCreateAccelerationStructureKHR = reinterpret_cast<PFN_vkCreateAccelerationStructureKHR>(vkGetDeviceProcAddr(mEngine.mDevice, "vkCreateAccelerationStructureKHR"));
-	//vkGetAccelerationStructureDeviceAddressKHR = reinterpret_cast<PFN_vkGetAccelerationStructureDeviceAddressKHR>(vkGetDeviceProcAddr(mEngine.mDevice, "vkGetAccelerationStructureDeviceAddressKHR"));
 }
 
 // TODO(Sergei): Compact BLAS (could save over 50% memory)
