@@ -95,6 +95,11 @@ public:
     std::vector<VkRayTracingShaderGroupCreateInfoKHR> mRtShaderGroups;
     VkPipelineLayout mRtPipelineLayout;
     VkPipeline mRtPipeline;
+    VulkanBuffer mRtSBTBuffer;
+    VkStridedDeviceAddressRegionKHR mRgenRegion;
+    VkStridedDeviceAddressRegionKHR mMissRegion;
+    VkStridedDeviceAddressRegionKHR mHitRegion;
+    VkStridedDeviceAddressRegionKHR mCallRegion;
 
 public:
     Engine()
@@ -151,11 +156,12 @@ private:
     void RenderShadowmap(VkCommandBuffer cmd);
 
     // Ray tracing
-    void InitRaytracing();
-    void InitRaytracingDescriptorLayout();
-    void InitRaytracingSceneDescriptorLayout();
-    void InitRaytracingPipeline();
-    void RenderRaytracing(VkCommandBuffer cmd, FrameData& currentFrame);
+    void InitRt();
+    void InitRtDescriptorLayout();
+    void InitRtSceneDescriptorLayout();
+    void InitRtPipeline();
+    void InitRtSBT();
+    void RenderRt(VkCommandBuffer cmd, FrameData& currentFrame);
 
     // Compute background
     void InitBackgroundDescriptorLayout();

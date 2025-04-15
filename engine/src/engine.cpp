@@ -116,7 +116,7 @@ void Engine::InitVulkan(FrameData* frames)
     CreateCommandObjects(vkbDevice, frames);
     InitDescriptors(frames);
     InitBuffers(frames);
-    InitRaytracing();
+    InitRt();
 }
 
 void Engine::MainLoop(FrameData* frames)
@@ -130,9 +130,10 @@ void Engine::MainLoop(FrameData* frames)
     InitRasterPipeline();
     InitShadowmapPipeline();
 
-    InitRaytracingDescriptorLayout();
-    InitRaytracingSceneDescriptorLayout();
-    InitRaytracingPipeline();
+    InitRtDescriptorLayout();
+    InitRtSceneDescriptorLayout();
+    InitRtPipeline();
+    InitRtSBT();
 
     double lastTime = 0;
 

@@ -1,7 +1,7 @@
 #include <engine.h>
 #include <vk_pipelines.h>
 
-struct RaytracingPushConstants
+struct RtPushConstants
 {
 	glm::vec4 clearColor;
 	glm::vec3 lightPosition;
@@ -9,7 +9,7 @@ struct RaytracingPushConstants
 	int lightType;
 };
 
-void Engine::InitRaytracing()
+void Engine::InitRt()
 {
 	VkPhysicalDeviceProperties2 properties2{};
 	properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -17,7 +17,7 @@ void Engine::InitRaytracing()
 	vkGetPhysicalDeviceProperties2(mPhysicalDevice, &properties2);
 }
 
-void Engine::InitRaytracingDescriptorLayout()
+void Engine::InitRtDescriptorLayout()
 {
 	DescriptorLayoutBuilder builder;
 	builder.AddBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
@@ -25,7 +25,7 @@ void Engine::InitRaytracingDescriptorLayout()
 	mRtDescriptorLayout = builder.Build(mDevice);
 }
 
-void Engine::InitRaytracingSceneDescriptorLayout()
+void Engine::InitRtSceneDescriptorLayout()
 {
 	u32 textureCount = TextureManager::Instance().GetTextureCount();
 
@@ -37,7 +37,7 @@ void Engine::InitRaytracingSceneDescriptorLayout()
 }
 
 // TODO(Sergei): Add "AddShaderStage" to pipeline builder
-void Engine::InitRaytracingPipeline()
+void Engine::InitRtPipeline()
 {
 	VkShaderModule raygenShader, missShader, closestHitShader;
 	LoadShaderModule("shaders/raygen.spv", mDevice, &raygenShader);
@@ -83,7 +83,7 @@ void Engine::InitRaytracingPipeline()
 
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
-	pushConstantRange.size = sizeof(RaytracingPushConstants);
+	pushConstantRange.size = sizeof(RtPushConstants);
 
 	std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = { mRtDescriptorLayout, mSceneDescriptorLayout };
 
@@ -111,7 +111,15 @@ void Engine::InitRaytracingPipeline()
 	}
 }
 
-void Engine::RenderRaytracing(VkCommandBuffer cmd, FrameData& currentFrame)
+void Engine::InitRtSBT()
+{
+	u32 missCount = 1;
+	u32 hitCount = 1;
+	u32 handleCount = 1 + missCount + hitCount;
+	u32 handleSize  = mRtProperties.shaderGroupHandleSize;
+}
+
+void Engine::RenderRt(VkCommandBuffer cmd, FrameData& currentFrame)
 {
 	VkDescriptorSet raytracingSet = currentFrame.descriptorAllocator.Allocate(mDevice, mSceneDescriptorLayout);
 
