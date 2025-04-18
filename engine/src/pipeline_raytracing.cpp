@@ -1,4 +1,6 @@
 #include <engine.h>
+#include <utility.h>
+#include <vk_buffers.h>
 #include <vk_pipelines.h>
 
 struct RtPushConstants
@@ -30,9 +32,12 @@ void Engine::InitRtSceneDescriptorLayout()
 	u32 textureCount = TextureManager::Instance().GetTextureCount();
 
 	DescriptorLayoutBuilder builder;
-	builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-	builder.AddBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
-	builder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, textureCount, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+	builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+	builder.AddBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+					   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+	builder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, textureCount,
+					   VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 	mRtSceneDescriptorLayout = builder.Build(mDevice);
 }
 
@@ -85,7 +90,7 @@ void Engine::InitRtPipeline()
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
 	pushConstantRange.size = sizeof(RtPushConstants);
 
-	std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = { mRtDescriptorLayout, mSceneDescriptorLayout };
+	std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {mRtDescriptorLayout, mSceneDescriptorLayout};
 
 	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -103,9 +108,9 @@ void Engine::InitRtPipeline()
 	pipelineCreateInfo.pGroups = mRtShaderGroups.data();
 	pipelineCreateInfo.maxPipelineRayRecursionDepth = 1;
 	pipelineCreateInfo.layout = mRtPipelineLayout;
-	mVkbDispatchTable.fp_vkCreateRayTracingPipelinesKHR(mDevice, {}, {}, 1, &pipelineCreateInfo, nullptr, &mRtPipeline);
+	mVkbDT.fp_vkCreateRayTracingPipelinesKHR(mDevice, {}, {}, 1, &pipelineCreateInfo, nullptr, &mRtPipeline);
 
-	for(u32 i = 0; i < stages.size(); i++)
+	for (u32 i = 0; i < stages.size(); i++)
 	{
 		vkDestroyShaderModule(mDevice, stages[i].module, nullptr);
 	}
@@ -116,7 +121,60 @@ void Engine::InitRtSBT()
 	u32 missCount = 1;
 	u32 hitCount = 1;
 	u32 handleCount = 1 + missCount + hitCount;
-	u32 handleSize  = mRtProperties.shaderGroupHandleSize;
+	u32 handleSize = mRtProperties.shaderGroupHandleSize;
+
+	u32 handleSizeAligned = AlignUp(handleSize, mRtProperties.shaderGroupHandleAlignment);
+
+	mRgenRegion.stride = AlignUp(handleSizeAligned, mRtProperties.shaderGroupBaseAlignment);
+	mRgenRegion.size = mRgenRegion.stride;
+	mMissRegion.stride = handleSizeAligned;
+	mMissRegion.size = AlignUp(missCount * handleSizeAligned, mRtProperties.shaderGroupBaseAlignment);
+	mHitRegion.stride = handleSizeAligned;
+	mHitRegion.size = AlignUp(hitCount * handleSizeAligned, mRtProperties.shaderGroupBaseAlignment);
+
+	u32 dataSize = handleCount * handleSize;
+	std::vector<u8> handles(dataSize);
+	VkResult result = mVkbDT.fp_vkGetRayTracingShaderGroupHandlesKHR(mDevice, mRtPipeline, 0, handleCount, dataSize, handles.data());
+	assert(result == VK_SUCCESS);
+
+	VkDeviceSize sbtSize = mRgenRegion.size + mMissRegion.size + mHitRegion.size + mCallRegion.size;
+	VkBufferUsageFlags usageFlags;
+	usageFlags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	usageFlags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+	usageFlags |= VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR;
+	mRtSBTBuffer = CreateBuffer(mAllocator, sbtSize, usageFlags, VMA_MEMORY_USAGE_CPU_ONLY);
+
+	VkBufferDeviceAddressInfo info{};
+	info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+	info.buffer = mRtSBTBuffer.buffer;
+
+	VkDeviceAddress sbtAddress = vkGetBufferDeviceAddress(mDevice, &info);
+	mRgenRegion.deviceAddress = sbtAddress;
+	mMissRegion.deviceAddress = sbtAddress + mRgenRegion.size;
+	mHitRegion.deviceAddress = sbtAddress + mRgenRegion.size + mMissRegion.size;
+
+	u8* sbtBuffer = reinterpret_cast<u8*>(mRtSBTBuffer.info.pMappedData);
+	u32 handleId = 0;
+
+	u8* dst = sbtBuffer;
+	memcpy(dst, handles.data() + handleId * handleSize, handleSize);
+	handleId++;
+
+	dst = sbtBuffer + mRgenRegion.size;
+	for (u32 i = 0; i < missCount; i++)
+	{
+		memcpy(dst, handles.data() + handleId * handleSize, handleSize);
+		handleId++;
+		dst += mMissRegion.stride;
+	}
+
+	dst = sbtBuffer + mRgenRegion.size + mMissRegion.size;
+	for (u32 i = 0; i < hitCount; i++)
+	{
+		memcpy(dst, handles.data() + handleId * handleSize, handleSize);
+		handleId++;
+		dst += mHitRegion.stride;
+	}
 }
 
 void Engine::RenderRt(VkCommandBuffer cmd, FrameData& currentFrame)
@@ -128,5 +186,5 @@ void Engine::RenderRt(VkCommandBuffer cmd, FrameData& currentFrame)
 	writer.WriteImage(1, mColorTarget.imageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 	writer.UpdateSet(mDevice, raytracingSet);
 
-	//vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mRaytracingPipelineLayout, 0, 1, &raytracingSet, 0, nullptr);
+	// vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mRaytracingPipelineLayout, 0, 1, &raytracingSet, 0, nullptr);
 }

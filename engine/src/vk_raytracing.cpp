@@ -75,7 +75,7 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 		sizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 		std::vector<u32> primitiveCounts = input[i].GetPrimitiveCounts();
 		auto buildType = VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR;
-		mEngine.mVkbDispatchTable.fp_vkGetAccelerationStructureBuildSizesKHR(mEngine.mDevice, buildType, &geometryInfo, primitiveCounts.data(), &sizesInfo);
+		mEngine.mVkbDT.fp_vkGetAccelerationStructureBuildSizesKHR(mEngine.mDevice, buildType, &geometryInfo, primitiveCounts.data(), &sizesInfo);
 		buildData[i].sizesInfo = sizesInfo;
 
 		maxScratchSize = std::max(maxScratchSize, sizesInfo.buildScratchSize);
@@ -107,7 +107,7 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 			createInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
 			createInfo.size = buildData[i].sizesInfo.accelerationStructureSize;
 			createInfo.buffer = mBlas[i].buffer.buffer;
-			mEngine.mVkbDispatchTable.fp_vkCreateAccelerationStructureKHR(mEngine.mDevice, &createInfo, nullptr, &mBlas[i].handle);
+			mEngine.mVkbDT.fp_vkCreateAccelerationStructureKHR(mEngine.mDevice, &createInfo, nullptr, &mBlas[i].handle);
 
 			// Build geometry info (cont.)
 			buildData[i].geometryInfo.scratchData.deviceAddress = scratchAddress;
@@ -116,7 +116,7 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 			// Range info
 			std::vector<VkAccelerationStructureBuildRangeInfoKHR*> rangeInfos = { buildData[i].rangeInfos.data() };
 
-			mEngine.mVkbDispatchTable.fp_vkCmdBuildAccelerationStructuresKHR(cmd, 1, &buildData[i].geometryInfo, rangeInfos.data());
+			mEngine.mVkbDT.fp_vkCmdBuildAccelerationStructuresKHR(cmd, 1, &buildData[i].geometryInfo, rangeInfos.data());
 		}
 	};
 
@@ -127,7 +127,7 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 		VkAccelerationStructureDeviceAddressInfoKHR addressInfo{};
 		addressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
 		addressInfo.accelerationStructure = mBlas[i].handle;
-		mBlas[i].deviceAddress = mEngine.mVkbDispatchTable.fp_vkGetAccelerationStructureDeviceAddressKHR(mEngine.mDevice, &addressInfo);
+		mBlas[i].deviceAddress = mEngine.mVkbDT.fp_vkGetAccelerationStructureDeviceAddressKHR(mEngine.mDevice, &addressInfo);
 	}
 
 	DestroyBuffer(mEngine.mAllocator, scratchBuffer);
@@ -173,7 +173,7 @@ void RaytracingBuilder::BuildTlas(std::vector<VkAccelerationStructureInstanceKHR
 	//Sizes info
 	VkAccelerationStructureBuildSizesInfoKHR sizesInfo{};
 	sizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-	mEngine.mVkbDispatchTable.fp_vkGetAccelerationStructureBuildSizesKHR(mEngine.mDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &buildInfo, &instanceCount, &sizesInfo);
+	mEngine.mVkbDT.fp_vkGetAccelerationStructureBuildSizesKHR(mEngine.mDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &buildInfo, &instanceCount, &sizesInfo);
 
 	// Create acceleration structure buffer
 	VkBufferUsageFlags asBufferUsage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
@@ -185,7 +185,7 @@ void RaytracingBuilder::BuildTlas(std::vector<VkAccelerationStructureInstanceKHR
 	createInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
 	createInfo.size = sizesInfo.accelerationStructureSize;
 	createInfo.buffer = mTlas.buffer.buffer;
-	mEngine.mVkbDispatchTable.fp_vkCreateAccelerationStructureKHR(mEngine.mDevice, &createInfo, nullptr, &mTlas.handle);
+	mEngine.mVkbDT.fp_vkCreateAccelerationStructureKHR(mEngine.mDevice, &createInfo, nullptr, &mTlas.handle);
 
 	// Create scratch buffer
 	VkBufferUsageFlags scratchBufferUsage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
@@ -211,7 +211,7 @@ void RaytracingBuilder::BuildTlas(std::vector<VkAccelerationStructureInstanceKHR
 
 	auto func = [&](VkCommandBuffer cmd)
 	{
-		mEngine.mVkbDispatchTable.fp_vkCmdBuildAccelerationStructuresKHR(cmd, 1, &buildInfo, &pBuildRangeInfo);
+		mEngine.mVkbDT.fp_vkCmdBuildAccelerationStructuresKHR(cmd, 1, &buildInfo, &pBuildRangeInfo);
 	};
 
 	ImmediateSubmit(mEngine.mDevice, mEngine.mGraphicsQueue, mEngine.mImmediate, func);
@@ -220,7 +220,7 @@ void RaytracingBuilder::BuildTlas(std::vector<VkAccelerationStructureInstanceKHR
 	VkAccelerationStructureDeviceAddressInfoKHR addressInfo{};
 	addressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
 	addressInfo.accelerationStructure = mTlas.handle;
-	mEngine.mVkbDispatchTable.fp_vkGetAccelerationStructureDeviceAddressKHR(mEngine.mDevice, &addressInfo);
+	mEngine.mVkbDT.fp_vkGetAccelerationStructureDeviceAddressKHR(mEngine.mDevice, &addressInfo);
 
 	DestroyBuffer(mEngine.mAllocator, instancesBuffer);
 	DestroyBuffer(mEngine.mAllocator, scratchBuffer);

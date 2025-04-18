@@ -1,7 +1,7 @@
 #pragma once
 
 #ifndef NOMINMAX
-    #define NOMINMAX
+#define NOMINMAX
 #endif
 
 #define GLFW_INCLUDE_VULKAN
@@ -20,12 +20,12 @@
 #include <application.h>
 #include <material_manager.h>
 #include <mesh_manager.h>
-#include <vk_images.h>
 #include <texture_manager.h>
-#include <vk_immediate.h>
 #include <types.h>
-#include <vk_types.h>
 #include <vk_descriptors.h>
+#include <vk_images.h>
+#include <vk_immediate.h>
+#include <vk_types.h>
 
 constexpr u32 WIDTH = 1280;
 constexpr u32 HEIGHT = 720;
@@ -41,140 +41,141 @@ constexpr bool enableValidationLayers = true;
 class Engine
 {
 public:
-    // Resize window
-    bool mResizeRequested = false;
-    bool mFramebufferResized = false;
+	// Resize window
+	bool mResizeRequested = false;
+	bool mFramebufferResized = false;
 
-    GLFWwindow* mWindow = nullptr;
+	GLFWwindow* mWindow = nullptr;
 
-    VmaAllocator mAllocator{};
+	VmaAllocator mAllocator{};
 
-    vkb::Swapchain mVkbSwapchain;
-    vkb::DispatchTable mVkbDispatchTable;
+	vkb::Swapchain mVkbSwapchain;
+	vkb::DispatchTable mVkbDT;
 
-    VkInstance mInstance = VK_NULL_HANDLE;
-    VkSurfaceKHR mSurface = VK_NULL_HANDLE;
+	VkInstance mInstance = VK_NULL_HANDLE;
+	VkSurfaceKHR mSurface = VK_NULL_HANDLE;
 
-    VkPhysicalDevice mPhysicalDevice = VK_NULL_HANDLE;
-    VkDevice mDevice = VK_NULL_HANDLE;
+	VkPhysicalDevice mPhysicalDevice = VK_NULL_HANDLE;
+	VkDevice mDevice = VK_NULL_HANDLE;
 
-    // Immediate
-    ImmediateData mImmediate{};
+	// Immediate
+	ImmediateData mImmediate{};
 
-    VkQueue mGraphicsQueue = VK_NULL_HANDLE;
-    VkQueue mPresentQueue = VK_NULL_HANDLE;
-    u32 mGraphicsQueueIndex;
-    u32 mPresentQueueIndex;
+	VkQueue mGraphicsQueue = VK_NULL_HANDLE;
+	VkQueue mPresentQueue = VK_NULL_HANDLE;
+	u32 mGraphicsQueueIndex;
+	u32 mPresentQueueIndex;
 
-    std::vector<VkImage> mSwapchainImages;
-    std::vector<VkImageView> mSwapchainImageViews;
+	std::vector<VkImage> mSwapchainImages;
+	std::vector<VkImageView> mSwapchainImageViews;
 
-    VulkanImage mColorTarget{};
-    VulkanImage mDepthTarget{};
-    VulkanImage mShadowmapTarget{};
+	VulkanImage mColorTarget{};
+	VulkanImage mDepthTarget{};
+	VulkanImage mShadowmapTarget{};
 
-    DescriptorAllocator mGlobalDescriptorAllocator{};
+	DescriptorAllocator mGlobalDescriptorAllocator{};
 
-    VkDescriptorSetLayout mSceneDescriptorLayout;
+	VkDescriptorSetLayout mSceneDescriptorLayout;
 
-    VkExtent2D mRenderExtent{};
+	VkExtent2D mRenderExtent{};
 
-    // Pipelines
-    VkPipelineLayout mMeshPipelineLayout = VK_NULL_HANDLE;
-    VkPipeline mMeshPipeline = VK_NULL_HANDLE;
+	// Pipelines
+	VkPipelineLayout mMeshPipelineLayout = VK_NULL_HANDLE;
+	VkPipeline mMeshPipeline = VK_NULL_HANDLE;
 
-    VkPipelineLayout mShadowmapPipelineLayout = VK_NULL_HANDLE;
-    VkPipeline mShadowmapPipeline = VK_NULL_HANDLE;
+	VkPipelineLayout mShadowmapPipelineLayout = VK_NULL_HANDLE;
+	VkPipeline mShadowmapPipeline = VK_NULL_HANDLE;
 
-    Application* mApplication;
+	Application* mApplication;
 
-    // Ray tracing
-    VkPhysicalDeviceRayTracingPipelinePropertiesKHR mRtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
-    VkDescriptorSetLayout mRtDescriptorLayout;
-    VkDescriptorSetLayout mRtSceneDescriptorLayout;
-    std::vector<VkRayTracingShaderGroupCreateInfoKHR> mRtShaderGroups;
-    VkPipelineLayout mRtPipelineLayout;
-    VkPipeline mRtPipeline;
-    VulkanBuffer mRtSBTBuffer;
-    VkStridedDeviceAddressRegionKHR mRgenRegion;
-    VkStridedDeviceAddressRegionKHR mMissRegion;
-    VkStridedDeviceAddressRegionKHR mHitRegion;
-    VkStridedDeviceAddressRegionKHR mCallRegion;
+	// Ray tracing
+	VkPhysicalDeviceRayTracingPipelinePropertiesKHR mRtProperties{
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+	VkDescriptorSetLayout mRtDescriptorLayout;
+	VkDescriptorSetLayout mRtSceneDescriptorLayout;
+	std::vector<VkRayTracingShaderGroupCreateInfoKHR> mRtShaderGroups;
+	VkPipelineLayout mRtPipelineLayout;
+	VkPipeline mRtPipeline;
+	VulkanBuffer mRtSBTBuffer;
+	VkStridedDeviceAddressRegionKHR mRgenRegion;
+	VkStridedDeviceAddressRegionKHR mMissRegion;
+	VkStridedDeviceAddressRegionKHR mHitRegion;
+	VkStridedDeviceAddressRegionKHR mCallRegion;
 
 public:
-    Engine()
-    {
-        MeshManager::Allocate(*this);
-        TextureManager::Allocate(*this);
-        MaterialManager::Allocate(*this);
-    }
+	Engine()
+	{
+		MeshManager::Allocate(*this);
+		TextureManager::Allocate(*this);
+		MaterialManager::Allocate(*this);
+	}
 
-    void Run(Application* application);
+	void Run(Application* application);
 
 private:
-    void InitWindow();
-    void InitVulkan(FrameData* frames);
-    void MainLoop(FrameData* frames);
-    void Cleanup();
+	void InitWindow();
+	void InitVulkan(FrameData* frames);
+	void MainLoop(FrameData* frames);
+	void Cleanup();
 
-    void ResizeSwapchain();
+	void ResizeSwapchain();
 
-    static vkb::Instance CreateInstance();
-    void CreateSurface();
-    static vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance& vkbInstance, VkSurfaceKHR vkSurface);
-    vkb::Device CreateDevice(vkb::PhysicalDevice& vkbPhysicalDevice);
-    void CreateDispatchTable(vkb::Device vkbDevice);
-    void GetQueues(vkb::Device& device);
-    void CreateAllocator();
-    void CreateSwapchain(u32 width, u32 height);
-    void CreateCommandObjects(vkb::Device& device, FrameData* frames);
-    void InitSyncObjects(FrameData* frames);
+	static vkb::Instance CreateInstance();
+	void CreateSurface();
+	static vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance& vkbInstance, VkSurfaceKHR vkSurface);
+	vkb::Device CreateDevice(vkb::PhysicalDevice& vkbPhysicalDevice);
+	void CreateDispatchTable(vkb::Device vkbDevice);
+	void GetQueues(vkb::Device& device);
+	void CreateAllocator();
+	void CreateSwapchain(u32 width, u32 height);
+	void CreateCommandObjects(vkb::Device& device, FrameData* frames);
+	void InitSyncObjects(FrameData* frames);
 
-    // Descriptors
-    void InitDescriptors(FrameData* frames);
-    void InitGlobalDescriptorAllocator();
-    void InitFrameDescriptorAllocators(FrameData* frames);
+	// Descriptors
+	void InitDescriptors(FrameData* frames);
+	void InitGlobalDescriptorAllocator();
+	void InitFrameDescriptorAllocators(FrameData* frames);
 
-    // Buffers
-    void InitBuffers(FrameData* frames);
+	// Buffers
+	void InitBuffers(FrameData* frames);
 
-    // Drawing
-    void Render(FrameData& currentFrame);
+	// Drawing
+	void Render(FrameData& currentFrame);
 
-    // ImGui
-    void InitImGui();
-    void RenderImgui(VkCommandBuffer cmd, VkImageView targetImageView);
+	// ImGui
+	void InitImGui();
+	void RenderImgui(VkCommandBuffer cmd, VkImageView targetImageView);
 
-    // Rasterized
-    void InitRasterSceneDescriptorLayout();
-    void InitRasterPipeline();
-    void UpdateSceneDescriptorSet(VkDescriptorSet sceneSet, FrameData& currentFrame);
-    void RenderRaster(VkCommandBuffer cmd, FrameData& currentFrame);
+	// Rasterized
+	void InitRasterSceneDescriptorLayout();
+	void InitRasterPipeline();
+	void UpdateSceneDescriptorSet(VkDescriptorSet sceneSet, FrameData& currentFrame);
+	void RenderRaster(VkCommandBuffer cmd, FrameData& currentFrame);
 
-    // Rasterized shadow mapping
-    void InitShadowmapPipeline();
-    void RenderShadowmap(VkCommandBuffer cmd);
+	// Rasterized shadow mapping
+	void InitShadowmapPipeline();
+	void RenderShadowmap(VkCommandBuffer cmd);
 
-    // Ray tracing
-    void InitRt();
-    void InitRtDescriptorLayout();
-    void InitRtSceneDescriptorLayout();
-    void InitRtPipeline();
-    void InitRtSBT();
-    void RenderRt(VkCommandBuffer cmd, FrameData& currentFrame);
+	// Ray tracing
+	void InitRt();
+	void InitRtDescriptorLayout();
+	void InitRtSceneDescriptorLayout();
+	void InitRtPipeline();
+	void InitRtSBT();
+	void RenderRt(VkCommandBuffer cmd, FrameData& currentFrame);
 
-    // Compute background
-    void InitBackgroundDescriptorLayout();
-    void UpdateBackgroundDescriptorSet();
-    void InitBackgroundPipeline();
-    void RenderBackground(VkCommandBuffer cmd);
+	// Compute background
+	void InitBackgroundDescriptorLayout();
+	void UpdateBackgroundDescriptorSet();
+	void InitBackgroundPipeline();
+	void RenderBackground(VkCommandBuffer cmd);
 
-    static void FramebufferResizeCallback(GLFWwindow* window, int width, int height)
-    {
-        auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
-        app->mFramebufferResized = true;
-    }
+	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height)
+	{
+		auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
+		app->mFramebufferResized = true;
+	}
 
 public:
-    void UploadMesh(CpuMesh& inMesh, GpuMesh& outMesh);
+	void UploadMesh(CpuMesh& inMesh, GpuMesh& outMesh);
 };
