@@ -6,9 +6,6 @@
 struct RtPushConstants
 {
 	glm::vec4 clearColor;
-	glm::vec3 lightPosition;
-	float lightIntensity;
-	int lightType;
 };
 
 void Engine::InitRt()
@@ -179,12 +176,28 @@ void Engine::InitRtSBT()
 
 void Engine::RenderRt(VkCommandBuffer cmd, FrameData& currentFrame)
 {
-	VkDescriptorSet raytracingSet = currentFrame.descriptorAllocator.Allocate(mDevice, mSceneDescriptorLayout);
+	VkDescriptorSet rtSet = currentFrame.descriptorAllocator.Allocate(mDevice, mRtDescriptorLayout);
+	VkDescriptorSet sceneSet = currentFrame.descriptorAllocator.Allocate(mDevice, mRtSceneDescriptorLayout);
+	std::vector<VkDescriptorSet> descSets = {rtSet, sceneSet};
 
 	DescriptorWriter writer;
 	writer.WriteTlas(0, mApplication->mRenderContext.raytracing.tlas);
 	writer.WriteImage(1, mColorTarget.imageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-	writer.UpdateSet(mDevice, raytracingSet);
+	writer.UpdateSet(mDevice, rtSet);
 
-	// vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mRaytracingPipelineLayout, 0, 1, &raytracingSet, 0, nullptr);
+	UpdateSceneDescriptorSet(sceneSet, currentFrame);
+
+	RtPushConstants pushConstants{};
+	pushConstants.clearColor = glm::vec4(0.27f, 0.69f, 0.86f, 1.0f);
+
+	u32 width = mColorTarget.extent.width;
+	u32 height = mColorTarget.extent.height;
+
+	VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+	VkShaderStageFlags stages = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
+
+	vkCmdBindPipeline(cmd, bindPoint, mRtPipeline);
+	vkCmdBindDescriptorSets(cmd, bindPoint, mRtPipelineLayout, 0, static_cast<u32>(descSets.size()), descSets.data(), 0, nullptr);
+	vkCmdPushConstants(cmd, mRtPipelineLayout, stages, 0, sizeof(RtPushConstants), &pushConstants);
+	mVkbDT.fp_vkCmdTraceRaysKHR(cmd, &mRgenRegion, &mMissRegion, &mHitRegion, &mCallRegion, width, height, 1);
 }

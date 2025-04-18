@@ -24,12 +24,10 @@ void DescriptorLayoutBuilder::AddBinding(u32 binding, VkDescriptorType type, u32
 	mBindings.push_back(layoutBinding);
 }
 
-void DescriptorLayoutBuilder::Clear()
-{
-	mBindings.clear();
-}
+void DescriptorLayoutBuilder::Clear() { mBindings.clear(); }
 
-VkDescriptorSetLayout DescriptorLayoutBuilder::Build(const VkDevice device, const void *pNext, const VkDescriptorSetLayoutCreateFlags flags)
+VkDescriptorSetLayout DescriptorLayoutBuilder::Build(const VkDevice device, const void* pNext,
+													 const VkDescriptorSetLayoutCreateFlags flags)
 {
 	VkDescriptorSetLayoutCreateInfo info{};
 	info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -54,7 +52,7 @@ void DescriptorAllocator::InitializePool(const VkDevice device, const u32 maxSet
 
 	for (PoolSizeRatio ratio : poolRatios)
 	{
-		poolSizes.emplace_back(ratio.type,static_cast<u32>(ratio.ratio * maxSets));
+		poolSizes.emplace_back(ratio.type, static_cast<u32>(ratio.ratio * maxSets));
 	}
 
 	VkDescriptorPoolCreateInfo info{};
@@ -67,15 +65,9 @@ void DescriptorAllocator::InitializePool(const VkDevice device, const u32 maxSet
 	vkCreateDescriptorPool(device, &info, nullptr, &mPool);
 }
 
-void DescriptorAllocator::ClearDescriptors(const VkDevice device)
-{
-	vkResetDescriptorPool(device, mPool, 0);
-}
+void DescriptorAllocator::ClearDescriptors(const VkDevice device) { vkResetDescriptorPool(device, mPool, 0); }
 
-void DescriptorAllocator::DestroyPool(const VkDevice device)
-{
-	vkDestroyDescriptorPool(device, mPool, nullptr);
-}
+void DescriptorAllocator::DestroyPool(const VkDevice device) { vkDestroyDescriptorPool(device, mPool, nullptr); }
 
 VkDescriptorSet DescriptorAllocator::Allocate(const VkDevice device, const VkDescriptorSetLayout layout)
 {
@@ -95,8 +87,7 @@ VkDescriptorSet DescriptorAllocator::Allocate(const VkDevice device, const VkDes
 	return descriptorSet;
 }
 
-void
-DescriptorWriter::WriteImage(u32 binding, VkImageView image, VkSampler sampler, VkImageLayout layout, VkDescriptorType type)
+void DescriptorWriter::WriteImage(u32 binding, VkImageView image, VkSampler sampler, VkImageLayout layout, VkDescriptorType type)
 {
 	VkDescriptorImageInfo imageInfo{};
 	imageInfo.sampler = sampler;
@@ -108,7 +99,7 @@ DescriptorWriter::WriteImage(u32 binding, VkImageView image, VkSampler sampler, 
 	VkWriteDescriptorSet write{};
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.dstBinding = binding;
-	write.dstSet = VK_NULL_HANDLE; //left empty for now until we need to write it
+	write.dstSet = VK_NULL_HANDLE; // left empty for now until we need to write it
 	write.descriptorCount = 1;
 	write.descriptorType = type;
 	write.pImageInfo = &info;
@@ -116,8 +107,7 @@ DescriptorWriter::WriteImage(u32 binding, VkImageView image, VkSampler sampler, 
 	mWrites.push_back(write);
 }
 
-void
-DescriptorWriter::WriteBuffer(u32 binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type)
+void DescriptorWriter::WriteBuffer(u32 binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type)
 {
 	VkDescriptorBufferInfo bufferInfo{};
 	bufferInfo.buffer = buffer;
@@ -129,7 +119,7 @@ DescriptorWriter::WriteBuffer(u32 binding, VkBuffer buffer, size_t size, size_t 
 	VkWriteDescriptorSet write{};
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.dstBinding = binding;
-	write.dstSet = VK_NULL_HANDLE; //left empty for now until we need to write it
+	write.dstSet = VK_NULL_HANDLE; // left empty for now until we need to write it
 	write.descriptorCount = 1;
 	write.descriptorType = type;
 	write.pBufferInfo = &info;
@@ -156,16 +146,14 @@ void DescriptorWriter::WriteTlas(u32 binding, VkAccelerationStructureKHR tlas)
 	mWrites.push_back(write);
 }
 
-void
-DescriptorWriter::Clear()
+void DescriptorWriter::Clear()
 {
 	mImageInfos.clear();
 	mBufferInfos.clear();
 	mWrites.clear();
 }
 
-void
-DescriptorWriter::UpdateSet(VkDevice device, VkDescriptorSet set)
+void DescriptorWriter::UpdateSet(VkDevice device, VkDescriptorSet set)
 {
 	for (VkWriteDescriptorSet& write : mWrites)
 	{

@@ -15,7 +15,7 @@ struct BlasInput
 	std::vector<u32> GetPrimitiveCounts()
 	{
 		std::vector<u32> maxPrimitiveCounts(asBuildOffsetInfo.size());
-		for(u32 j = 0; j < asBuildOffsetInfo.size(); j++)
+		for (u32 j = 0; j < asBuildOffsetInfo.size(); j++)
 		{
 			maxPrimitiveCounts[j] = asBuildOffsetInfo[j].primitiveCount;
 		}
@@ -47,15 +47,19 @@ public:
 	RaytracingBuilder() = delete;
 	explicit RaytracingBuilder(Engine& engine);
 
-	void BuildBlas(std::vector<BlasInput>& input, VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
-	void BuildTlas(std::vector<VkAccelerationStructureInstanceKHR>& instances, VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR, bool update = false);
+	void BuildBlas(std::vector<BlasInput>& input,
+				   VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
+	void BuildTlas(std::vector<VkAccelerationStructureInstanceKHR>& instances,
+				   VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,
+				   bool update = false);
 
 	VkDeviceAddress GetBlasDeviceAddress(u32 index);
 
-private:
-
-	std::vector<AccelerationStructure> mBlas;
+public:
 	AccelerationStructure mTlas;
+
+private:
+	std::vector<AccelerationStructure> mBlas;
 
 	Engine& mEngine;
 };
