@@ -1,10 +1,10 @@
 #pragma once
 
 #include <deque>
-#include <vulkan/vulkan_core.h>
-#include <vector>
 #include <span>
 #include <types.h>
+#include <vector>
+#include <vulkan/vulkan_core.h>
 
 struct DescriptorLayoutBuilder
 {
@@ -40,7 +40,7 @@ struct DescriptorWriter
 
 	void WriteImage(u32 binding, VkImageView image, VkSampler sampler, VkImageLayout layout, VkDescriptorType type);
 	void WriteBuffer(u32 binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type);
-	void WriteTlas(u32 binding, VkAccelerationStructureKHR tlas);
+	void WriteTlas(u32 binding, VkWriteDescriptorSetAccelerationStructureKHR* writeAS);
 
 	void Clear();
 	void UpdateSet(VkDevice device, VkDescriptorSet set);

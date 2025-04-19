@@ -127,17 +127,12 @@ void DescriptorWriter::WriteBuffer(u32 binding, VkBuffer buffer, size_t size, si
 	mWrites.push_back(write);
 }
 
-void DescriptorWriter::WriteTlas(u32 binding, VkAccelerationStructureKHR tlas)
+void DescriptorWriter::WriteTlas(u32 binding, VkWriteDescriptorSetAccelerationStructureKHR* writeAS)
 {
-	VkWriteDescriptorSetAccelerationStructureKHR writeAS{};
-	writeAS.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
-	writeAS.accelerationStructureCount = 1;
-	writeAS.pAccelerationStructures = &tlas;
-
 	VkWriteDescriptorSet write{};
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	// NOTE(Sergei): If you ever forget - the specialized descriptor has to be chained.
-	write.pNext = &writeAS;
+	write.pNext = writeAS;
 	write.dstBinding = binding;
 	write.dstSet = VK_NULL_HANDLE;
 	write.descriptorCount = 1;

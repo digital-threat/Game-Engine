@@ -1,4 +1,5 @@
 #include <engine.h>
+#include <glm/gtc/quaternion.hpp>
 #include <utility.h>
 #include <vk_buffers.h>
 #include <vk_pipelines.h>
@@ -87,7 +88,7 @@ void Engine::InitRtPipeline()
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
 	pushConstantRange.size = sizeof(RtPushConstants);
 
-	std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {mRtDescriptorLayout, mSceneDescriptorLayout};
+	std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {mRtDescriptorLayout, mRtSceneDescriptorLayout};
 
 	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -128,6 +129,8 @@ void Engine::InitRtSBT()
 	mMissRegion.size = AlignUp(missCount * handleSizeAligned, mRtProperties.shaderGroupBaseAlignment);
 	mHitRegion.stride = handleSizeAligned;
 	mHitRegion.size = AlignUp(hitCount * handleSizeAligned, mRtProperties.shaderGroupBaseAlignment);
+	mCallRegion.stride = 0;
+	mCallRegion.size = 0;
 
 	u32 dataSize = handleCount * handleSize;
 	std::vector<u8> handles(dataSize);
@@ -174,18 +177,81 @@ void Engine::InitRtSBT()
 	}
 }
 
+void Engine::UpdateRtSceneDescriptorSet(VkDescriptorSet sceneSet, FrameData& currentFrame)
+{
+	float aspect = static_cast<float>(mRenderExtent.width) / static_cast<float>(mRenderExtent.height);
+
+	SceneRenderData sceneRenderData = mApplication->mRenderContext.scene;
+	glm::mat4 mainLightP = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 100.0f, 0.1f);
+	glm::mat4 mainLightV = glm::lookAt(sceneRenderData.mainLightPos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
+
+	CameraRenderData& camera = mApplication->mRenderContext.camera;
+	SceneData scene{};
+	scene.matrixV = glm::lookAt(camera.pos, camera.pos + camera.forward, camera.up);
+	scene.matrixP = glm::perspective(glm::radians(camera.fov), aspect, 100.0f, 0.1f);
+	scene.matrixVP = scene.matrixP * scene.matrixV;
+	scene.mainLightVP = mainLightP * mainLightV;
+	scene.mainLightColor = sceneRenderData.mainLightColor;
+	scene.mainLightDir = glm::normalize(glm::vec4(sceneRenderData.mainLightPos - glm::vec3(0.0f), 1.0f));
+	scene.ambientColor = glm::vec4(sceneRenderData.ambientColor, 1.0f);
+	scene.lightBuffer = mApplication->mRenderContext.light.lightBuffer;
+	scene.lightCount = mApplication->mRenderContext.light.lightCount;
+	scene.cameraPos = glm::vec4(camera.pos, 0.0f);
+
+	memcpy(currentFrame.sceneDataBuffer.info.pMappedData, &scene, sizeof(SceneData));
+
+	// TODO(Sergei): Object data buffer shouldn't be updated every frame, only on scene load.
+	u32 meshCount = MeshManager::Instance().mMeshes.size();
+	std::vector<ObjectData> objects;
+	objects.reserve(meshCount);
+
+	for (u32 j = 0; j < meshCount; j++)
+	{
+		GpuMesh& mesh = MeshManager::Instance().mMeshes[j];
+
+		ObjectData renderObject{};
+		renderObject.textureOffset = mesh.textureOffset;
+		renderObject.vertexBufferAddress = mesh.vertexBufferAddress;
+		renderObject.indexBufferAddress = mesh.indexBufferAddress;
+		renderObject.materialBufferAddress = mesh.materialBufferAddress;
+		renderObject.matIdBufferAddress = mesh.matIdBufferAddress;
+
+		objects.push_back(renderObject);
+	}
+
+	memcpy(currentFrame.objectDataBuffer.info.pMappedData, objects.data(), objects.size() * sizeof(ObjectData));
+
+	DescriptorWriter writer;
+	writer.WriteBuffer(0, currentFrame.sceneDataBuffer.buffer, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	writer.WriteBuffer(1, currentFrame.objectDataBuffer.buffer, objects.size() * sizeof(ObjectData), 0,
+					   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	for (u32 i = 0; i < TextureManager::Instance().mTextures.size(); i++)
+	{
+		Texture& texture = TextureManager::Instance().mTextures[i];
+		writer.WriteImage(2, texture.image.imageView, texture.sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+						  VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	}
+	writer.UpdateSet(mDevice, sceneSet);
+}
+
+
 void Engine::RenderRt(VkCommandBuffer cmd, FrameData& currentFrame)
 {
 	VkDescriptorSet rtSet = currentFrame.descriptorAllocator.Allocate(mDevice, mRtDescriptorLayout);
 	VkDescriptorSet sceneSet = currentFrame.descriptorAllocator.Allocate(mDevice, mRtSceneDescriptorLayout);
 	std::vector<VkDescriptorSet> descSets = {rtSet, sceneSet};
 
+	VkWriteDescriptorSetAccelerationStructureKHR writeAS{};
+	writeAS.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+	writeAS.accelerationStructureCount = 1;
+	writeAS.pAccelerationStructures = &mApplication->mRenderContext.raytracing.tlas;
+
 	DescriptorWriter writer;
-	writer.WriteTlas(0, mApplication->mRenderContext.raytracing.tlas);
+	writer.WriteTlas(0, &writeAS);
 	writer.WriteImage(1, mColorTarget.imageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 	writer.UpdateSet(mDevice, rtSet);
 
-	UpdateSceneDescriptorSet(sceneSet, currentFrame);
+	UpdateRtSceneDescriptorSet(sceneSet, currentFrame);
 
 	RtPushConstants pushConstants{};
 	pushConstants.clearColor = glm::vec4(0.27f, 0.69f, 0.86f, 1.0f);

@@ -97,10 +97,10 @@ public:
 	VkPipelineLayout mRtPipelineLayout;
 	VkPipeline mRtPipeline;
 	VulkanBuffer mRtSBTBuffer;
-	VkStridedDeviceAddressRegionKHR mRgenRegion;
-	VkStridedDeviceAddressRegionKHR mMissRegion;
-	VkStridedDeviceAddressRegionKHR mHitRegion;
-	VkStridedDeviceAddressRegionKHR mCallRegion;
+	VkStridedDeviceAddressRegionKHR mRgenRegion{};
+	VkStridedDeviceAddressRegionKHR mMissRegion{};
+	VkStridedDeviceAddressRegionKHR mHitRegion{};
+	VkStridedDeviceAddressRegionKHR mCallRegion{};
 
 public:
 	Engine()
@@ -162,6 +162,7 @@ private:
 	void InitRtSceneDescriptorLayout();
 	void InitRtPipeline();
 	void InitRtSBT();
+	void UpdateRtSceneDescriptorSet(VkDescriptorSet sceneSet, FrameData& currentFrame);
 	void RenderRt(VkCommandBuffer cmd, FrameData& currentFrame);
 
 	// Compute background
