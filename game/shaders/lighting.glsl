@@ -1,4 +1,4 @@
-#include "input.glsl"
+#include "forward_input.glsl"
 
 struct Light
 {

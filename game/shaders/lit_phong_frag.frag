@@ -1,8 +1,8 @@
 #version 460
-#extension GL_EXT_buffer_reference2 : require
-#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
-#extension GL_EXT_scalar_block_layout : enable
-#extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_EXT_buffer_reference2: require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
+#extension GL_EXT_scalar_block_layout: enable
+#extension GL_EXT_nonuniform_qualifier: enable
 
 #include "lighting.glsl"
 
@@ -13,12 +13,12 @@ layout (location = 3) in vec4 inShadowCoord;
 
 layout (location = 0) out vec4 outColor;
 
-layout(buffer_reference, scalar) buffer Materials
+layout (buffer_reference, scalar) buffer Materials
 {
     Material m[];
 };
 
-layout(buffer_reference, scalar) buffer MatIds
+layout (buffer_reference, scalar) buffer MatIds
 {
     int i[];
 };
@@ -42,7 +42,7 @@ void main()
 
     vec3 color = vec3(1.0f, 0.0f, 1.0f);
 
-    if(material.diffuseTextureId >= 0)
+    if (material.diffuseTextureId >= 0)
     {
         int txtOffset = data.txtOffset;
         uint txtId = txtOffset + material.diffuseTextureId;

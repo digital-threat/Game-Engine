@@ -189,6 +189,8 @@ void Engine::UpdateRtSceneDescriptorSet(VkDescriptorSet sceneSet, FrameData& cur
 	SceneData scene{};
 	scene.matrixV = glm::lookAt(camera.pos, camera.pos + camera.forward, camera.up);
 	scene.matrixP = glm::perspective(glm::radians(camera.fov), aspect, 100.0f, 0.1f);
+	scene.matrixIV = glm::inverse(scene.matrixV);
+	scene.matrixIP = glm::inverse(scene.matrixP);
 	scene.matrixVP = scene.matrixP * scene.matrixV;
 	scene.mainLightVP = mainLightP * mainLightV;
 	scene.mainLightColor = sceneRenderData.mainLightColor;

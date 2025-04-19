@@ -1,27 +1,24 @@
 #pragma once
 
-#include <vulkan/vulkan_core.h>
 #include <glm/glm.hpp>
+#include <vulkan/vulkan_core.h>
 
+#include <array>
 #include <deque>
 #include <functional>
 #include <string>
-#include <array>
 
+#include <lights.h>
 #include <types.h>
 #include <vk_descriptors.h>
 #include <vk_structs.h>
-#include <lights.h>
 
 // TODO(Sergei): Temporary, replace!
 struct DeletionQueue
 {
 	std::deque<std::function<void()>> deletors;
 
-	void Push(std::function<void()>&& function)
-	{
-		deletors.push_back(function);
-	}
+	void Push(std::function<void()>&& function) { deletors.push_back(function); }
 
 	void Flush()
 	{
@@ -60,6 +57,8 @@ struct SceneData
 {
 	glm::mat4 matrixV;
 	glm::mat4 matrixP;
+	glm::mat4 matrixIV;
+	glm::mat4 matrixIP;
 	glm::mat4 matrixVP;
 	glm::mat4 mainLightVP;
 	glm::vec4 mainLightDir;

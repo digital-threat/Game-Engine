@@ -1,9 +1,9 @@
 #version 460
-#extension GL_EXT_buffer_reference2 : require
-#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
-#extension GL_EXT_scalar_block_layout : enable
+#extension GL_EXT_buffer_reference2: require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
+#extension GL_EXT_scalar_block_layout: enable
 
-#include "input.glsl"
+#include "forward_input.glsl"
 
 layout (location = 0) out vec3 outPosition;
 layout (location = 1) out vec3 outNormal;
@@ -17,7 +17,7 @@ struct Vertex
     vec2 uv;
 };
 
-layout(buffer_reference, scalar) buffer VertexBuffer
+layout (buffer_reference, scalar) buffer VertexBuffer
 {
     Vertex vertices[];
 };
