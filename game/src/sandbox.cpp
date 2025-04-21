@@ -35,9 +35,7 @@ void Sandbox::Awake()
 	mCoordinator.RegisterComponent<BoxCollider>();
 	mCoordinator.RegisterComponent<Camera>();
 
-	// Force
-
-	LoadDefaultScene();
+	CreateScene();
 
 	CreateBlas();
 	CreateTlas();
@@ -120,7 +118,7 @@ void Sandbox::CreateTlas()
 
 		VkAccelerationStructureInstanceKHR instance{};
 		instance.transform = ToVkTransformMatrixKHR(matrixM);
-		instance.instanceCustomIndex = 0;
+		instance.instanceCustomIndex = renderer.meshHandle;
 		instance.accelerationStructureReference = mRtBuilder.GetBlasDeviceAddress(renderer.meshHandle);
 		instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
 		instance.mask = 0xFF;
@@ -133,17 +131,17 @@ void Sandbox::CreateTlas()
 	mRtBuilder.BuildTlas(tlas, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
 }
 
-void Sandbox::LoadDefaultScene()
+void Sandbox::CreateScene()
 {
 	MeshManager& meshManager = MeshManager::Instance();
 	MeshHandle cube = meshManager.LoadMesh("assets\\meshes\\cube.obj");
+	// MeshHandle plane = meshManager.LoadMesh("assets\\meshes\\plane.obj");
 
-	for (i32 i = 0; i < 3; i++)
 	{
 		Entity entity = mCoordinator.CreateEntity();
 
 		Transform transform;
-		transform.position = glm::vec3(static_cast<float>(i - 1) * 1.5f, i, 0.0f);
+		transform.position = glm::vec3(0.5f, 0.5f, 0.5f);
 		transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 		transform.scale = 1;
 		mCoordinator.AddComponent<Transform>(entity, transform);
@@ -153,15 +151,31 @@ void Sandbox::LoadDefaultScene()
 		mCoordinator.AddComponent<Renderer>(entity, renderer);
 	}
 
-	Entity cameraEntity = mCoordinator.CreateEntity();
+	// {
+	// 	Entity entity = mCoordinator.CreateEntity();
+	//
+	// 	Transform transform;
+	// 	transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
+	// 	transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+	// 	transform.scale = 3;
+	// 	mCoordinator.AddComponent<Transform>(entity, transform);
+	//
+	// 	Renderer renderer;
+	// 	renderer.meshHandle = plane;
+	// 	mCoordinator.AddComponent<Renderer>(entity, renderer);
+	// }
 
-	Camera camera{};
-	camera.position = glm::vec3(0.0f, 2.0f, -3.0f);
-	camera.sensitivity = 0.1f;
-	camera.speed = 1.0f;
-	camera.yaw = 90.0f;
-	camera.fov = 60.0f;
-	mCoordinator.AddComponent<Camera>(cameraEntity, camera);
+	{
+		Entity entity = mCoordinator.CreateEntity();
+
+		Camera camera{};
+		camera.position = glm::vec3(0.0f, 2.0f, -3.0f);
+		camera.sensitivity = 0.1f;
+		camera.speed = 1.0f;
+		camera.yaw = 90.0f;
+		camera.fov = 60.0f;
+		mCoordinator.AddComponent<Camera>(entity, camera);
+	}
 }
 
 bool Sandbox::Raycast(Ray& ray, RayHit& hit)

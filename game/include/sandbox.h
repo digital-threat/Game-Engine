@@ -40,7 +40,7 @@ private:
 	void ImGuiMaterials();
 	void ImGuiMainLight();
 
-	void LoadDefaultScene();
+	void CreateScene();
 
 	bool Raycast(Ray& ray, RayHit& hit);
 };

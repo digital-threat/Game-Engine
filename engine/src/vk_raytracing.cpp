@@ -3,8 +3,8 @@
 #include <utility.h>
 #include <vertex.h>
 #include <vk_buffers.h>
-#include <vk_raytracing.h>
 #include <vk_immediate.h>
+#include <vk_raytracing.h>
 
 BlasInput MeshToVkGeometryKHR(GpuMesh& mesh)
 {
@@ -15,7 +15,7 @@ BlasInput MeshToVkGeometryKHR(GpuMesh& mesh)
 	triangles.vertexStride = sizeof(Vertex);
 	triangles.indexType = VK_INDEX_TYPE_UINT32;
 	triangles.indexData.deviceAddress = mesh.indexBufferAddress;
-	//triangles.transformData = {};
+	// triangles.transformData = {};
 	triangles.maxVertex = mesh.vertexCount - 1;
 
 	VkAccelerationStructureGeometryKHR asGeometry{};
@@ -36,10 +36,7 @@ BlasInput MeshToVkGeometryKHR(GpuMesh& mesh)
 	return input;
 }
 
-RaytracingBuilder::RaytracingBuilder(Engine& engine): mEngine(engine)
-{
-	mTlas.handle = VK_NULL_HANDLE;
-}
+RaytracingBuilder::RaytracingBuilder(Engine& engine) : mEngine(engine) { mTlas.handle = VK_NULL_HANDLE; }
 
 // TODO(Sergei): Compact BLAS (could save over 50% memory)
 // TODO(Sergei): Allocate one big scratch buffer and use regions of it to build different BLAS
@@ -75,7 +72,8 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 		sizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 		std::vector<u32> primitiveCounts = input[i].GetPrimitiveCounts();
 		auto buildType = VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR;
-		mEngine.mVkbDT.fp_vkGetAccelerationStructureBuildSizesKHR(mEngine.mDevice, buildType, &geometryInfo, primitiveCounts.data(), &sizesInfo);
+		mEngine.mVkbDT.fp_vkGetAccelerationStructureBuildSizesKHR(mEngine.mDevice, buildType, &geometryInfo, primitiveCounts.data(),
+																  &sizesInfo);
 		buildData[i].sizesInfo = sizesInfo;
 
 		maxScratchSize = std::max(maxScratchSize, sizesInfo.buildScratchSize);
@@ -98,8 +96,10 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 		for (u32 i = 0; i < blasCount; i++)
 		{
 			// Create acceleration structure buffer
-			VkBufferUsageFlags asBufferUsage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-			mBlas[i].buffer = CreateBuffer(mEngine.mAllocator, buildData[i].sizesInfo.accelerationStructureSize, asBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
+			VkBufferUsageFlags asBufferUsage =
+					VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+			mBlas[i].buffer = CreateBuffer(mEngine.mAllocator, buildData[i].sizesInfo.accelerationStructureSize, asBufferUsage,
+										   VMA_MEMORY_USAGE_GPU_ONLY);
 
 			// Create info
 			VkAccelerationStructureCreateInfoKHR createInfo{};
@@ -114,7 +114,7 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 			buildData[i].geometryInfo.dstAccelerationStructure = mBlas[i].handle;
 
 			// Range info
-			std::vector<VkAccelerationStructureBuildRangeInfoKHR*> rangeInfos = { buildData[i].rangeInfos.data() };
+			std::vector<VkAccelerationStructureBuildRangeInfoKHR*> rangeInfos = {buildData[i].rangeInfos.data()};
 
 			mEngine.mVkbDT.fp_vkCmdBuildAccelerationStructuresKHR(cmd, 1, &buildData[i].geometryInfo, rangeInfos.data());
 		}
@@ -133,16 +133,32 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 	DestroyBuffer(mEngine.mAllocator, scratchBuffer);
 }
 
-void RaytracingBuilder::BuildTlas(std::vector<VkAccelerationStructureInstanceKHR>& instances, VkBuildAccelerationStructureFlagsKHR flags, bool update)
+void RaytracingBuilder::BuildTlas(std::vector<VkAccelerationStructureInstanceKHR>& instances,
+								  VkBuildAccelerationStructureFlagsKHR flags, bool update)
 {
 	assert(mTlas.handle == VK_NULL_HANDLE || update);
 
 	u32 instanceCount = static_cast<u32>(instances.size());
 
 	// Create instances buffer
-	VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
-	// TODO(Sergei): Implicit immediate submit. Set up a pipeline barrier instead, don't want to stall the pipeline just to update TLAS.
-	VulkanBuffer instancesBuffer = CreateBufferAndUploadData(mEngine, instances, bufferUsage);
+	VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+									 VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
+									 VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+	// TODO(Sergei): Set up a pipeline barrier instead, don't want to stall the pipeline just to update TLAS.
+	VkDeviceSize stagingBufferSize = sizeof(VkAccelerationStructureInstanceKHR) * instanceCount;
+	VulkanBuffer stagingBuffer =
+			CreateBuffer(mEngine.mAllocator, stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+	memcpy(stagingBuffer.info.pMappedData, instances.data(), stagingBufferSize);
+
+	VulkanBuffer instancesBuffer = CreateBuffer(mEngine.mAllocator, stagingBufferSize, bufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
+
+	auto func1 = [&](VkCommandBuffer cmd) { CopyBuffer(cmd, stagingBuffer.buffer, instancesBuffer.buffer, stagingBufferSize); };
+
+	ImmediateSubmit(mEngine.mDevice, mEngine.mGraphicsQueue, mEngine.mImmediate, func1);
+
+	DestroyBuffer(mEngine.mAllocator, stagingBuffer);
+
 
 	// Get device address of instances buffer
 	VkBufferDeviceAddressInfo instancesBufferInfo{};
@@ -170,13 +186,15 @@ void RaytracingBuilder::BuildTlas(std::vector<VkAccelerationStructureInstanceKHR
 	buildInfo.geometryCount = 1;
 	buildInfo.pGeometries = &geometry;
 
-	//Sizes info
+	// Sizes info
 	VkAccelerationStructureBuildSizesInfoKHR sizesInfo{};
 	sizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-	mEngine.mVkbDT.fp_vkGetAccelerationStructureBuildSizesKHR(mEngine.mDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &buildInfo, &instanceCount, &sizesInfo);
+	mEngine.mVkbDT.fp_vkGetAccelerationStructureBuildSizesKHR(mEngine.mDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+															  &buildInfo, &instanceCount, &sizesInfo);
 
 	// Create acceleration structure buffer
-	VkBufferUsageFlags asBufferUsage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+	VkBufferUsageFlags asBufferUsage =
+			VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 	mTlas.buffer = CreateBuffer(mEngine.mAllocator, sizesInfo.accelerationStructureSize, asBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
 
 	// Create info
@@ -209,12 +227,10 @@ void RaytracingBuilder::BuildTlas(std::vector<VkAccelerationStructureInstanceKHR
 	buildRangeInfo.primitiveCount = instanceCount;
 	const VkAccelerationStructureBuildRangeInfoKHR* pBuildRangeInfo = &buildRangeInfo;
 
-	auto func = [&](VkCommandBuffer cmd)
-	{
-		mEngine.mVkbDT.fp_vkCmdBuildAccelerationStructuresKHR(cmd, 1, &buildInfo, &pBuildRangeInfo);
-	};
+	auto func2 = [&](VkCommandBuffer cmd)
+	{ mEngine.mVkbDT.fp_vkCmdBuildAccelerationStructuresKHR(cmd, 1, &buildInfo, &pBuildRangeInfo); };
 
-	ImmediateSubmit(mEngine.mDevice, mEngine.mGraphicsQueue, mEngine.mImmediate, func);
+	ImmediateSubmit(mEngine.mDevice, mEngine.mGraphicsQueue, mEngine.mImmediate, func2);
 
 	// Get device address of TLAS
 	VkAccelerationStructureDeviceAddressInfoKHR addressInfo{};
