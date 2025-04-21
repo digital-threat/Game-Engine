@@ -549,7 +549,7 @@ void Engine::Render(FrameData& currentFrame)
 
 	TransitionImageLayout(cmd, mSwapchainImages[imageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	CopyImage(cmd, mColorTarget.image, mSwapchainImages[imageIndex], mRenderExtent, mVkbSwapchain.extent);
+	CopyImage(cmd, mColorTarget.image, mSwapchainImages[imageIndex], mRenderExtent, mVkbSwapchain.extent, true);
 
 	TransitionImageLayout(cmd, mSwapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 						  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);

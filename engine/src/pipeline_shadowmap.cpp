@@ -1,7 +1,7 @@
 #include <engine.h>
+#include <glm/gtc/quaternion.hpp>
 #include <vk_helpers.h>
 #include <vk_pipelines.h>
-#include <glm/gtc/quaternion.hpp>
 
 struct ShadowmapPushConstants
 {
@@ -12,7 +12,7 @@ struct ShadowmapPushConstants
 void Engine::InitShadowmapPipeline()
 {
 	VkShaderModule vertexShader;
-	LoadShaderModule("shaders/shadowmap_vert.spv", mDevice, &vertexShader);
+	LoadShaderModule("shaders/shadowmap.vert.spv", mDevice, &vertexShader);
 
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.offset = 0;
@@ -41,8 +41,10 @@ void Engine::InitShadowmapPipeline()
 
 void Engine::RenderShadowmap(VkCommandBuffer cmd)
 {
-	VkRenderingAttachmentInfo depthAttachment = DepthAttachmentInfo(mShadowmapTarget.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-	VkRenderingInfo renderInfo = RenderingInfo(VkExtent2D(mShadowmapTarget.extent.width, mShadowmapTarget.extent.height), VK_NULL_HANDLE, &depthAttachment);
+	VkRenderingAttachmentInfo depthAttachment =
+			DepthAttachmentInfo(mShadowmapTarget.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+	VkRenderingInfo renderInfo =
+			RenderingInfo(VkExtent2D(mShadowmapTarget.extent.width, mShadowmapTarget.extent.height), VK_NULL_HANDLE, &depthAttachment);
 
 	vkCmdBeginRendering(cmd, &renderInfo);
 
@@ -79,7 +81,8 @@ void Engine::RenderShadowmap(VkCommandBuffer cmd)
 		pushConstants.depthMVP = matrixP * matrixV * object.transform;
 		pushConstants.vertexBuffer = mesh.vertexBufferAddress;
 
-		vkCmdPushConstants(cmd, mShadowmapPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShadowmapPushConstants), &pushConstants);
+		vkCmdPushConstants(cmd, mShadowmapPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShadowmapPushConstants),
+						   &pushConstants);
 		vkCmdBindIndexBuffer(cmd, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdDrawIndexed(cmd, mesh.indexCount, 1, 0, 0, 0);

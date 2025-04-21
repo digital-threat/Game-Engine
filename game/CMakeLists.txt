@@ -38,10 +38,10 @@ file(GLOB_RECURSE SHADER_FILES
         ${SHADER_SOURCE_DIR}/*.rgen
 )
 
-# Shader files must not have the same name, even if they have different extensions
-foreach(SHADER ${SHADER_FILES})
+foreach (SHADER ${SHADER_FILES})
     get_filename_component(SHADER_NAME ${SHADER} NAME_WE)
-    set(SHADER_BINARY ${SHADER_BINARY_DIR}/${SHADER_NAME}.spv)
+    get_filename_component(SHADER_EXT ${SHADER} EXT)
+    set(SHADER_BINARY ${SHADER_BINARY_DIR}/${SHADER_NAME}${SHADER_EXT}.spv)
 
     add_custom_command(
             OUTPUT ${SHADER_BINARY}
@@ -52,7 +52,7 @@ foreach(SHADER ${SHADER_FILES})
     )
 
     list(APPEND SHADER_BINARIES ${SHADER_BINARY})
-endforeach()
+endforeach ()
 
 target_sources(${PROJECT_NAME} PRIVATE ${SHADER_BINARIES})
 

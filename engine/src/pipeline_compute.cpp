@@ -68,7 +68,7 @@ void Engine::InitBackgroundPipeline()
 	}
 
 	VkShaderModule gradientShader;
-	LoadShaderModule("shaders/gradient_color.spv", mDevice, &gradientShader);
+	LoadShaderModule("shaders/gradient_color.comp.spv", mDevice, &gradientShader);
 
 	VkPipelineShaderStageCreateInfo stageInfo = PipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT, gradientShader, "main");
 
@@ -99,7 +99,8 @@ void Engine::RenderBackground(VkCommandBuffer cmd)
 	ComputeEffect& effect = mBackground.effects[mBackground.currentEffect];
 
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, effect.pipeline);
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mBackground.pipelineLayout, 0, 1, &mBackground.descriptorSet, 0, nullptr);
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mBackground.pipelineLayout, 0, 1, &mBackground.descriptorSet, 0,
+							nullptr);
 
 	vkCmdPushConstants(cmd, mBackground.pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.data);
 
@@ -108,7 +109,7 @@ void Engine::RenderBackground(VkCommandBuffer cmd)
 
 void Engine::Render(FrameData& currentFrame)
 {
-	//TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	// TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-	//RenderBackground(cmd);
+	// RenderBackground(cmd);
 }

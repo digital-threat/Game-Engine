@@ -1,23 +1,25 @@
 #pragma once
 
-#include <vk_structs.h>
-#include <vk_mem_alloc.h>
-#include <vulkan/vulkan_core.h>
 #include <span>
+#include <vk_mem_alloc.h>
+#include <vk_structs.h>
+#include <vulkan/vulkan_core.h>
 
 class Engine;
 
-void CreateImage(VmaAllocator pAllocator, VkImageCreateInfo pInfo, VmaMemoryUsage pUsage, VkMemoryPropertyFlags pFlags, VulkanImage &outImage);
-VulkanImage CreateImage(VkExtent3D pSize, VkFormat pFormat, VkImageUsageFlags pUsage, bool pMipmapped = false);
-VulkanImage CreateImage(const Engine& pEngine, void* pData, VkExtent3D pSize, VkFormat pFormat, VkImageUsageFlags pUsage, bool pMipmapped = false);
-void DestroyImage(const VulkanImage& pImage);
+void CreateImage(VmaAllocator alloc, VkImageCreateInfo info, VmaMemoryUsage usage, VkMemoryPropertyFlags flags, VulkanImage& outImage);
+VulkanImage CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
+VulkanImage CreateImage(const Engine& engine, void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
+						bool mipmapped = false);
+void DestroyImage(const VulkanImage& image);
 
-void TransitionImageLayout(VkCommandBuffer pCmd, VkImage pImage, VkImageLayout pOldLayout, VkImageLayout pNewLayout);
+void TransitionImageLayout(VkCommandBuffer cmd, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
 void GenerateMipmaps(VkCommandBuffer cmd, VkImage image, VkExtent2D size);
-void CopyImage(VkCommandBuffer pCmd, VkImage pSource, VkImage pDestination, VkExtent2D pSrcSize, VkExtent2D pDstSize);
-VkFormat FindSupportedFormat(const VkPhysicalDevice& pPhysicalDevice, const std::span<VkFormat> &pCandidates, VkImageTiling pTiling, VkFormatFeatureFlags pFeatures);
+void CopyImage(VkCommandBuffer cmd, VkImage src, VkImage dst, VkExtent2D srcSize, VkExtent2D dstSize, bool flipY = false);
+VkFormat FindSupportedFormat(const VkPhysicalDevice& physicalDevice, const std::span<VkFormat>& candidates, VkImageTiling tiling,
+							 VkFormatFeatureFlags features);
 
-inline bool HasStencilComponent(VkFormat pFormat)
+inline bool HasStencilComponent(VkFormat format)
 {
-	return pFormat == VK_FORMAT_D32_SFLOAT_S8_UINT || pFormat == VK_FORMAT_D24_UNORM_S8_UINT;
+	return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }

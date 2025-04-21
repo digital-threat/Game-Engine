@@ -27,10 +27,10 @@ void Engine::InitRasterSceneDescriptorLayout()
 void Engine::InitRasterPipeline()
 {
 	VkShaderModule vertexShader;
-	LoadShaderModule("shaders/lit_phong_vert.spv", mDevice, &vertexShader);
+	LoadShaderModule("shaders/lit.vert.spv", mDevice, &vertexShader);
 
 	VkShaderModule fragmentShader;
-	LoadShaderModule("shaders/lit_phong_frag.spv", mDevice, &fragmentShader);
+	LoadShaderModule("shaders/lit.frag.spv", mDevice, &fragmentShader);
 
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.offset = 0;

@@ -35,6 +35,8 @@ void Sandbox::Awake()
 	mCoordinator.RegisterComponent<BoxCollider>();
 	mCoordinator.RegisterComponent<Camera>();
 
+	// Force
+
 	LoadDefaultScene();
 
 	CreateBlas();
@@ -84,37 +86,49 @@ void Sandbox::Destroy() {}
 
 void Sandbox::CreateBlas()
 {
-	std::vector<BlasInput> allBlas;
+	MeshManager& meshManager = MeshManager::Instance();
+	u32 size = meshManager.mMeshes.size();
 
-	// TODO(Sergei): Get all renderer components and create blas
-	GpuMesh cube = MeshManager::Instance().GetMesh(0);
-	auto blas = MeshToVkGeometryKHR(cube);
-	allBlas.emplace_back(blas);
+	std::vector<BlasInput> input;
+	input.reserve(size);
 
-	mRtBuilder.BuildBlas(allBlas, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
+	for (u32 i = 0; i < size; i++)
+	{
+		BlasInput blas = MeshToVkGeometryKHR(meshManager.mMeshes[i]);
+		input.emplace_back(blas);
+	}
+
+	mRtBuilder.BuildBlas(input, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
 }
 
 void Sandbox::CreateTlas()
 {
 	std::vector<VkAccelerationStructureInstanceKHR> tlas;
 
-	Transform transform;
-	transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
-	transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-	transform.scale = 1;
+	Archetype archetype;
+	archetype.set(mCoordinator.mComponentManager.GetComponentType<Transform>());
+	archetype.set(mCoordinator.mComponentManager.GetComponentType<Renderer>());
 
-	glm::mat4 matrixM = glm::translate(glm::mat4(1.0f), transform.position);
-	matrixM *= glm::mat4_cast(transform.rotation);
-	matrixM = glm::scale(matrixM, glm::vec3(transform.scale));
+	auto func = [&](Entity entity)
+	{
+		Transform& transform = mCoordinator.mComponentManager.GetComponent<Transform>(entity);
+		Renderer& renderer = mCoordinator.mComponentManager.GetComponent<Renderer>(entity);
 
-	VkAccelerationStructureInstanceKHR instance{};
-	instance.transform = ToVkTransformMatrixKHR(matrixM);
-	instance.instanceCustomIndex = 0;
-	instance.accelerationStructureReference = mRtBuilder.GetBlasDeviceAddress(0);
-	instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-	instance.mask = 0xFF;
-	instance.instanceShaderBindingTableRecordOffset = 0;
-	tlas.emplace_back(instance);
+		glm::mat4 matrixM = glm::translate(glm::mat4(1.0f), transform.position);
+		matrixM *= glm::mat4_cast(transform.rotation);
+		matrixM = glm::scale(matrixM, glm::vec3(transform.scale));
+
+		VkAccelerationStructureInstanceKHR instance{};
+		instance.transform = ToVkTransformMatrixKHR(matrixM);
+		instance.instanceCustomIndex = 0;
+		instance.accelerationStructureReference = mRtBuilder.GetBlasDeviceAddress(renderer.meshHandle);
+		instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+		instance.mask = 0xFF;
+		instance.instanceShaderBindingTableRecordOffset = 0;
+		tlas.emplace_back(instance);
+	};
+
+	mCoordinator.mEntityManager.Each(archetype, func);
 
 	mRtBuilder.BuildTlas(tlas, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
 }

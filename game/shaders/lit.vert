@@ -10,13 +10,6 @@ layout (location = 1) out vec3 outNormal;
 layout (location = 2) out vec2 outUV;
 layout (location = 3) out vec4 outShadowCoord;
 
-struct Vertex
-{
-    vec3 position;
-    vec3 normal;
-    vec2 uv;
-};
-
 layout (buffer_reference, scalar) buffer VertexBuffer
 {
     Vertex vertices[];

@@ -1,6 +1,6 @@
 #define MAX_LIGHTS 8
 
-#include "common.glsl"
+#include "lighting.glsl"
 
 layout (push_constant) uniform PushConstants
 {

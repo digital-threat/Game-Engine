@@ -1,26 +1,26 @@
 #include <vk_images.h>
 
 #include <engine.h>
+#include <stdexcept>
 #include <vk_buffers.h>
 #include <vk_helpers.h>
-#include <vk_types.h>
 #include <vk_immediate.h>
-#include <stdexcept>
+#include <vk_types.h>
 
 
-void TransitionImageLayout(VkCommandBuffer pCmd, VkImage pImage, VkImageLayout pOldLayout, VkImageLayout pNewLayout)
+void TransitionImageLayout(VkCommandBuffer cmd, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
 	VkImageMemoryBarrier2 barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
 	barrier.pNext = nullptr;
-	barrier.oldLayout = pOldLayout;
-	barrier.newLayout = pNewLayout;
+	barrier.oldLayout = oldLayout;
+	barrier.newLayout = newLayout;
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.image = pImage;
+	barrier.image = image;
 
 	VkImageAspectFlags aspectMask;
-	if (pNewLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL || pOldLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
+	if (newLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL || oldLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
 	{
 		aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 	}
@@ -30,28 +30,28 @@ void TransitionImageLayout(VkCommandBuffer pCmd, VkImage pImage, VkImageLayout p
 	}
 	barrier.subresourceRange = ImageSubresourceRange(aspectMask);
 
-	if (pOldLayout == VK_IMAGE_LAYOUT_UNDEFINED && pNewLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+	if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 	{
 		barrier.srcAccessMask = 0;
 		barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
 		barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
 		barrier.dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
 	}
-	else if (pOldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && pNewLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 	{
 		barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
 		barrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
 		barrier.srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
 		barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
 	}
-	else if (pOldLayout == VK_IMAGE_LAYOUT_UNDEFINED && pNewLayout == VK_IMAGE_LAYOUT_GENERAL)
+	else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_GENERAL)
 	{
 		barrier.srcAccessMask = 0;
 		barrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT;
 		barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
 		barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 	}
-	else if (pOldLayout == VK_IMAGE_LAYOUT_GENERAL && pNewLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+	else if (oldLayout == VK_IMAGE_LAYOUT_GENERAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
 	{
 		barrier.srcAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT;
 		barrier.dstAccessMask = 0;
@@ -72,7 +72,7 @@ void TransitionImageLayout(VkCommandBuffer pCmd, VkImage pImage, VkImageLayout p
 	dependencyInfo.imageMemoryBarrierCount = 1;
 	dependencyInfo.pImageMemoryBarriers = &barrier;
 
-	vkCmdPipelineBarrier2(pCmd, &dependencyInfo);
+	vkCmdPipelineBarrier2(cmd, &dependencyInfo);
 }
 
 void GenerateMipmaps(VkCommandBuffer cmd, VkImage image, VkExtent2D size)
@@ -80,86 +80,92 @@ void GenerateMipmaps(VkCommandBuffer cmd, VkImage image, VkExtent2D size)
 	u32 mipLevels = static_cast<u32>(std::floor(std::log2(std::max(size.width, size.height)))) + 1;
 	for (u32 mipLevel = 0; mipLevel < mipLevels; mipLevel++)
 	{
-        VkExtent2D halfSize = size;
-        halfSize.width /= 2;
-        halfSize.height /= 2;
+		VkExtent2D halfSize = size;
+		halfSize.width /= 2;
+		halfSize.height /= 2;
 
-        VkImageMemoryBarrier2 imageBarrier{};
+		VkImageMemoryBarrier2 imageBarrier{};
 		imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
 
-        imageBarrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-        imageBarrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
-        imageBarrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-        imageBarrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+		imageBarrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+		imageBarrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
+		imageBarrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+		imageBarrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
 
-        imageBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        imageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		imageBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		imageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
-        VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        imageBarrier.subresourceRange = ImageSubresourceRange(aspectMask);
-        imageBarrier.subresourceRange.levelCount = 1;
-        imageBarrier.subresourceRange.baseMipLevel = mipLevel;
-        imageBarrier.image = image;
+		VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBarrier.subresourceRange = ImageSubresourceRange(aspectMask);
+		imageBarrier.subresourceRange.levelCount = 1;
+		imageBarrier.subresourceRange.baseMipLevel = mipLevel;
+		imageBarrier.image = image;
 
-        VkDependencyInfo dependencyInfo{};
+		VkDependencyInfo dependencyInfo{};
 		dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-        dependencyInfo.imageMemoryBarrierCount = 1;
-        dependencyInfo.pImageMemoryBarriers = &imageBarrier;
+		dependencyInfo.imageMemoryBarrierCount = 1;
+		dependencyInfo.pImageMemoryBarriers = &imageBarrier;
 
-        vkCmdPipelineBarrier2(cmd, &dependencyInfo);
+		vkCmdPipelineBarrier2(cmd, &dependencyInfo);
 
-        if (mipLevel < mipLevels - 1)
-        {
-            VkImageBlit2 blitRegion{};
-        	blitRegion.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
+		if (mipLevel < mipLevels - 1)
+		{
+			VkImageBlit2 blitRegion{};
+			blitRegion.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
 
-            blitRegion.srcOffsets[1].x = size.width;
-            blitRegion.srcOffsets[1].y = size.height;
-            blitRegion.srcOffsets[1].z = 1;
+			blitRegion.srcOffsets[1].x = size.width;
+			blitRegion.srcOffsets[1].y = size.height;
+			blitRegion.srcOffsets[1].z = 1;
 
-            blitRegion.dstOffsets[1].x = halfSize.width;
-            blitRegion.dstOffsets[1].y = halfSize.height;
-            blitRegion.dstOffsets[1].z = 1;
+			blitRegion.dstOffsets[1].x = halfSize.width;
+			blitRegion.dstOffsets[1].y = halfSize.height;
+			blitRegion.dstOffsets[1].z = 1;
 
-            blitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            blitRegion.srcSubresource.baseArrayLayer = 0;
-            blitRegion.srcSubresource.layerCount = 1;
-            blitRegion.srcSubresource.mipLevel = mipLevel;
+			blitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			blitRegion.srcSubresource.baseArrayLayer = 0;
+			blitRegion.srcSubresource.layerCount = 1;
+			blitRegion.srcSubresource.mipLevel = mipLevel;
 
-            blitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            blitRegion.dstSubresource.baseArrayLayer = 0;
-            blitRegion.dstSubresource.layerCount = 1;
-            blitRegion.dstSubresource.mipLevel = mipLevel + 1;
+			blitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			blitRegion.dstSubresource.baseArrayLayer = 0;
+			blitRegion.dstSubresource.layerCount = 1;
+			blitRegion.dstSubresource.mipLevel = mipLevel + 1;
 
-            VkBlitImageInfo2 blitInfo{};
-        	blitInfo.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2;
-            blitInfo.dstImage = image;
-            blitInfo.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            blitInfo.srcImage = image;
-            blitInfo.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-            blitInfo.filter = VK_FILTER_LINEAR;
-            blitInfo.regionCount = 1;
-            blitInfo.pRegions = &blitRegion;
+			VkBlitImageInfo2 blitInfo{};
+			blitInfo.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2;
+			blitInfo.dstImage = image;
+			blitInfo.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			blitInfo.srcImage = image;
+			blitInfo.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			blitInfo.filter = VK_FILTER_LINEAR;
+			blitInfo.regionCount = 1;
+			blitInfo.pRegions = &blitRegion;
 
-            vkCmdBlitImage2(cmd, &blitInfo);
+			vkCmdBlitImage2(cmd, &blitInfo);
 
-            size = halfSize;
-        }
-    }
+			size = halfSize;
+		}
+	}
 
-    TransitionImageLayout(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	TransitionImageLayout(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
-void CopyImage(VkCommandBuffer pCmd, VkImage pSource, VkImage pDestination, VkExtent2D pSrcSize, VkExtent2D pDstSize)
+void CopyImage(VkCommandBuffer cmd, VkImage src, VkImage dst, VkExtent2D srcSize, VkExtent2D dstSize, bool flipY)
 {
 	VkImageBlit2 blitRegion{};
 	blitRegion.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
 	blitRegion.pNext = nullptr;
-	blitRegion.srcOffsets[1].x = pSrcSize.width;
-	blitRegion.srcOffsets[1].y = pSrcSize.height;
-	blitRegion.srcOffsets[1].z = 1;
-	blitRegion.dstOffsets[1].x = pDstSize.width;
-	blitRegion.dstOffsets[1].y = pDstSize.height;
+	if (flipY)
+	{
+		blitRegion.srcOffsets[0] = {0, static_cast<i32>(srcSize.height), 0};
+		blitRegion.srcOffsets[1] = {static_cast<i32>(srcSize.width), 0, 1};
+	}
+	else
+	{
+		blitRegion.srcOffsets[1] = {static_cast<i32>(srcSize.width), static_cast<i32>(srcSize.height), 1};
+	}
+	blitRegion.dstOffsets[1].x = dstSize.width;
+	blitRegion.dstOffsets[1].y = dstSize.height;
 	blitRegion.dstOffsets[1].z = 1;
 	blitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	blitRegion.srcSubresource.baseArrayLayer = 0;
@@ -173,30 +179,31 @@ void CopyImage(VkCommandBuffer pCmd, VkImage pSource, VkImage pDestination, VkEx
 	VkBlitImageInfo2 blitInfo{};
 	blitInfo.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2;
 	blitInfo.pNext = nullptr;
-	blitInfo.dstImage = pDestination;
+	blitInfo.dstImage = dst;
 	blitInfo.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	blitInfo.srcImage = pSource;
+	blitInfo.srcImage = src;
 	blitInfo.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	blitInfo.filter = VK_FILTER_LINEAR;
 	blitInfo.regionCount = 1;
 	blitInfo.pRegions = &blitRegion;
 
-	vkCmdBlitImage2(pCmd, &blitInfo);
+	vkCmdBlitImage2(cmd, &blitInfo);
 }
 
-void CreateImage(VmaAllocator pAllocator, VkImageCreateInfo pInfo, VmaMemoryUsage pUsage, VkMemoryPropertyFlags pFlags, VulkanImage &outImage)
+void CreateImage(VmaAllocator alloc, VkImageCreateInfo info, VmaMemoryUsage usage, VkMemoryPropertyFlags flags, VulkanImage& outImage)
 {
 	VmaAllocationCreateInfo allocationInfo{};
-	allocationInfo.usage = pUsage;
-	allocationInfo.requiredFlags = pFlags;
+	allocationInfo.usage = usage;
+	allocationInfo.requiredFlags = flags;
 
-	if (vmaCreateImage(pAllocator, &pInfo, &allocationInfo, &outImage.image, &outImage.allocation, nullptr) != VK_SUCCESS)
+	if (vmaCreateImage(alloc, &info, &allocationInfo, &outImage.image, &outImage.allocation, nullptr) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create image.");
 	}
 }
 
-VulkanImage CreateImage(VkDevice pDevice, VmaAllocator pAllocator, VkExtent3D pSize, VkFormat pFormat, VkImageUsageFlags pUsage, bool pMipmapped)
+VulkanImage CreateImage(VkDevice pDevice, VmaAllocator pAllocator, VkExtent3D pSize, VkFormat pFormat, VkImageUsageFlags pUsage,
+						bool pMipmapped)
 {
 	VulkanImage image;
 	image.format = pFormat;
@@ -228,14 +235,16 @@ VulkanImage CreateImage(VkDevice pDevice, VmaAllocator pAllocator, VkExtent3D pS
 	return image;
 }
 
-VulkanImage CreateImage(const Engine& pEngine, void *pData, VkExtent3D pSize, VkFormat pFormat, VkImageUsageFlags pUsage, bool pMipmapped)
+VulkanImage CreateImage(const Engine& engine, void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped)
 {
-	size_t dataSize = pSize.depth * pSize.width * pSize.height * 4;
-	VulkanBuffer stagingBuffer = CreateBuffer(pEngine.mAllocator, dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+	size_t dataSize = size.depth * size.width * size.height * 4;
+	VulkanBuffer stagingBuffer =
+			CreateBuffer(engine.mAllocator, dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-	memcpy(stagingBuffer.info.pMappedData, pData, dataSize);
+	memcpy(stagingBuffer.info.pMappedData, data, dataSize);
 
-	VulkanImage image = CreateImage(pEngine.mDevice, pEngine.mAllocator, pSize, pFormat, pUsage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, pMipmapped);
+	VulkanImage image = CreateImage(engine.mDevice, engine.mAllocator, size, format,
+									usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, mipmapped);
 
 	auto func = [&](VkCommandBuffer cmd)
 	{
@@ -250,25 +259,24 @@ VulkanImage CreateImage(const Engine& pEngine, void *pData, VkExtent3D pSize, Vk
 		copyRegion.imageSubresource.mipLevel = 0;
 		copyRegion.imageSubresource.baseArrayLayer = 0;
 		copyRegion.imageSubresource.layerCount = 1;
-		copyRegion.imageExtent = pSize;
+		copyRegion.imageExtent = size;
 
 		vkCmdCopyBufferToImage(cmd, stagingBuffer.buffer, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
-		if (pMipmapped)
+		if (mipmapped)
 		{
-			VkExtent2D extent = { image.extent.width, image.extent.height };
+			VkExtent2D extent = {image.extent.width, image.extent.height};
 			GenerateMipmaps(cmd, image.image, extent);
 		}
 		else
 		{
 			TransitionImageLayout(cmd, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		}
-
 	};
 
-	ImmediateSubmit(pEngine.mDevice, pEngine.mGraphicsQueue, pEngine.mImmediate, func);
+	ImmediateSubmit(engine.mDevice, engine.mGraphicsQueue, engine.mImmediate, func);
 
-	DestroyBuffer(pEngine.mAllocator, stagingBuffer);
+	DestroyBuffer(engine.mAllocator, stagingBuffer);
 
 	return image;
 }
@@ -279,18 +287,19 @@ void DestroyImage(const VkDevice& pDevice, const VmaAllocator& pAllocator, const
 	vmaDestroyImage(pAllocator, pImage.image, pImage.allocation);
 }
 
-VkFormat FindSupportedFormat(const VkPhysicalDevice& pPhysicalDevice, const std::span<VkFormat>& pCandidates, VkImageTiling pTiling, VkFormatFeatureFlags pFeatures)
+VkFormat FindSupportedFormat(const VkPhysicalDevice& physicalDevice, const std::span<VkFormat>& candidates, VkImageTiling tiling,
+							 VkFormatFeatureFlags features)
 {
-	for (VkFormat format : pCandidates)
+	for (VkFormat format : candidates)
 	{
 		VkFormatProperties properties;
-		vkGetPhysicalDeviceFormatProperties(pPhysicalDevice, format, &properties);
+		vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
 
-		if (pTiling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & pFeatures) == pFeatures)
+		if (tiling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & features) == features)
 		{
 			return format;
 		}
-		if (pTiling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & pFeatures) == pFeatures)
+		if (tiling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & features) == features)
 		{
 			return format;
 		}
@@ -298,4 +307,3 @@ VkFormat FindSupportedFormat(const VkPhysicalDevice& pPhysicalDevice, const std:
 
 	throw std::runtime_error("Failed to find supported format.");
 }
-

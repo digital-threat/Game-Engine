@@ -43,9 +43,9 @@ void Engine::InitRtSceneDescriptorLayout()
 void Engine::InitRtPipeline()
 {
 	VkShaderModule raygenShader, missShader, closestHitShader;
-	LoadShaderModule("shaders/raygen.spv", mDevice, &raygenShader);
-	LoadShaderModule("shaders/miss.spv", mDevice, &missShader);
-	LoadShaderModule("shaders/closest_hit.spv", mDevice, &closestHitShader);
+	LoadShaderModule("shaders/rt.rgen.spv", mDevice, &raygenShader);
+	LoadShaderModule("shaders/rt.rmiss.spv", mDevice, &missShader);
+	LoadShaderModule("shaders/rt.rchit.spv", mDevice, &closestHitShader);
 
 	std::array<VkPipelineShaderStageCreateInfo, 3> stages;
 	VkPipelineShaderStageCreateInfo stage{};
