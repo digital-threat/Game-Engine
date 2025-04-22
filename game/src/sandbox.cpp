@@ -135,13 +135,13 @@ void Sandbox::CreateScene()
 {
 	MeshManager& meshManager = MeshManager::Instance();
 	MeshHandle cube = meshManager.LoadMesh("assets\\meshes\\cube.obj");
-	// MeshHandle plane = meshManager.LoadMesh("assets\\meshes\\plane.obj");
+	MeshHandle plane = meshManager.LoadMesh("assets\\meshes\\plane.obj");
 
 	{
 		Entity entity = mCoordinator.CreateEntity();
 
 		Transform transform;
-		transform.position = glm::vec3(0.5f, 0.5f, 0.5f);
+		transform.position = glm::vec3(0.5f, 0.6f, 0.5f);
 		transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 		transform.scale = 1;
 		mCoordinator.AddComponent<Transform>(entity, transform);
@@ -151,19 +151,19 @@ void Sandbox::CreateScene()
 		mCoordinator.AddComponent<Renderer>(entity, renderer);
 	}
 
-	// {
-	// 	Entity entity = mCoordinator.CreateEntity();
-	//
-	// 	Transform transform;
-	// 	transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
-	// 	transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-	// 	transform.scale = 3;
-	// 	mCoordinator.AddComponent<Transform>(entity, transform);
-	//
-	// 	Renderer renderer;
-	// 	renderer.meshHandle = plane;
-	// 	mCoordinator.AddComponent<Renderer>(entity, renderer);
-	// }
+	{
+		Entity entity = mCoordinator.CreateEntity();
+
+		Transform transform;
+		transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
+		transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+		transform.scale = 0.25f;
+		mCoordinator.AddComponent<Transform>(entity, transform);
+
+		Renderer renderer;
+		renderer.meshHandle = plane;
+		mCoordinator.AddComponent<Renderer>(entity, renderer);
+	}
 
 	{
 		Entity entity = mCoordinator.CreateEntity();

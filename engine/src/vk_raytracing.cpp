@@ -81,19 +81,18 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 
 	// Create scratch buffer
 	VkBufferUsageFlags scratchBufferUsage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-	VkDeviceSize scratchSize = AlignUp(maxScratchSize, 128);
-	VulkanBuffer scratchBuffer = CreateBuffer(mEngine.mAllocator, scratchSize, scratchBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
+	VulkanBuffer scratchBuffer =
+			CreateBufferAligned(mEngine.mAllocator, maxScratchSize, scratchBufferUsage, VMA_MEMORY_USAGE_GPU_ONLY, 128);
 
 	// Get device address of scratch buffer
 	VkBufferDeviceAddressInfo bufferInfo{};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
 	bufferInfo.buffer = scratchBuffer.buffer;
 	VkDeviceAddress scratchAddress = vkGetBufferDeviceAddress(mEngine.mDevice, &bufferInfo);
-	scratchAddress = AlignUp(scratchAddress, 128);
 
 	auto func = [&](VkCommandBuffer cmd)
 	{
-		for (u32 i = 0; i < blasCount; i++)
+		for (u32 i = 0; i < 1; i++)
 		{
 			// Create acceleration structure buffer
 			VkBufferUsageFlags asBufferUsage =
@@ -121,6 +120,37 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 	};
 
 	ImmediateSubmit(mEngine.mDevice, mEngine.mGraphicsQueue, mEngine.mImmediate, func);
+
+	auto func2 = [&](VkCommandBuffer cmd)
+	{
+		for (u32 i = 1; i < 2; i++)
+		{
+			// Create acceleration structure buffer
+			VkBufferUsageFlags asBufferUsage =
+					VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+			mBlas[i].buffer = CreateBuffer(mEngine.mAllocator, buildData[i].sizesInfo.accelerationStructureSize, asBufferUsage,
+										   VMA_MEMORY_USAGE_GPU_ONLY);
+
+			// Create info
+			VkAccelerationStructureCreateInfoKHR createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+			createInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+			createInfo.size = buildData[i].sizesInfo.accelerationStructureSize;
+			createInfo.buffer = mBlas[i].buffer.buffer;
+			mEngine.mVkbDT.fp_vkCreateAccelerationStructureKHR(mEngine.mDevice, &createInfo, nullptr, &mBlas[i].handle);
+
+			// Build geometry info (cont.)
+			buildData[i].geometryInfo.scratchData.deviceAddress = scratchAddress;
+			buildData[i].geometryInfo.dstAccelerationStructure = mBlas[i].handle;
+
+			// Range info
+			std::vector<VkAccelerationStructureBuildRangeInfoKHR*> rangeInfos = {buildData[i].rangeInfos.data()};
+
+			mEngine.mVkbDT.fp_vkCmdBuildAccelerationStructuresKHR(cmd, 1, &buildData[i].geometryInfo, rangeInfos.data());
+		}
+	};
+
+	ImmediateSubmit(mEngine.mDevice, mEngine.mGraphicsQueue, mEngine.mImmediate, func2);
 
 	for (u32 i = 0; i < blasCount; i++)
 	{

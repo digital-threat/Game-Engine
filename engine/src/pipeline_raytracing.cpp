@@ -223,16 +223,25 @@ void Engine::UpdateRtSceneDescriptorSet(VkDescriptorSet sceneSet, FrameData& cur
 
 	memcpy(currentFrame.objectDataBuffer.info.pMappedData, objects.data(), objects.size() * sizeof(ObjectData));
 
+	u32 textureCount = TextureManager::Instance().mTextures.size();
+	std::vector<VkDescriptorImageInfo> imageInfos;
+	for (u32 i = 0; i < textureCount; i++)
+	{
+		Texture& texture = TextureManager::Instance().mTextures[i];
+
+		VkDescriptorImageInfo imageInfo{};
+		imageInfo.sampler = texture.sampler;
+		imageInfo.imageView = texture.image.imageView;
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		imageInfos.emplace_back(imageInfo);
+	}
+
 	DescriptorWriter writer;
 	writer.WriteBuffer(0, currentFrame.sceneDataBuffer.buffer, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	writer.WriteBuffer(1, currentFrame.objectDataBuffer.buffer, objects.size() * sizeof(ObjectData), 0,
 					   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-	for (u32 i = 0; i < TextureManager::Instance().mTextures.size(); i++)
-	{
-		Texture& texture = TextureManager::Instance().mTextures[i];
-		writer.WriteImage(2, texture.image.imageView, texture.sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-						  VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-	}
+	writer.WriteImages(2, imageInfos.data(), textureCount, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 	writer.UpdateSet(mDevice, sceneSet);
 }
 

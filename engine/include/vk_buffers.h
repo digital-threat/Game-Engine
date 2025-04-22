@@ -2,13 +2,13 @@
 
 #include <vector>
 #include <vk_mem_alloc.h>
-#include <vulkan/vulkan_core.h>
 #include <vk_structs.h>
+#include <vulkan/vulkan_core.h>
 
 class Engine;
 
 // NOTE(Sergei): Implicit immediate submit
-template <typename T>
+template<typename T>
 VulkanBuffer CreateBufferAndUploadData(Engine& engine, std::vector<T>& data, VkBufferUsageFlags usage)
 {
 	return CreateBufferAndUploadData(engine, sizeof(T) * data.size(), data.data(), usage);
@@ -18,6 +18,9 @@ VulkanBuffer CreateBufferAndUploadData(Engine& engine, std::vector<T>& data, VkB
 VulkanBuffer CreateBufferAndUploadData(Engine& engine, VkDeviceSize size, void* data, VkBufferUsageFlags usage);
 
 VulkanBuffer CreateBuffer(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
+
+VulkanBuffer CreateBufferAligned(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage,
+								 VkDeviceSize alignment);
 
 void DestroyBuffer(VmaAllocator allocator, const VulkanBuffer& buffer);
 

@@ -99,10 +99,20 @@ void DescriptorWriter::WriteImage(u32 binding, VkImageView image, VkSampler samp
 	VkWriteDescriptorSet write{};
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.dstBinding = binding;
-	write.dstSet = VK_NULL_HANDLE; // left empty for now until we need to write it
 	write.descriptorCount = 1;
 	write.descriptorType = type;
 	write.pImageInfo = &info;
+
+	mWrites.push_back(write);
+}
+void DescriptorWriter::WriteImages(u32 binding, VkDescriptorImageInfo* pImageInfo, u32 count, VkDescriptorType type)
+{
+	VkWriteDescriptorSet write{};
+	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write.dstBinding = binding;
+	write.descriptorCount = count;
+	write.descriptorType = type;
+	write.pImageInfo = pImageInfo;
 
 	mWrites.push_back(write);
 }
@@ -119,7 +129,6 @@ void DescriptorWriter::WriteBuffer(u32 binding, VkBuffer buffer, size_t size, si
 	VkWriteDescriptorSet write{};
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.dstBinding = binding;
-	write.dstSet = VK_NULL_HANDLE; // left empty for now until we need to write it
 	write.descriptorCount = 1;
 	write.descriptorType = type;
 	write.pBufferInfo = &info;
@@ -134,7 +143,6 @@ void DescriptorWriter::WriteTlas(u32 binding, VkWriteDescriptorSetAccelerationSt
 	// NOTE(Sergei): If you ever forget - the specialized descriptor has to be chained.
 	write.pNext = writeAS;
 	write.dstBinding = binding;
-	write.dstSet = VK_NULL_HANDLE;
 	write.descriptorCount = 1;
 	write.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 

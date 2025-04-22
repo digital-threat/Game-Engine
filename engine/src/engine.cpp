@@ -470,7 +470,7 @@ void Engine::InitBuffers(FrameData* frames)
 				CreateBuffer(mAllocator, sizeof(SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 		// TODO(Sergei): Find a solution for size that's not a hard-coded number
 		frames[i].objectDataBuffer =
-				CreateBuffer(mAllocator, sizeof(ObjectData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+				CreateBuffer(mAllocator, sizeof(ObjectData) * 128, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 	}
 }
 
@@ -573,7 +573,7 @@ void Engine::Render(FrameData& currentFrame)
 
 	if (vkQueueSubmit2(mGraphicsQueue, 1, &submitInfo, currentFrame.renderFence) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to submit draw command buffer.");
+		std::cerr << "Failed to submit draw command buffer." << std::endl;
 	}
 
 	VkPresentInfoKHR presentInfo{};
@@ -592,7 +592,7 @@ void Engine::Render(FrameData& currentFrame)
 	}
 	else if (result != VK_SUCCESS)
 	{
-		throw std::runtime_error("failed to present swap chain image!");
+		throw std::runtime_error("Failed to present swap chain image.");
 	}
 }
 

@@ -22,7 +22,28 @@ VulkanBuffer CreateBuffer(VmaAllocator allocator, VkDeviceSize size, VkBufferUsa
 	}
 
 	return buffer;
+}
+VulkanBuffer CreateBufferAligned(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage,
+								 VkDeviceSize alignment)
+{
+	VkBufferCreateInfo bufferInfo{};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.pNext = nullptr;
+	bufferInfo.size = size;
+	bufferInfo.usage = usage;
 
+	VmaAllocationCreateInfo vmaAllocationInfo{};
+	vmaAllocationInfo.usage = memoryUsage;
+	vmaAllocationInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+	VulkanBuffer buffer;
+	if (vmaCreateBufferWithAlignment(allocator, &bufferInfo, &vmaAllocationInfo, alignment, &buffer.buffer, &buffer.allocation,
+									 &buffer.info) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create buffer.");
+	}
+
+	return buffer;
 }
 
 // TODO(Sergei): Create a staging memory manager to avoid having to use immediate submit.
@@ -35,10 +56,7 @@ VulkanBuffer CreateBufferAndUploadData(Engine& engine, VkDeviceSize size, void* 
 	VkBufferUsageFlags bufferUsage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	VulkanBuffer dstBuffer = CreateBuffer(engine.mAllocator, size, bufferUsage, VMA_MEMORY_USAGE_GPU_ONLY);
 
-	auto func = [&](VkCommandBuffer cmd)
-	{
-		CopyBuffer(cmd, stagingBuffer.buffer, dstBuffer.buffer, size);
-	};
+	auto func = [&](VkCommandBuffer cmd) { CopyBuffer(cmd, stagingBuffer.buffer, dstBuffer.buffer, size); };
 
 	ImmediateSubmit(engine.mDevice, engine.mGraphicsQueue, engine.mImmediate, func);
 
@@ -47,7 +65,7 @@ VulkanBuffer CreateBufferAndUploadData(Engine& engine, VkDeviceSize size, void* 
 	return dstBuffer;
 }
 
-void DestroyBuffer(VmaAllocator allocator, const VulkanBuffer &buffer)
+void DestroyBuffer(VmaAllocator allocator, const VulkanBuffer& buffer)
 {
 	vmaDestroyBuffer(allocator, buffer.buffer, buffer.allocation);
 }
