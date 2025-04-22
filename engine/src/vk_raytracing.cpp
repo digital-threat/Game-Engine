@@ -90,9 +90,9 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 	bufferInfo.buffer = scratchBuffer.buffer;
 	VkDeviceAddress scratchAddress = vkGetBufferDeviceAddress(mEngine.mDevice, &bufferInfo);
 
-	auto func = [&](VkCommandBuffer cmd)
+	for (u32 i = 0; i < blasCount; i++)
 	{
-		for (u32 i = 0; i < 1; i++)
+		auto func = [&](VkCommandBuffer cmd)
 		{
 			// Create acceleration structure buffer
 			VkBufferUsageFlags asBufferUsage =
@@ -116,41 +116,10 @@ void RaytracingBuilder::BuildBlas(std::vector<BlasInput>& input, VkBuildAccelera
 			std::vector<VkAccelerationStructureBuildRangeInfoKHR*> rangeInfos = {buildData[i].rangeInfos.data()};
 
 			mEngine.mVkbDT.fp_vkCmdBuildAccelerationStructuresKHR(cmd, 1, &buildData[i].geometryInfo, rangeInfos.data());
-		}
-	};
+		};
 
-	ImmediateSubmit(mEngine.mDevice, mEngine.mGraphicsQueue, mEngine.mImmediate, func);
-
-	auto func2 = [&](VkCommandBuffer cmd)
-	{
-		for (u32 i = 1; i < 2; i++)
-		{
-			// Create acceleration structure buffer
-			VkBufferUsageFlags asBufferUsage =
-					VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-			mBlas[i].buffer = CreateBuffer(mEngine.mAllocator, buildData[i].sizesInfo.accelerationStructureSize, asBufferUsage,
-										   VMA_MEMORY_USAGE_GPU_ONLY);
-
-			// Create info
-			VkAccelerationStructureCreateInfoKHR createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-			createInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-			createInfo.size = buildData[i].sizesInfo.accelerationStructureSize;
-			createInfo.buffer = mBlas[i].buffer.buffer;
-			mEngine.mVkbDT.fp_vkCreateAccelerationStructureKHR(mEngine.mDevice, &createInfo, nullptr, &mBlas[i].handle);
-
-			// Build geometry info (cont.)
-			buildData[i].geometryInfo.scratchData.deviceAddress = scratchAddress;
-			buildData[i].geometryInfo.dstAccelerationStructure = mBlas[i].handle;
-
-			// Range info
-			std::vector<VkAccelerationStructureBuildRangeInfoKHR*> rangeInfos = {buildData[i].rangeInfos.data()};
-
-			mEngine.mVkbDT.fp_vkCmdBuildAccelerationStructuresKHR(cmd, 1, &buildData[i].geometryInfo, rangeInfos.data());
-		}
-	};
-
-	ImmediateSubmit(mEngine.mDevice, mEngine.mGraphicsQueue, mEngine.mImmediate, func2);
+		ImmediateSubmit(mEngine.mDevice, mEngine.mGraphicsQueue, mEngine.mImmediate, func);
+	}
 
 	for (u32 i = 0; i < blasCount; i++)
 	{
