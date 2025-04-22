@@ -1,10 +1,11 @@
 newmtl plane
+Ns 10.0000
+Ni 1.5000
+Tr 0
 illum 2
-d 1
-Ns 8.0
-Ni 0
-Ka 0 0 0
-Kd 0.8 0.8 0.8
-Ks 1 1 1
+Ka 0.1 0.1 0.1
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ke 0 0 0
 map_Kd check_yellow_red.png
 

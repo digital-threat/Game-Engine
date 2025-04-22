@@ -66,12 +66,13 @@ void main()
         color = texture(textures[nonuniformEXT(index)], uv).xyz;
     }
 
-    //Light mainLight;
-    //mainLight.color = mainLightColor.xyz * mainLightColor.w;
-    //mainLight.direction = normalize(mainLightDir.xyz);
-    //mainLight.attenuation = 1.0f;
+    Light mainLight;
+    mainLight.color = mainLightColor.xyz;
+    mainLight.direction = normalize(mainLightDir.xyz);
+    mainLight.attenuation = 1.0f;
 
-    //vec3 lightingColor = CalculateLighting(mainLight, material, normal, viewDir);
+    vec3 lightingColor = LightingLambert(material, mainLight.direction, normal);
+    lightingColor = clamp(lightingColor, 0.0f, 1.0f);
 
-    inPayload.hitValue = color;
+    inPayload.hitValue = color * lightingColor;
 }
