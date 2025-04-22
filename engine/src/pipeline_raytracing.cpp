@@ -20,7 +20,8 @@ void Engine::InitRt()
 void Engine::InitRtDescriptorLayout()
 {
 	DescriptorLayoutBuilder builder;
-	builder.AddBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+	builder.AddBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+					   VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 	builder.AddBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 	mRtDescriptorLayout = builder.Build(mDevice);
 }
@@ -43,12 +44,13 @@ void Engine::InitRtSceneDescriptorLayout()
 // TODO(Sergei): Add "AddShaderStage" to pipeline builder
 void Engine::InitRtPipeline()
 {
-	VkShaderModule raygenShader, missShader, closestHitShader;
+	VkShaderModule raygenShader, missShader, closestHitShader, shadowMissShader;
 	LoadShaderModule("shaders/rt.rgen.spv", mDevice, &raygenShader);
 	LoadShaderModule("shaders/rt.rmiss.spv", mDevice, &missShader);
 	LoadShaderModule("shaders/rt.rchit.spv", mDevice, &closestHitShader);
+	LoadShaderModule("shaders/rt_shadow.rmiss.spv", mDevice, &shadowMissShader);
 
-	std::array<VkPipelineShaderStageCreateInfo, 3> stages;
+	std::array<VkPipelineShaderStageCreateInfo, 4> stages;
 	VkPipelineShaderStageCreateInfo stage{};
 	stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	stage.pName = "main";
@@ -61,9 +63,13 @@ void Engine::InitRtPipeline()
 	stage.stage = VK_SHADER_STAGE_MISS_BIT_KHR;
 	stages[1] = stage;
 
+	stage.module = shadowMissShader;
+	stage.stage = VK_SHADER_STAGE_MISS_BIT_KHR;
+	stages[2] = stage;
+
 	stage.module = closestHitShader;
 	stage.stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-	stages[2] = stage;
+	stages[3] = stage;
 
 	VkRayTracingShaderGroupCreateInfoKHR group{};
 	group.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
@@ -80,9 +86,13 @@ void Engine::InitRtPipeline()
 	group.generalShader = 1;
 	mRtShaderGroups.push_back(group);
 
+	group.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+	group.generalShader = 2;
+	mRtShaderGroups.push_back(group);
+
 	group.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
 	group.generalShader = VK_SHADER_UNUSED_KHR;
-	group.closestHitShader = 2;
+	group.closestHitShader = 3;
 	mRtShaderGroups.push_back(group);
 
 	VkPushConstantRange pushConstantRange{};
@@ -105,9 +115,14 @@ void Engine::InitRtPipeline()
 	pipelineCreateInfo.pStages = stages.data();
 	pipelineCreateInfo.groupCount = static_cast<u32>(mRtShaderGroups.size());
 	pipelineCreateInfo.pGroups = mRtShaderGroups.data();
-	pipelineCreateInfo.maxPipelineRayRecursionDepth = 1;
+	pipelineCreateInfo.maxPipelineRayRecursionDepth = 2;
 	pipelineCreateInfo.layout = mRtPipelineLayout;
 	mVkbDT.fp_vkCreateRayTracingPipelinesKHR(mDevice, {}, {}, 1, &pipelineCreateInfo, nullptr, &mRtPipeline);
+
+	if (mRtProperties.maxRayRecursionDepth <= 1)
+	{
+		throw std::runtime_error("Device does not support ray recursion (m_rtProperties.maxRayRecursionDepth <= 1).");
+	}
 
 	for (u32 i = 0; i < stages.size(); i++)
 	{
@@ -117,7 +132,7 @@ void Engine::InitRtPipeline()
 
 void Engine::InitRtSBT()
 {
-	u32 missCount = 1;
+	u32 missCount = 2;
 	u32 hitCount = 1;
 	u32 handleCount = 1 + missCount + hitCount;
 	u32 handleSize = mRtProperties.shaderGroupHandleSize;

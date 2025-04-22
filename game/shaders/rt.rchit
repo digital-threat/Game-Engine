@@ -9,6 +9,7 @@
 #include "rt_common.glsl"
 
 layout (location = 0) rayPayloadInEXT HitPayload inPayload;
+layout (location = 1) rayPayloadEXT bool isInShadow;
 
 hitAttributeEXT vec3 attributes;
 
@@ -71,8 +72,40 @@ void main()
     mainLight.direction = normalize(mainLightDir.xyz);
     mainLight.attenuation = 1.0f;
 
+    float attenuation = 1;
+    if (dot(normal, mainLight.direction) > 0)
+    {
+        float tMin = 0.001f;
+        float tMax = 10000.0f;
+        vec3 origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
+        vec3 rayDir = mainLight.direction;
+        uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
+        isInShadow = true;
+        traceRayEXT(tlas, // acceleration structure
+                    flags, // rayFlags
+                    0xFF, // cullMask
+                    0, // sbtRecordOffset
+                    0, // sbtRecordStride
+                    1, // missIndex
+                    origin, // ray origin
+                    tMin, // ray min range
+                    rayDir, // ray direction
+                    tMax, // ray max range
+                    1 // payload (location = 1)
+        );
+
+        if (isInShadow)
+        {
+            attenuation = 0.3;
+        }
+        else
+        {
+            // Specular
+        }
+    }
+
     vec3 lightingColor = LightingLambert(material, mainLight.direction, normal);
     lightingColor = clamp(lightingColor, 0.0f, 1.0f);
 
-    inPayload.hitValue = color * lightingColor;
+    inPayload.hitValue = vec3(color * attenuation * lightingColor);
 }

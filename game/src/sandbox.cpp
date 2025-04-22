@@ -35,7 +35,6 @@ void Sandbox::Awake()
 	mCoordinator.RegisterComponent<BoxCollider>();
 	mCoordinator.RegisterComponent<Camera>();
 
-	//
 	CreateScene();
 
 	CreateBlas();
