@@ -1,3 +1,4 @@
+#include <acceleration_structures.h>
 #include <engine.h>
 #include <sandbox.h>
 
@@ -6,6 +7,7 @@
 
 #include <collision.h>
 #include <components/camera.h>
+#include <components/name.h>
 #include <components/renderer.h>
 #include <components/transform.h>
 #include <ecs/coordinator.h>
@@ -15,10 +17,10 @@
 #include <systems/camera_system.h>
 #include <systems/physics_system.h>
 #include <systems/render_system.h>
-#include <vk_images.h>
-#include <vk_raytracing.h>
+#include <systems/rt_render_system.h>
+#include <systems/transform_gui_system.h>
 
-Sandbox::Sandbox(Engine& engine) : Application(engine), mResourceSystem(mCoordinator), mRtBuilder(engine)
+Sandbox::Sandbox(Engine& engine) : Application(engine), mResourceSystem(mCoordinator), rtBuilder(engine)
 {
 	mRenderContext.renderScale = 1.0f;
 	mMainLightColor = glm::vec3(1, 1, 1);
@@ -34,6 +36,7 @@ void Sandbox::Awake()
 	mCoordinator.RegisterComponent<SphereCollider>();
 	mCoordinator.RegisterComponent<BoxCollider>();
 	mCoordinator.RegisterComponent<Camera>();
+	mCoordinator.RegisterComponent<Name>();
 
 	CreateScene();
 
@@ -64,9 +67,9 @@ void Sandbox::PhysicsUpdate(f64 deltaTime)
 void Sandbox::Render()
 {
 	CameraSystem::OnGUI(mCoordinator.mEntityManager, mCoordinator.mComponentManager);
+	TransformGUISystem::Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager);
 
 	ImGuiApplication();
-	// ImGuiEntities();
 	// ImGuiMaterials();
 	ImGuiMainLight();
 
@@ -75,9 +78,9 @@ void Sandbox::Render()
 	mRenderContext.scene.mainLightColor = glm::vec4(mMainLightColor, mMainLightIntensity);
 	mRenderContext.instances.clear();
 	mRenderContext.light.lightCount = 0;
-	mRenderContext.raytracing.tlas = mRtBuilder.mTlas.handle;
+	mRenderContext.raytracing.tlas = rtScene.tlas.handle;
 
-	RenderSystem::Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, mRenderContext);
+	RtRenderSystem::Update(mEngine, mCoordinator.mEntityManager, mCoordinator.mComponentManager, rtScene, rtBuilder);
 }
 
 void Sandbox::Destroy() {}
@@ -96,12 +99,12 @@ void Sandbox::CreateBlas()
 		input.emplace_back(blas);
 	}
 
-	mRtBuilder.BuildBlas(input, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
+	rtBuilder.BuildBlas(input, rtScene.blas);
 }
 
 void Sandbox::CreateTlas()
 {
-	std::vector<VkAccelerationStructureInstanceKHR> tlas;
+	std::vector<VkAccelerationStructureInstanceKHR> instances;
 
 	Archetype archetype;
 	archetype.set(mCoordinator.mComponentManager.GetComponentType<Transform>());
@@ -119,16 +122,19 @@ void Sandbox::CreateTlas()
 		VkAccelerationStructureInstanceKHR instance{};
 		instance.transform = ToVkTransformMatrixKHR(matrixM);
 		instance.instanceCustomIndex = renderer.meshHandle;
-		instance.accelerationStructureReference = mRtBuilder.GetBlasDeviceAddress(renderer.meshHandle);
+		instance.accelerationStructureReference = rtScene.GetBlasDeviceAddress(renderer.meshHandle);
 		instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
 		instance.mask = 0xFF;
 		instance.instanceShaderBindingTableRecordOffset = 0;
-		tlas.emplace_back(instance);
+		instances.emplace_back(instance);
 	};
 
 	mCoordinator.mEntityManager.Each(archetype, func);
 
-	mRtBuilder.BuildTlas(tlas, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
+	VkBuildAccelerationStructureFlagsKHR flags{};
+	flags |= VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+	flags |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+	rtBuilder.BuildTlas(instances, rtScene.tlas, flags);
 }
 
 void Sandbox::CreateScene()
@@ -136,9 +142,14 @@ void Sandbox::CreateScene()
 	MeshManager& meshManager = MeshManager::Instance();
 	MeshHandle cube = meshManager.LoadMesh("assets\\meshes\\cube.obj");
 	MeshHandle plane = meshManager.LoadMesh("assets\\meshes\\plane.obj");
+	MeshHandle sphere = meshManager.LoadMesh("assets\\meshes\\sphere-cylcoords-1k.obj");
 
 	{
 		Entity entity = mCoordinator.CreateEntity();
+
+		Name name;
+		name.name = "Cube";
+		mCoordinator.AddComponent<Name>(entity, name);
 
 		Transform transform;
 		transform.position = glm::vec3(0.5f, 0.6f, 0.5f);
@@ -154,6 +165,10 @@ void Sandbox::CreateScene()
 	{
 		Entity entity = mCoordinator.CreateEntity();
 
+		Name name;
+		name.name = "Plane";
+		mCoordinator.AddComponent<Name>(entity, name);
+
 		Transform transform;
 		transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
 		transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
@@ -162,6 +177,24 @@ void Sandbox::CreateScene()
 
 		Renderer renderer;
 		renderer.meshHandle = plane;
+		mCoordinator.AddComponent<Renderer>(entity, renderer);
+	}
+
+	{
+		Entity entity = mCoordinator.CreateEntity();
+
+		Name name;
+		name.name = "Sphere";
+		mCoordinator.AddComponent<Name>(entity, name);
+
+		Transform transform;
+		transform.position = glm::vec3(-1.5f, 0.6f, -1.5f);
+		transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+		transform.scale = 0.005f;
+		mCoordinator.AddComponent<Transform>(entity, transform);
+
+		Renderer renderer;
+		renderer.meshHandle = sphere;
 		mCoordinator.AddComponent<Renderer>(entity, renderer);
 	}
 

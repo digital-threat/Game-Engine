@@ -1,9 +1,8 @@
 #pragma once
 
+#include <acceleration_structures.h>
 #include <application.h>
 #include <components/camera.h>
-#include <message_queue.h>
-#include <vk_raytracing.h>
 #include <ecs/coordinator.h>
 #include <systems/resource_system.h>
 
@@ -20,7 +19,8 @@ private:
 	float mMainLightIntensity;
 	bool isSimulating;
 
-	RaytracingBuilder mRtBuilder;
+	RaytracingBuilder rtBuilder;
+	Scene rtScene;
 
 public:
 	explicit Sandbox(Engine& engine);
@@ -36,7 +36,6 @@ private:
 
 private:
 	void ImGuiApplication();
-	//void ImGuiEntities();
 	void ImGuiMaterials();
 	void ImGuiMainLight();
 
@@ -44,4 +43,3 @@ private:
 
 	bool Raycast(Ray& ray, RayHit& hit);
 };
-

@@ -1,12 +1,11 @@
 #pragma once
 
-#include <render_object.h>
 #include <glm/glm.hpp>
 #include <lights.h>
+#include <render_object.h>
 
 #include <array>
 #include <vector>
-#include <vk_raytracing.h>
 
 struct SceneRenderData
 {

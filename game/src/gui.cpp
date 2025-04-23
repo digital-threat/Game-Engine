@@ -1,44 +1,9 @@
-#include <sandbox.h>
-#include <imgui.h>
-#include <material_manager.h>
 #include <filesystem>
+#include <imgui.h>
 #include <iostream>
+#include <material_manager.h>
+#include <sandbox.h>
 #include <texture_manager.h>
-
-// void MySandbox::ImGuiEntities()
-// {
-//     if (ImGui::Begin("Entities"))
-//     {
-//         if (mEntityManager.Count() > 0)
-//         {
-//             Entity* selected = mEntityManager.All()[mCurrentEntity];
-//
-//             ImGui::SliderInt("Entity Index", &mCurrentEntity,0, mEntityManager.Count() - 1);
-//
-//             selected->OnGUI();
-//
-//             ImGui::Separator();
-//
-//             if (ImGui::Button("Delete Entity"))
-//             {
-//                 mEntityManager.DeleteEntity(selected);
-//                 if (mEntityManager.Count() > 0)
-//                 {
-//                     mCurrentEntity %= mEntityManager.Count();
-//                 }
-//             }
-//         }
-//
-//         ImGui::SameLine();
-//
-//         if (ImGui::Button("Create Entity"))
-//         {
-//             mEntityManager.CreateEntity();
-//         }
-//
-//     }
-//     ImGui::End();
-// }
 
 // void Sandbox::ImGuiMaterials()
 // {
@@ -156,20 +121,20 @@
 
 void Sandbox::ImGuiMainLight()
 {
-    if (ImGui::Begin("Main Light"))
-    {
-        ImGui::InputFloat3("Position", reinterpret_cast<float *>(&mMainLightPosition));
-        ImGui::ColorEdit3("Color", reinterpret_cast<float *>(&mMainLightColor));
-        ImGui::SliderFloat("Intensity", &mMainLightIntensity, 0.0f, 1.0f);
-    }
-    ImGui::End();
+	if (ImGui::Begin("Main Light"))
+	{
+		ImGui::InputFloat3("Position", reinterpret_cast<float*>(&mMainLightPosition));
+		ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&mMainLightColor));
+		ImGui::SliderFloat("Intensity", &mMainLightIntensity, 0.0f, 1.0f);
+	}
+	ImGui::End();
 }
 
 void Sandbox::ImGuiApplication()
 {
-    if (ImGui::Begin("Application"))
-    {
-        ImGui::SliderFloat("Render Scale", &mRenderContext.renderScale, 0.3f, 1.0f);
-    }
-    ImGui::End();
+	if (ImGui::Begin("Application"))
+	{
+		ImGui::SliderFloat("Render Scale", &mRenderContext.renderScale, 0.3f, 1.0f);
+	}
+	ImGui::End();
 }
