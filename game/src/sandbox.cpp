@@ -19,186 +19,19 @@
 #include <systems/rt_render_system.h>
 #include <systems/transform_gui_system.h>
 
-Sandbox::Sandbox(Engine& engine) : Application(engine), mResourceSystem(mCoordinator), rtBuilder(engine)
+Sandbox::Sandbox(Engine& engine) : Application(engine)
 {
 	mRenderContext.renderScale = 1.0f;
-	mMainLightColor = glm::vec3(1, 1, 1);
-	mMainLightPosition = glm::vec3(0, 5, -10);
-	mMainLightIntensity = 0.5f;
 	isSimulating = true;
+	mCurrentScene = 0;
 }
 
 void Sandbox::Awake()
 {
-	mCoordinator.RegisterComponent<Transform>();
-	mCoordinator.RegisterComponent<Renderer>();
-	mCoordinator.RegisterComponent<SphereCollider>();
-	mCoordinator.RegisterComponent<BoxCollider>();
-	mCoordinator.RegisterComponent<Camera>();
-	mCoordinator.RegisterComponent<Name>();
-
-	CreateScene();
-
-	CreateBlas();
-	CreateTlas();
-}
-
-void Sandbox::Update(f64 deltaTime)
-{
-	mResourceSystem.Update();
-
-	CameraSystem::Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, mRenderContext.camera, deltaTime);
-
-	Ray ray{};
-	RayHit hit{};
-	ray.direction = glm::vec3(0, 0, 1);
-	Raycast(ray, hit);
-}
-
-void Sandbox::PhysicsUpdate(f64 deltaTime)
-{
-	if (isSimulating)
-	{
-		PhysicsSystem::Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager, deltaTime);
-	}
-}
-
-void Sandbox::Render()
-{
-	CameraSystem::OnGUI(mCoordinator.mEntityManager, mCoordinator.mComponentManager);
-	TransformGUISystem::Update(mCoordinator.mEntityManager, mCoordinator.mComponentManager);
-
-	ImGuiApplication();
-	// ImGuiMaterials();
-	ImGuiMainLight();
-
-	mRenderContext.scene.ambientColor = glm::vec3(0.05f, 0.05f, 0.05f);
-	mRenderContext.scene.mainLightPos = mMainLightPosition;
-	mRenderContext.scene.mainLightColor = glm::vec4(mMainLightColor, mMainLightIntensity);
-	mRenderContext.instances.clear();
-	mRenderContext.light.lightCount = 0;
-	mRenderContext.raytracing.tlas = rtScene.tlas.handle;
-
-	RtRenderSystem::Update(mEngine, mCoordinator.mEntityManager, mCoordinator.mComponentManager, rtScene, rtBuilder);
-}
-
-void Sandbox::Destroy() {}
-
-void Sandbox::CreateBlas()
-{
-	MeshManager& meshManager = MeshManager::Instance();
-	u32 size = meshManager.mMeshes.size();
-
-	std::vector<BlasInput> input;
-	input.reserve(size);
-
-	for (u32 i = 0; i < size; i++)
-	{
-		BlasInput blas = MeshToVkGeometryKHR(meshManager.mMeshes[i]);
-		input.emplace_back(blas);
-	}
-
-	rtBuilder.BuildBlas(input, rtScene.blas);
-}
-
-void Sandbox::CreateTlas()
-{
-	std::vector<VkAccelerationStructureInstanceKHR> instances;
-
-	Archetype archetype;
-	archetype.set(mCoordinator.mComponentManager.GetComponentType<Transform>());
-	archetype.set(mCoordinator.mComponentManager.GetComponentType<Renderer>());
-
-	auto func = [&](Entity entity)
-	{
-		Transform& transform = mCoordinator.mComponentManager.GetComponent<Transform>(entity);
-		Renderer& renderer = mCoordinator.mComponentManager.GetComponent<Renderer>(entity);
-
-		glm::mat4 matrixM = glm::translate(glm::mat4(1.0f), transform.position);
-		matrixM *= glm::mat4_cast(transform.rotation);
-		matrixM = glm::scale(matrixM, glm::vec3(transform.scale));
-
-		VkAccelerationStructureInstanceKHR instance{};
-		instance.transform = ToVkTransformMatrixKHR(matrixM);
-		instance.instanceCustomIndex = renderer.meshHandle;
-		instance.accelerationStructureReference = rtScene.GetBlasDeviceAddress(renderer.meshHandle);
-		instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-		instance.mask = 0xFF;
-		instance.instanceShaderBindingTableRecordOffset = 0;
-		instances.emplace_back(instance);
-	};
-
-	mCoordinator.mEntityManager.Each(archetype, func);
-
-	VkBuildAccelerationStructureFlagsKHR flags{};
-	flags |= VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-	flags |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
-	rtBuilder.BuildTlas(instances, rtScene.tlas, flags);
-}
-
-void Sandbox::CreateScene()
-{
-	MeshManager& meshManager = MeshManager::Instance();
-	MeshHandle cube = meshManager.LoadMesh("assets\\meshes\\cube.obj");
-	MeshHandle plane = meshManager.LoadMesh("assets\\meshes\\plane.obj");
-	MeshHandle sphere = meshManager.LoadMesh("assets\\meshes\\sphere.obj");
+	mGlobalCoordinator.RegisterComponent<Camera>();
 
 	{
-		Entity entity = mCoordinator.CreateEntity();
-
-		Name name;
-		name.name = "Cube";
-		mCoordinator.AddComponent<Name>(entity, name);
-
-		Transform transform;
-		transform.position = glm::vec3(0.5f, 0.6f, 0.5f);
-		transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-		transform.scale = 1;
-		mCoordinator.AddComponent<Transform>(entity, transform);
-
-		Renderer renderer;
-		renderer.meshHandle = cube;
-		mCoordinator.AddComponent<Renderer>(entity, renderer);
-	}
-
-	{
-		Entity entity = mCoordinator.CreateEntity();
-
-		Name name;
-		name.name = "Plane";
-		mCoordinator.AddComponent<Name>(entity, name);
-
-		Transform transform;
-		transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
-		transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-		transform.scale = 5.0f;
-		mCoordinator.AddComponent<Transform>(entity, transform);
-
-		Renderer renderer;
-		renderer.meshHandle = plane;
-		mCoordinator.AddComponent<Renderer>(entity, renderer);
-	}
-
-	{
-		Entity entity = mCoordinator.CreateEntity();
-
-		Name name;
-		name.name = "Sphere";
-		mCoordinator.AddComponent<Name>(entity, name);
-
-		Transform transform;
-		transform.position = glm::vec3(-1.5f, 0.6f, -1.5f);
-		transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-		transform.scale = 0.5f;
-		mCoordinator.AddComponent<Transform>(entity, transform);
-
-		Renderer renderer;
-		renderer.meshHandle = sphere;
-		mCoordinator.AddComponent<Renderer>(entity, renderer);
-	}
-
-	{
-		Entity entity = mCoordinator.CreateEntity();
+		Entity entity = mGlobalCoordinator.CreateEntity();
 
 		Camera camera{};
 		camera.position = glm::vec3(0.0f, 2.0f, -3.0f);
@@ -206,34 +39,71 @@ void Sandbox::CreateScene()
 		camera.speed = 1.0f;
 		camera.yaw = 90.0f;
 		camera.fov = 60.0f;
-		mCoordinator.AddComponent<Camera>(entity, camera);
+		mGlobalCoordinator.AddComponent<Camera>(entity, camera);
 	}
+
+	mScenes.push_back(MirrorScene());
 }
 
-bool Sandbox::Raycast(Ray& ray, RayHit& hit)
+void Sandbox::Update(f64 deltaTime)
 {
-	auto sphereColliders = mCoordinator.mComponentManager.GetComponentsOfType<SphereCollider>();
-	auto boxColliders = mCoordinator.mComponentManager.GetComponentsOfType<BoxCollider>();
-
-	std::vector<Collision> collisions;
-
-	for (u32 i = 0; i < sphereColliders.mSize; i++)
-	{
-		SphereCollider& c = sphereColliders.mComponentArray[i];
-		if (IntersectRaySphere(ray, hit, c))
-		{
-			return true;
-		}
-	}
-
-	for (u32 i = 0; i < boxColliders.mSize; i++)
-	{
-		BoxCollider& c = boxColliders.mComponentArray[i];
-		if (IntersectRayOBB(ray, hit, c))
-		{
-			return true;
-		}
-	}
-
-	return false;
+	CameraSystem::Update(mGlobalCoordinator.mEntityManager, mGlobalCoordinator.mComponentManager, mRenderContext.camera, deltaTime);
 }
+
+void Sandbox::PhysicsUpdate(f64 deltaTime)
+{
+	// if (isSimulating)
+	// {
+	// 	PhysicsSystem::Update(mGlobalCoordinator.mEntityManager, mGlobalCoordinator.mComponentManager, deltaTime);
+	// }
+}
+
+void Sandbox::Render()
+{
+	Scene& scene = mScenes[mCurrentScene];
+
+	CameraSystem::OnGUI(mGlobalCoordinator.mEntityManager, mGlobalCoordinator.mComponentManager);
+	TransformGUISystem::Update(scene.coordinator.mEntityManager, scene.coordinator.mComponentManager);
+
+	ImGuiApplication();
+	ImGuiMainLight(scene);
+
+	mRenderContext.scene.ambientColor = glm::vec3(0.05f, 0.05f, 0.05f);
+	mRenderContext.scene.mainLightPos = scene.mainLightPosition;
+	mRenderContext.scene.mainLightColor = glm::vec4(scene.mainLightColor, scene.mainLightIntensity);
+	mRenderContext.instances.clear();
+	mRenderContext.light.lightCount = 0;
+	mRenderContext.raytracing.tlas = scene.tlas.handle;
+
+	RtRenderSystem::Update(mEngine, scene.coordinator.mEntityManager, scene.coordinator.mComponentManager, scene);
+}
+
+void Sandbox::Destroy() {}
+
+// bool Sandbox::Raycast(Ray& ray, RayHit& hit)
+// {
+// 	auto sphereColliders = mScenes[mCurrentScene].coordinator.mComponentManager.GetComponentsOfType<SphereCollider>();
+// 	auto boxColliders = mScenes[mCurrentScene].coordinator.mComponentManager.GetComponentsOfType<BoxCollider>();
+//
+// 	std::vector<Collision> collisions;
+//
+// 	for (u32 i = 0; i < sphereColliders.mSize; i++)
+// 	{
+// 		SphereCollider& c = sphereColliders.mComponentArray[i];
+// 		if (IntersectRaySphere(ray, hit, c))
+// 		{
+// 			return true;
+// 		}
+// 	}
+//
+// 	for (u32 i = 0; i < boxColliders.mSize; i++)
+// 	{
+// 		BoxCollider& c = boxColliders.mComponentArray[i];
+// 		if (IntersectRayOBB(ray, hit, c))
+// 		{
+// 			return true;
+// 		}
+// 	}
+//
+// 	return false;
+// }

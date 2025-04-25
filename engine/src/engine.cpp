@@ -573,7 +573,7 @@ void Engine::Render(FrameData& currentFrame)
 
 	if (vkQueueSubmit2(mGraphicsQueue, 1, &submitInfo, currentFrame.renderFence) != VK_SUCCESS)
 	{
-		std::cerr << "Failed to submit draw command buffer." << std::endl;
+		throw std::runtime_error("Failed to submit draw command buffer.");
 	}
 
 	VkPresentInfoKHR presentInfo{};

@@ -108,7 +108,7 @@ void main()
     lightingColor = clamp(lightingColor, 0.0f, 1.0f);
 
     // Reflection
-    if(material.illum == 3 && inPayload.depth < 10)
+    if(material.illum == 3)
     {
         vec3 origin = positionWS;
         vec3 direction = reflect(gl_WorldRayDirectionEXT, normal);

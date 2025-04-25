@@ -29,18 +29,6 @@ struct TLAS
 	u32 instanceCount;
 };
 
-struct Scene
-{
-	TLAS tlas;
-	std::vector<BLAS> blas;
-
-	VkDeviceAddress GetBlasDeviceAddress(u32 index)
-	{
-		assert(index < blas.size());
-		return blas[index].deviceAddress;
-	}
-};
-
 struct BlasInput
 {
 	std::vector<VkAccelerationStructureGeometryKHR> asGeometry;
@@ -71,8 +59,7 @@ class RaytracingBuilder
 	};
 
 public:
-	RaytracingBuilder() = delete;
-	explicit RaytracingBuilder(Engine& engine);
+	RaytracingBuilder(Engine& engine);
 
 	void BuildBlas(std::vector<BlasInput>& input, std::vector<BLAS>& output,
 				   VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);

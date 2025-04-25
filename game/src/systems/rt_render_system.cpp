@@ -5,12 +5,12 @@
 #include <ecs/entity_manager.h>
 #include <ecs/typedefs.h>
 #include <engine.h>
+#include <scene.h>
 #include <systems/rt_render_system.h>
 #include <vk_buffers.h>
 #include <vk_immediate.h>
 
-void RtRenderSystem::Update(Engine& engine, EntityManager& entityManager, ComponentManager& componentManager, Scene& scene,
-							RaytracingBuilder& builder)
+void RtRenderSystem::Update(Engine& engine, EntityManager& entityManager, ComponentManager& componentManager, Scene& scene)
 {
 	std::vector<VkAccelerationStructureInstanceKHR> instances;
 	instances.reserve(scene.tlas.instanceCount);
@@ -58,5 +58,5 @@ void RtRenderSystem::Update(Engine& engine, EntityManager& entityManager, Compon
 	VkBuildAccelerationStructureFlagsKHR flags{};
 	flags |= VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
 	flags |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
-	builder.UpdateTlas(scene.tlas, flags);
+	scene.rtBuilder.UpdateTlas(scene.tlas, flags);
 }

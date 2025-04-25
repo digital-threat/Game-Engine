@@ -2,9 +2,8 @@
 
 #include <acceleration_structures.h>
 #include <application.h>
-#include <components/camera.h>
 #include <ecs/coordinator.h>
-#include <systems/resource_system.h>
+#include <scene.h>
 
 struct RayHit;
 struct Ray;
@@ -12,15 +11,11 @@ struct Ray;
 class Sandbox : public Application
 {
 private:
-	Coordinator mCoordinator;
-	ResourceSystem mResourceSystem;
-	glm::vec3 mMainLightColor;
-	glm::vec3 mMainLightPosition;
-	float mMainLightIntensity;
+	Coordinator mGlobalCoordinator;
 	bool isSimulating;
 
-	RaytracingBuilder rtBuilder;
-	Scene rtScene;
+	std::vector<Scene> mScenes;
+	u32 mCurrentScene;
 
 public:
 	explicit Sandbox(Engine& engine);
@@ -31,15 +26,12 @@ public:
 	void Destroy() override;
 
 private:
-	void CreateBlas();
-	void CreateTlas();
-
-private:
 	void ImGuiApplication();
 	void ImGuiMaterials();
-	void ImGuiMainLight();
+	void ImGuiMainLight(Scene& scene);
 
-	void CreateScene();
+	Scene MirrorScene();
+	void CornellBoxScene();
 
 	bool Raycast(Ray& ray, RayHit& hit);
 };
