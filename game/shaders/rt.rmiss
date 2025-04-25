@@ -12,5 +12,5 @@ layout (location = 0) rayPayloadInEXT HitPayload inPayload;
 
 void main()
 {
-    inPayload.hitValue = clearColor.xyz;
+    inPayload.color = clearColor.xyz;
 }

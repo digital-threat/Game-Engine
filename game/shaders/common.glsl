@@ -1,3 +1,6 @@
+#ifndef COMMON
+#define COMMON
+
 struct Vertex
 {
     vec3 position;
@@ -35,3 +38,5 @@ struct Material
     int illum;
     int diffuseTextureId;
 };
+
+#endif

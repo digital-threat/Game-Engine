@@ -22,18 +22,41 @@ void main()
     float tMin = 0.001f;
     float tMax = 10000.0f;
 
-    traceRayEXT(tlas, // acceleration structure
-                flags, // rayFlags
-                0xFF, // cullMask
-                0, // sbtRecordOffset
-                0, // sbtRecordStride
-                0, // missIndex
-                origin.xyz, // ray origin
-                tMin, // ray min range
-                direction.xyz, // ray direction
-                tMax, // ray max range
-                0 // payload (location = 0)
-    );
+    payload.depth = 0;
+    payload.color = vec3(0);
+    payload.attenuation = vec3(1.0f, 1.0f, 1.0f);
+    payload.done = 1;
+    payload.rayOrigin = origin.xyz;
+    payload.rayDirection = direction.xyz;
 
-    imageStore(renderTarget, ivec2(gl_LaunchIDEXT.xy), vec4(payload.hitValue.xyz, 1.0f));
+    vec3 color = vec3(0);
+    for(;;)
+    {
+        traceRayEXT(tlas, // acceleration structure
+                    flags, // rayFlags
+                    0xFF, // cullMask
+                    0, // sbtRecordOffset
+                    0, // sbtRecordStride
+                    0, // missIndex
+                    origin.xyz, // ray origin
+                    tMin, // ray min range
+                    direction.xyz, // ray direction
+                    tMax, // ray max range
+                    0 // payload (location = 0)
+        );
+
+        color += payload.color * payload.attenuation;
+
+        payload.depth++;
+        if(payload.done == 1 || payload.depth >= 10)
+        {
+            break;
+        }
+
+        origin.xyz = payload.rayOrigin;
+        direction.xyz = payload.rayDirection;
+        payload.done = 1;
+    }
+
+    imageStore(renderTarget, ivec2(gl_LaunchIDEXT.xy), vec4(color, 1.0f));
 }

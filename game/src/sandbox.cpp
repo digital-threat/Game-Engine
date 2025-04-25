@@ -16,7 +16,6 @@
 #include <obj_loading.h>
 #include <systems/camera_system.h>
 #include <systems/physics_system.h>
-#include <systems/render_system.h>
 #include <systems/rt_render_system.h>
 #include <systems/transform_gui_system.h>
 
@@ -142,7 +141,7 @@ void Sandbox::CreateScene()
 	MeshManager& meshManager = MeshManager::Instance();
 	MeshHandle cube = meshManager.LoadMesh("assets\\meshes\\cube.obj");
 	MeshHandle plane = meshManager.LoadMesh("assets\\meshes\\plane.obj");
-	MeshHandle sphere = meshManager.LoadMesh("assets\\meshes\\sphere-cylcoords-1k.obj");
+	MeshHandle sphere = meshManager.LoadMesh("assets\\meshes\\sphere.obj");
 
 	{
 		Entity entity = mCoordinator.CreateEntity();
@@ -172,7 +171,7 @@ void Sandbox::CreateScene()
 		Transform transform;
 		transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
 		transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-		transform.scale = 0.25f;
+		transform.scale = 5.0f;
 		mCoordinator.AddComponent<Transform>(entity, transform);
 
 		Renderer renderer;
@@ -190,7 +189,7 @@ void Sandbox::CreateScene()
 		Transform transform;
 		transform.position = glm::vec3(-1.5f, 0.6f, -1.5f);
 		transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-		transform.scale = 0.005f;
+		transform.scale = 0.5f;
 		mCoordinator.AddComponent<Transform>(entity, transform);
 
 		Renderer renderer;

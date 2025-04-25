@@ -4,12 +4,10 @@
 # http://graphics.cs.williams.edu/data
 
 newmtl sphere
-Ns 10.0000
-Ni 1.5000
-Tr 0
-illum 2
-Ka 1 1 1
-Kd 1 1 1
-Ks 0.01 0.01 0.01
-Ke 0 0 0
-map_Kd dirt.png
+illum 3
+d 1
+Ns 32
+Ni 0
+Ka 0 0 0
+Kd 0 0 0
+Ks 0.95 0.95 0.95

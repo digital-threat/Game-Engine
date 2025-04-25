@@ -5,6 +5,7 @@
 #extension GL_EXT_nonuniform_qualifier: enable
 
 #include "lighting.glsl"
+#include "forward_input.glsl"
 
 layout (location = 0) in vec3 inPosition;
 layout (location = 1) in vec3 inNormal;

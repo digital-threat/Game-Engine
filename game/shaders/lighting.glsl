@@ -1,3 +1,6 @@
+#ifndef LIGHTING
+#define LIGHTING
+
 #include "common.glsl"
 
 struct Light
@@ -40,3 +43,5 @@ vec3 CalculateLighting(Light light, Material material, vec3 normal, vec3 viewDir
 
     return diffuse * attenuatedLightColor + specular * attenuatedLightColor;
 }
+
+#endif

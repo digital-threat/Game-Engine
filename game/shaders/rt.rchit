@@ -107,5 +107,16 @@ void main()
     vec3 lightingColor = LightingLambert(material, mainLight.direction, normal);
     lightingColor = clamp(lightingColor, 0.0f, 1.0f);
 
-    inPayload.hitValue = vec3(color * attenuation * lightingColor);
+    // Reflection
+    if(material.illum == 3 && inPayload.depth < 10)
+    {
+        vec3 origin = positionWS;
+        vec3 direction = reflect(gl_WorldRayDirectionEXT, normal);
+        inPayload.attenuation *= material.specular;
+        inPayload.done = 0;
+        inPayload.rayOrigin = origin;
+        inPayload.rayDirection = direction;
+    }
+
+    inPayload.color = vec3(attenuation * color * lightingColor);
 }
