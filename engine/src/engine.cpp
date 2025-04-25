@@ -517,8 +517,7 @@ void Engine::Render(FrameData& currentFrame)
 	}
 
 	mRenderExtent.width = std::min(mVkbSwapchain.extent.width, mColorTarget.extent.width) * mApplication->mRenderContext.renderScale;
-	mRenderExtent.height =
-			std::min(mVkbSwapchain.extent.height, mColorTarget.extent.height) * mApplication->mRenderContext.renderScale;
+	mRenderExtent.height = std::min(mVkbSwapchain.extent.height, mColorTarget.extent.height) * mApplication->mRenderContext.renderScale;
 
 	vkResetFences(mDevice, 1, &currentFrame.renderFence);
 	vkResetCommandBuffer(currentFrame.mainCommandBuffer, 0);
@@ -549,7 +548,9 @@ void Engine::Render(FrameData& currentFrame)
 
 	TransitionImageLayout(cmd, mSwapchainImages[imageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	CopyImage(cmd, mColorTarget.image, mSwapchainImages[imageIndex], mRenderExtent, mVkbSwapchain.extent, true);
+	VkExtent2D extent = { mColorTarget.extent.width, mColorTarget.extent.height };
+	CopyImage(cmd, mColorTarget.image, mSwapchainImages[imageIndex], extent, mVkbSwapchain.extent, true);
+	//CopyImage(cmd, mColorTarget.image, mSwapchainImages[imageIndex], mRenderExtent, mVkbSwapchain.extent, true);
 
 	TransitionImageLayout(cmd, mSwapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 						  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
