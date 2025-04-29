@@ -64,7 +64,7 @@ void main()
     {
         uint index = data.txtOffset + material.diffuseTextureId;
         vec2 uv = v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * barycentrics.z;
-        color = texture(textures[nonuniformEXT(index)], uv).xyz;
+        color = texture(textures[nonuniformEXT (index)], vec2(uv.x, 1 - uv.y)).xyz;
     }
 
     Light mainLight;
@@ -108,7 +108,7 @@ void main()
     lightingColor = clamp(lightingColor, 0.0f, 1.0f);
 
     // Reflection
-    if(material.illum == 3)
+    if (material.illum == 3)
     {
         vec3 origin = positionWS;
         vec3 direction = reflect(gl_WorldRayDirectionEXT, normal);

@@ -7,15 +7,8 @@
 
 #include <collision.h>
 #include <components/camera.h>
-#include <components/name.h>
-#include <components/renderer.h>
-#include <components/transform.h>
 #include <ecs/coordinator.h>
-#include <mesh_manager.h>
-#include <mesh_structs.h>
-#include <obj_loading.h>
 #include <systems/camera_system.h>
-#include <systems/physics_system.h>
 #include <systems/rt_render_system.h>
 #include <systems/transform_gui_system.h>
 
@@ -43,6 +36,9 @@ void Sandbox::Awake()
 	}
 
 	mScenes.push_back(MirrorScene());
+	mScenes.push_back(SponzaScene());
+
+	mCurrentScene = 1;
 }
 
 void Sandbox::Update(f64 deltaTime)

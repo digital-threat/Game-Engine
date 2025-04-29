@@ -124,3 +124,43 @@ Scene Sandbox::MirrorScene()
 
 	return scene;
 }
+
+Scene Sandbox::SponzaScene()
+{
+	Scene scene(mEngine);
+
+	scene.coordinator.RegisterComponent<Transform>();
+	scene.coordinator.RegisterComponent<Renderer>();
+	scene.coordinator.RegisterComponent<Name>();
+
+	scene.mainLightColor = glm::vec3(1, 1, 1);
+	scene.mainLightPosition = glm::vec3(0, 5, -10);
+	scene.mainLightIntensity = 0.5f;
+
+	MeshManager& meshManager = MeshManager::Instance();
+	MeshHandle sponza = meshManager.LoadMesh("assets\\meshes\\sponza.obj");
+	scene.meshes.push_back(sponza);
+
+	{
+		Entity entity = scene.coordinator.CreateEntity();
+
+		Name name;
+		name.name = "Sponza";
+		scene.coordinator.AddComponent<Name>(entity, name);
+
+		Transform transform;
+		transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
+		transform.rotation = glm::quat(0.0f, 0.0f, 0.0f, 0.0f);
+		transform.scale = 1;
+		scene.coordinator.AddComponent<Transform>(entity, transform);
+
+		Renderer renderer;
+		renderer.meshHandle = sponza;
+		scene.coordinator.AddComponent<Renderer>(entity, renderer);
+	}
+
+	scene.CreateBlas();
+	scene.CreateTlas();
+
+	return scene;
+}

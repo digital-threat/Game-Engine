@@ -31,6 +31,7 @@ private:
 	void ImGuiMainLight(Scene& scene);
 
 	Scene MirrorScene();
+	Scene SponzaScene();
 	void CornellBoxScene();
 
 	bool Raycast(Ray& ray, RayHit& hit);
