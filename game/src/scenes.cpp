@@ -140,7 +140,7 @@ Scene Sandbox::SponzaScene()
 	scene.skyColor = glm::vec4(0.27f, 0.69f, 0.86f, 1.0f);
 
 	MeshManager& meshManager = MeshManager::Instance();
-	MeshHandle sponza = meshManager.LoadMesh("models\\sponza\\sponza.obj");
+	MeshHandle sponza = meshManager.LoadMesh("models\\crytek_sponza\\sponza.obj");
 	scene.meshes.push_back(sponza);
 
 	{
