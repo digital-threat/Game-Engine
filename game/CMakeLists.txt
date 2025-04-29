@@ -57,8 +57,8 @@ endforeach ()
 target_sources(${PROJECT_NAME} PRIVATE ${SHADER_BINARIES})
 
 # Copy assets to build directory
-set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets)
-set(BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/assets)
+set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/models)
+set(BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/models)
 file(MAKE_DIRECTORY ${BINARY_DIR})
 
 add_custom_command(

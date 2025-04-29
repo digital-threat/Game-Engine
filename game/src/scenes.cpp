@@ -19,15 +19,16 @@ Scene Sandbox::MirrorScene()
 	scene.mainLightColor = glm::vec3(1, 1, 1);
 	scene.mainLightPosition = glm::vec3(0, 5, -10);
 	scene.mainLightIntensity = 0.5f;
+	scene.skyColor = glm::vec4(0.27f, 0.69f, 0.86f, 1.0f);
 
 	MeshManager& meshManager = MeshManager::Instance();
-	MeshHandle cube = meshManager.LoadMesh("assets\\meshes\\cube.obj");
-	// MeshHandle plane = meshManager.LoadMesh("assets\\meshes\\plane.obj");
-	MeshHandle mirror = meshManager.LoadMesh("assets\\meshes\\mirror.obj");
-	// MeshHandle sphere = meshManager.LoadMesh("assets\\meshes\\sphere.obj");
+	MeshHandle cube = meshManager.LoadMesh("models\\cube\\cube.obj");
+	MeshHandle mirror = meshManager.LoadMesh("models\\mirror\\mirror.obj");
+	// MeshHandle plane = meshManager.LoadMesh("models\\plane\\plane.obj");
+	// MeshHandle sphere = meshManager.LoadMesh("models\\sphere\\sphere.obj");
 	scene.meshes.push_back(cube);
-	// scene.meshes.push_back(plane);
 	scene.meshes.push_back(mirror);
+	// scene.meshes.push_back(plane);
 
 	{
 		Entity entity = scene.coordinator.CreateEntity();
@@ -136,9 +137,10 @@ Scene Sandbox::SponzaScene()
 	scene.mainLightColor = glm::vec3(1, 1, 1);
 	scene.mainLightPosition = glm::vec3(0, 5, -10);
 	scene.mainLightIntensity = 0.5f;
+	scene.skyColor = glm::vec4(0.27f, 0.69f, 0.86f, 1.0f);
 
 	MeshManager& meshManager = MeshManager::Instance();
-	MeshHandle sponza = meshManager.LoadMesh("assets\\meshes\\sponza.obj");
+	MeshHandle sponza = meshManager.LoadMesh("models\\sponza\\sponza.obj");
 	scene.meshes.push_back(sponza);
 
 	{

@@ -4,7 +4,7 @@
 
 layout (push_constant) uniform PushConstants
 {
-    vec4 clearColor;
+    uint samplesPerPixel;
 };
 
 layout (set = 0, binding = 0) uniform accelerationStructureEXT tlas;
@@ -20,7 +20,7 @@ layout (set = 1, binding = 0) uniform Scene
     mat4 mainLightVP;
     vec4 mainLightDir;
     vec4 mainLightColor;
-    vec4 ambientColor;
+    vec4 skyColor;
     vec4 cameraPos;
     LightData lightBuffer[MAX_LIGHTS];
     uint lightCount;

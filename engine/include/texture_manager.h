@@ -1,10 +1,11 @@
 #pragma once
-#include <vk_structs.h>
-#include <unordered_map>
+#include <filesystem>
 #include <string>
 #include <texture_structs.h>
 #include <types.h>
+#include <unordered_map>
 #include <vector>
+
 
 class Engine;
 
@@ -19,12 +20,12 @@ public:
 	TextureManager& operator=(TextureManager&&) = delete;
 
 	explicit TextureManager(Engine& engine);
-	
+
 public:
 	void Awake();
-	static TextureManager& Allocate(Engine &engine);
+	static TextureManager& Allocate(Engine& engine);
 	static TextureManager& Instance();
-	void LoadTexture(std::string& name);
+	void LoadTexture(std::filesystem::path path, std::string& name);
 	u32 GetTextureCount();
 	VkSampler GetSampler(const std::string& name);
 

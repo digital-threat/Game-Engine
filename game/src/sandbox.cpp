@@ -15,6 +15,7 @@
 Sandbox::Sandbox(Engine& engine) : Application(engine)
 {
 	mRenderContext.renderScale = 1.0f;
+	mRenderContext.samplesPerPixel = 1;
 	isSimulating = true;
 	mCurrentScene = 0;
 }
@@ -62,11 +63,11 @@ void Sandbox::Render()
 	TransformGUISystem::Update(scene.coordinator.mEntityManager, scene.coordinator.mComponentManager);
 
 	ImGuiApplication();
-	ImGuiMainLight(scene);
+	ImGuiScene(scene);
 
-	mRenderContext.scene.ambientColor = glm::vec3(0.05f, 0.05f, 0.05f);
 	mRenderContext.scene.mainLightPos = scene.mainLightPosition;
 	mRenderContext.scene.mainLightColor = glm::vec4(scene.mainLightColor, scene.mainLightIntensity);
+	mRenderContext.scene.skyColor = scene.skyColor;
 	mRenderContext.instances.clear();
 	mRenderContext.light.lightCount = 0;
 	mRenderContext.raytracing.tlas = scene.tlas.handle;

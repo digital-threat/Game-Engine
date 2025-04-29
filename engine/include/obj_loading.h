@@ -135,7 +135,7 @@ inline CpuMesh ParseOBJ(std::filesystem::path path)
 
 inline CpuMesh ParseObj(std::filesystem::path path, std::vector<std::string>& textures)
 {
-	rapidobj::MaterialLibrary mtllib = rapidobj::MaterialLibrary::SearchPathA("../materials");
+	rapidobj::MaterialLibrary mtllib = rapidobj::MaterialLibrary::SearchPaths({"materials", "../materials", "."});
 	rapidobj::Result result = rapidobj::ParseFile(path, mtllib);
 
 	if (result.error)

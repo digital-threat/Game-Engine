@@ -79,7 +79,7 @@ void Engine::UpdateSceneDescriptorSet(VkDescriptorSet sceneSet, FrameData& curre
 	scene.mainLightVP = mainLightP * mainLightV;
 	scene.mainLightColor = sceneRenderData.mainLightColor;
 	scene.mainLightDir = glm::normalize(glm::vec4(sceneRenderData.mainLightPos - glm::vec3(0.0f), 1.0f));
-	scene.ambientColor = glm::vec4(sceneRenderData.ambientColor, 1.0f);
+	scene.skyColor = glm::vec4(sceneRenderData.skyColor, 1.0f);
 	scene.lightBuffer = mApplication->mRenderContext.light.lightBuffer;
 	scene.lightCount = mApplication->mRenderContext.light.lightCount;
 	scene.cameraPos = glm::vec4(camera.pos, 0.0f);

@@ -1,49 +1,40 @@
 #include <texture_manager.h>
 
 #include <engine.h>
-#include <vk_images.h>
+#include <stb_image.h>
 #include <stdexcept>
 #include <utility.h>
-#include <stb_image.h>
+#include <vk_images.h>
 
 TextureManager* TextureManager::mInstance = nullptr;
 
-TextureManager::TextureManager(Engine &engine)
-	: mEngine(engine)
-{
-}
+TextureManager::TextureManager(Engine& engine) : mEngine(engine) {}
 
-void TextureManager::Awake()
-{
-	InitTextureSamplers();
-}
+void TextureManager::Awake() { InitTextureSamplers(); }
 
-TextureManager & TextureManager::Allocate(Engine &engine)
+TextureManager& TextureManager::Allocate(Engine& engine)
 {
 	assert(mInstance == nullptr);
 	mInstance = new TextureManager(engine);
 	return *mInstance;
 }
 
-TextureManager & TextureManager::Instance()
-{
-	return *mInstance;
-}
+TextureManager& TextureManager::Instance() { return *mInstance; }
 
-void TextureManager::LoadTexture(std::string& name)
+void TextureManager::LoadTexture(std::filesystem::path folder, std::string& name)
 {
-	std::string path = "assets/textures/" + name;
+	std::filesystem::path path = folder / "textures" / name;
 
 	i32 width, height, channels;
-	stbi_info(path.c_str(), &width, &height, &channels);
-	stbi_uc* pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+	stbi_info(path.string().c_str(), &width, &height, &channels);
+	stbi_uc* pixels = stbi_load(path.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
 	if (!pixels)
 	{
-	    throw std::runtime_error("Failed to load texture.");
+		throw std::runtime_error("Failed to load texture.");
 	}
 
-	VkExtent3D extent = { static_cast<u32>(width), static_cast<u32>(height), 1};
+	VkExtent3D extent = {static_cast<u32>(width), static_cast<u32>(height), 1};
 	VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
 	VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	auto image = CreateImage(mEngine, pixels, extent, format, usage, true);
@@ -56,10 +47,7 @@ void TextureManager::LoadTexture(std::string& name)
 	mTextures.push_back(texture);
 }
 
-u32 TextureManager::GetTextureCount()
-{
-	return mTextures.size();
-}
+u32 TextureManager::GetTextureCount() { return mTextures.size(); }
 
 VkSampler TextureManager::GetSampler(const std::string& name)
 {
@@ -71,10 +59,7 @@ VkSampler TextureManager::GetSampler(const std::string& name)
 	return VK_NULL_HANDLE;
 }
 
-std::unordered_map<std::string, VkSampler> TextureManager::GetSamplers()
-{
-	return mSamplers;
-}
+std::unordered_map<std::string, VkSampler> TextureManager::GetSamplers() { return mSamplers; }
 
 void TextureManager::InitTextureSamplers()
 {

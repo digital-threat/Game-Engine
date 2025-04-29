@@ -28,7 +28,7 @@ public:
 private:
 	void ImGuiApplication();
 	void ImGuiMaterials();
-	void ImGuiMainLight(Scene& scene);
+	void ImGuiScene(Scene& scene);
 
 	Scene MirrorScene();
 	Scene SponzaScene();

@@ -6,7 +6,7 @@
 
 struct RtPushConstants
 {
-	glm::vec4 clearColor;
+	u32 samplesPerPixel;
 };
 
 void Engine::InitRt()
@@ -33,7 +33,7 @@ void Engine::InitRtSceneDescriptorLayout()
 	DescriptorLayoutBuilder builder;
 	builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 					   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR |
-							   VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+							   VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
 	builder.AddBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 					   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 	builder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, textureCount,
@@ -211,7 +211,7 @@ void Engine::UpdateRtSceneDescriptorSet(VkDescriptorSet sceneSet, FrameData& cur
 	scene.mainLightVP = mainLightP * mainLightV;
 	scene.mainLightColor = sceneRenderData.mainLightColor;
 	scene.mainLightDir = glm::normalize(glm::vec4(sceneRenderData.mainLightPos - glm::vec3(0.0f), 1.0f));
-	scene.ambientColor = glm::vec4(sceneRenderData.ambientColor, 1.0f);
+	scene.skyColor = glm::vec4(sceneRenderData.skyColor, 1.0f);
 	scene.lightBuffer = mApplication->mRenderContext.light.lightBuffer;
 	scene.lightCount = mApplication->mRenderContext.light.lightCount;
 	scene.cameraPos = glm::vec4(camera.pos, 0.0f);
@@ -281,7 +281,7 @@ void Engine::RenderRt(VkCommandBuffer cmd, FrameData& currentFrame)
 	UpdateRtSceneDescriptorSet(sceneSet, currentFrame);
 
 	RtPushConstants pushConstants{};
-	pushConstants.clearColor = glm::vec4(0.27f, 0.69f, 0.86f, 1.0f);
+	pushConstants.samplesPerPixel = static_cast<u32>(mApplication->mRenderContext.samplesPerPixel);
 
 	u32 width = mColorTarget.extent.width;
 	u32 height = mColorTarget.extent.height;

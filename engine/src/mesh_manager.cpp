@@ -2,37 +2,28 @@
 
 #include <cassert>
 #include <engine.h>
-#include <obj_loading.h>
 #include <iostream>
 #include <mesh_serialization.h>
+#include <obj_loading.h>
 #include <windows.h>
 
 MeshManager* MeshManager::mInstance = nullptr;
 
 
-MeshManager::MeshManager(Engine &engine)
-	: mEngine(engine)
-{
-}
+MeshManager::MeshManager(Engine& engine) : mEngine(engine) {}
 
-MeshManager& MeshManager::Allocate(Engine &engine)
+MeshManager& MeshManager::Allocate(Engine& engine)
 {
 	assert(mInstance == nullptr);
 	mInstance = new MeshManager(engine);
 	return *mInstance;
 }
 
-MeshManager& MeshManager::Instance()
-{
-	return *mInstance;
-}
+MeshManager& MeshManager::Instance() { return *mInstance; }
 
-GpuMesh MeshManager::GetMesh(MeshHandle handle)
-{
-	return mMeshes[handle];
-}
+GpuMesh MeshManager::GetMesh(MeshHandle handle) { return mMeshes[handle]; }
 
-MeshHandle MeshManager::LoadMesh(std::string path)
+MeshHandle MeshManager::LoadMesh(std::filesystem::path path)
 {
 	std::vector<std::string> textures;
 	auto textureCount = TextureManager::Instance().GetTextureCount();
@@ -42,7 +33,7 @@ MeshHandle MeshManager::LoadMesh(std::string path)
 
 	for (u32 i = 0; i < textures.size(); i++)
 	{
-		TextureManager::Instance().LoadTexture(textures[i]);
+		TextureManager::Instance().LoadTexture(path.parent_path(), textures[i]);
 	}
 
 	mMeshes.emplace_back();

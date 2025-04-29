@@ -16,6 +16,8 @@ struct Scene
 	glm::vec3 mainLightPosition;
 	float mainLightIntensity;
 
+	glm::vec3 skyColor;
+
 	Coordinator coordinator;
 
 	VkDeviceAddress GetBlasDeviceAddress(u32 handle);

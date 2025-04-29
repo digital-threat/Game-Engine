@@ -1,8 +1,7 @@
 #pragma once
 
-#include <atomic>
+#include <filesystem>
 #include <mesh_structs.h>
-#include <unordered_map>
 #include <message_queue.h>
 
 class Engine;
@@ -20,11 +19,11 @@ public:
 	explicit MeshManager(Engine& engine);
 
 public:
-	static MeshManager& Allocate(Engine &engine);
+	static MeshManager& Allocate(Engine& engine);
 	static MeshManager& Instance();
 
 	GpuMesh GetMesh(MeshHandle handle);
-	MeshHandle LoadMesh(std::string path);
+	MeshHandle LoadMesh(std::filesystem::path path);
 
 public:
 	std::vector<GpuMesh> mMeshes;
@@ -32,5 +31,4 @@ public:
 private:
 	Engine& mEngine;
 	static MeshManager* mInstance;
-
 };

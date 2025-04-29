@@ -5,58 +5,71 @@
 
 #include "rt_input.glsl"
 #include "rt_common.glsl"
+#include "random.glsl"
 
 layout (location = 0) rayPayloadEXT HitPayload payload;
 
 void main()
 {
-    const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5f);
-    const vec2 inUV = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
-    vec2 d = inUV * 2.0f - 1.0f;
-
-    vec4 origin = matrixIV * vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    vec4 target = matrixIP * vec4(d.x, d.y, 1.0f, 1.0f);
-    vec4 direction = matrixIV * vec4(normalize(target.xyz), 0.0f);
-
     uint flags = gl_RayFlagsOpaqueEXT;
     float tMin = 0.001f;
     float tMax = 10000.0f;
 
-    payload.depth = 0;
-    payload.color = vec3(0);
-    payload.attenuation = vec3(1.0f, 1.0f, 1.0f);
-    payload.done = 1;
-    payload.rayOrigin = origin.xyz;
-    payload.rayDirection = direction.xyz;
-
-    vec3 color = vec3(0);
-    for(;;)
+    vec3 finalColor = vec3(0);
+    for (uint i = 0; i < samplesPerPixel; i++)
     {
-        traceRayEXT(tlas, // acceleration structure
-                    flags, // rayFlags
-                    0xFF, // cullMask
-                    0, // sbtRecordOffset
-                    0, // sbtRecordStride
-                    0, // missIndex
-                    origin.xyz, // ray origin
-                    tMin, // ray min range
-                    direction.xyz, // ray direction
-                    tMax, // ray max range
-                    0 // payload (location = 0)
-        );
+        uint seed = tea(gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x, i);
+        float r1 = rnd(seed);
+        float r2 = rnd(seed);
+        vec2 sampleLocation = i == 0 ? vec2(0.5f, 0.5f) : vec2(r1, r2);
 
-        color += payload.color * payload.attenuation;
+        const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + sampleLocation;
+        const vec2 inUV = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
+        vec2 d = inUV * 2.0f - 1.0f;
 
-        payload.depth++;
-        if(payload.done == 1 || payload.depth >= 50)
+        vec4 origin = matrixIV * vec4(0.0f, 0.0f, 0.0f, 1.0f);
+        vec4 target = matrixIP * vec4(d.x, d.y, 1.0f, 1.0f);
+        vec4 direction = matrixIV * vec4(normalize(target.xyz), 0.0f);
+
+        payload.depth = 0;
+        payload.color = vec3(0);
+        payload.attenuation = vec3(1.0f, 1.0f, 1.0f);
+        payload.done = 1;
+        payload.rayOrigin = origin.xyz;
+        payload.rayDirection = direction.xyz;
+
+        vec3 color = vec3(0);
+        for (; ;)
         {
-            break;
+            traceRayEXT(tlas, // acceleration structure
+                        flags, // rayFlags
+                        0xFF, // cullMask
+                        0, // sbtRecordOffset
+                        0, // sbtRecordStride
+                        0, // missIndex
+                        origin.xyz, // ray origin
+                        tMin, // ray min range
+                        direction.xyz, // ray direction
+                        tMax, // ray max range
+                        0 // payload (location = 0)
+            );
+
+            color += payload.color * payload.attenuation;
+
+            payload.depth++;
+            if (payload.done == 1 || payload.depth >= 50)
+            {
+                break;
+            }
+
+            origin.xyz = payload.rayOrigin;
+            direction.xyz = payload.rayDirection;
+            payload.done = 1;
         }
 
-        origin.xyz = payload.rayOrigin;
-        direction.xyz = payload.rayDirection;
-        payload.done = 1;
+        finalColor += color;
     }
 
-    imageStore(renderTarget, ivec2(gl_LaunchIDEXT.xy), vec4(color, 1.0f));
+    finalColor = finalColor / samplesPerPixel;
+    imageStore(renderTarget, ivec2(gl_LaunchIDEXT.xy), vec4(finalColor, 1.0f));
 }

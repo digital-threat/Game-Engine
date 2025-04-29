@@ -11,7 +11,7 @@ struct SceneRenderData
 {
 	glm::vec3 mainLightPos;
 	glm::vec4 mainLightColor;
-	glm::vec3 ambientColor;
+	glm::vec3 skyColor;
 };
 
 struct CameraRenderData
@@ -41,4 +41,5 @@ struct RenderContext
 	LightRenderData light;
 	RaytracingData raytracing;
 	float renderScale;
+	i32 samplesPerPixel;
 };
