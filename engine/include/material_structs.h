@@ -33,4 +33,5 @@ struct Material
 	int illum;
 	int diffuseTextureIndex;
 	int alphaTextureIndex;
+	int specularTextureIndex;
 };

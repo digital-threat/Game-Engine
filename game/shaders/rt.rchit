@@ -55,23 +55,26 @@ void main()
     const vec3 normal = v0.normal * barycentrics.x + v1.normal * barycentrics.y + v2.normal * barycentrics.z;
     const vec3 normalWS = normalize(vec3(normal * gl_WorldToObjectEXT));
 
+    const vec2 uv = v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * barycentrics.z;
+
     int matId = matIdBuffer.indices[gl_PrimitiveID];
     Material material = materialBuffer.materials[matId];
-
-    vec3 color = vec3(1.0f, 0.0f, 1.0f);
-
-    if (material.diffuseTextureId >= 0)
-    {
-        uint index = data.txtOffset + material.diffuseTextureId;
-        vec2 uv = v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * barycentrics.z;
-        color = texture(textures[nonuniformEXT (index)], vec2(uv.x, 1 - uv.y)).xyz;
-    }
 
     Light mainLight;
     mainLight.color = mainLightColor.xyz;
     mainLight.direction = normalize(mainLightDir.xyz);
     mainLight.attenuation = 1.0f;
 
+    float lightIntensity = mainLightColor.w;
+
+    vec3 diffuse = ComputeDiffuse(material, mainLight.direction, normalWS);
+    if (material.diffuseTextureId >= 0)
+    {
+        uint index = data.txtOffset + material.diffuseTextureId;
+        diffuse *= texture(textures[nonuniformEXT (index)], vec2(uv.x, 1 - uv.y)).xyz;
+    }
+
+    vec3 specular = vec3(0);
     float attenuation = 1;
     if (dot(normal, mainLight.direction) > 0)
     {
@@ -100,14 +103,15 @@ void main()
         }
         else
         {
-            // Specular
+            specular = ComputeSpecular(material, mainLight.direction, normalWS, gl_WorldRayDirectionEXT);
+            if (material.specularTextureId >= 0)
+            {
+                uint index = data.txtOffset + material.specularTextureId;
+                specular *= texture(textures[nonuniformEXT (index)], vec2(uv.x, 1 - uv.y)).xyz;
+            }
         }
     }
 
-    vec3 lightingColor = LightingLambert(material, mainLight.direction, normal);
-    lightingColor = clamp(lightingColor, 0.0f, 1.0f);
-
-    // Reflection
     if (material.illum == 3)
     {
         vec3 origin = positionWS;
@@ -118,5 +122,5 @@ void main()
         inPayload.rayDirection = direction;
     }
 
-    inPayload.color = vec3(attenuation * color * lightingColor);
+    inPayload.color = vec3(attenuation * lightIntensity * (diffuse + specular));
 }
