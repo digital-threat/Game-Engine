@@ -1,9 +1,5 @@
-#include <filesystem>
 #include <imgui.h>
-#include <iostream>
-#include <material_manager.h>
 #include <sandbox.h>
-#include <texture_manager.h>
 
 void Sandbox::ImGuiScene(Scene& scene)
 {

@@ -1,25 +1,15 @@
 #pragma once
 
-#include <vulkan/vulkan_core.h>
+#include <glm/vec3.hpp>
 #include <string>
 #include <texture_structs.h>
 #include <types.h>
-#include <glm/vec3.hpp>
 #include <vk_images.h>
+#include <vulkan/vulkan_core.h>
 
 struct MaterialHandle
 {
 	u16 index = -1;
-};
-
-struct Material_
-{
-	std::string name;
-	MaterialHandle handle;
-	VkBuffer dataBuffer;
-	float shininess;
-	Texture textures[2];
-	VkDescriptorSet materialSet;
 };
 
 struct GpuMaterial
@@ -42,4 +32,5 @@ struct Material
 	float dissolve;
 	int illum;
 	int diffuseTextureIndex;
+	int alphaTextureIndex;
 };

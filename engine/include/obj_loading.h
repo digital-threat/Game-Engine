@@ -150,7 +150,9 @@ inline CpuMesh ParseObj(std::filesystem::path path, std::vector<std::string>& te
 
 	for (u32 i = 0; i < result.materials.size(); i++)
 	{
-		Material material;
+		Material material{};
+		material.diffuseTextureIndex = -1;
+		material.alphaTextureIndex = -1;
 		material.ambient = glm::vec3(result.materials[i].ambient[0], result.materials[i].ambient[1], result.materials[i].ambient[2]);
 		material.diffuse = glm::vec3(result.materials[i].diffuse[0], result.materials[i].diffuse[1], result.materials[i].diffuse[2]);
 		material.specular =
@@ -167,6 +169,11 @@ inline CpuMesh ParseObj(std::filesystem::path path, std::vector<std::string>& te
 		{
 			textures.push_back(result.materials[i].diffuse_texname);
 			material.diffuseTextureIndex = static_cast<int>(textures.size()) - 1;
+		}
+		if (!result.materials[i].alpha_texname.empty())
+		{
+			textures.push_back(result.materials[i].alpha_texname);
+			material.alphaTextureIndex = static_cast<int>(textures.size()) - 1;
 		}
 
 		mesh.materials.push_back(material);

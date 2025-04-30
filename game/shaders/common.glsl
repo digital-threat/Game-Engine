@@ -37,6 +37,7 @@ struct Material
     float dissolve;
     int illum;
     int diffuseTextureId;
+    int alphaTextureId;
 };
 
 #endif

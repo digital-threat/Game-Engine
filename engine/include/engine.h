@@ -18,7 +18,6 @@
 #include <vector>
 
 #include <application.h>
-#include <material_manager.h>
 #include <mesh_manager.h>
 #include <texture_manager.h>
 #include <types.h>
@@ -107,7 +106,6 @@ public:
 	{
 		MeshManager::Allocate(*this);
 		TextureManager::Allocate(*this);
-		MaterialManager::Allocate(*this);
 	}
 
 	void Run(Application* application);

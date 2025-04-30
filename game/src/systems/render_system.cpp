@@ -1,15 +1,13 @@
-#include <material_manager.h>
-#include <mesh_structs.h>
-#include <render_context.h>
-#include <ecs/component_manager.h>
-#include <ecs/entity_manager.h>
-#include <systems/render_system.h>
 #include <components/renderer.h>
 #include <components/transform.h>
+#include <ecs/component_manager.h>
+#include <ecs/entity_manager.h>
+#include <render_context.h>
+#include <systems/render_system.h>
 
 #include <glm/gtc/quaternion.hpp>
 
-void RenderSystem::Update(EntityManager& entityManager, ComponentManager& componentManager, RenderContext &context)
+void RenderSystem::Update(EntityManager& entityManager, ComponentManager& componentManager, RenderContext& context)
 {
 	Archetype archetype;
 	archetype.set(componentManager.GetComponentType<Transform>());
