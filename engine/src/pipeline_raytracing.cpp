@@ -35,22 +35,24 @@ void Engine::InitRtSceneDescriptorLayout()
 					   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR |
 							   VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
 	builder.AddBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-					   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+					   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
+							   VK_SHADER_STAGE_ANY_HIT_BIT_KHR);
 	builder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, textureCount,
-					   VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+					   VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR);
 	mRtSceneDescriptorLayout = builder.Build(mDevice);
 }
 
 // TODO(Sergei): Add "AddShaderStage" to pipeline builder
 void Engine::InitRtPipeline()
 {
-	VkShaderModule raygenShader, missShader, closestHitShader, shadowMissShader;
+	VkShaderModule raygenShader, missShader, closestHitShader, shadowMissShader, anyHitShader;
 	LoadShaderModule("shaders/rt.rgen.spv", mDevice, &raygenShader);
 	LoadShaderModule("shaders/rt.rmiss.spv", mDevice, &missShader);
 	LoadShaderModule("shaders/rt.rchit.spv", mDevice, &closestHitShader);
 	LoadShaderModule("shaders/rt_shadow.rmiss.spv", mDevice, &shadowMissShader);
+	LoadShaderModule("shaders/rt.rahit.spv", mDevice, &anyHitShader);
 
-	std::array<VkPipelineShaderStageCreateInfo, 4> stages;
+	std::array<VkPipelineShaderStageCreateInfo, 5> stages;
 	VkPipelineShaderStageCreateInfo stage{};
 	stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	stage.pName = "main";
@@ -70,6 +72,10 @@ void Engine::InitRtPipeline()
 	stage.module = closestHitShader;
 	stage.stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
 	stages[3] = stage;
+
+	stage.module = anyHitShader;
+	stage.stage = VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+	stages[4] = stage;
 
 	VkRayTracingShaderGroupCreateInfoKHR group{};
 	group.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
@@ -93,6 +99,7 @@ void Engine::InitRtPipeline()
 	group.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
 	group.generalShader = VK_SHADER_UNUSED_KHR;
 	group.closestHitShader = 3;
+	group.anyHitShader = 4;
 	mRtShaderGroups.push_back(group);
 
 	VkPushConstantRange pushConstantRange{};

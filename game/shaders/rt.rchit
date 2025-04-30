@@ -11,7 +11,7 @@
 layout (location = 0) rayPayloadInEXT HitPayload inPayload;
 layout (location = 1) rayPayloadEXT bool isInShadow;
 
-hitAttributeEXT vec3 attributes;
+hitAttributeEXT vec2 attributes;
 
 layout (buffer_reference, scalar) buffer VertexBuffer
 {
@@ -79,7 +79,7 @@ void main()
         float tMax = 10000.0f;
         vec3 origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
         vec3 rayDir = mainLight.direction;
-        uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
+        uint flags = gl_RayFlagsSkipClosestHitShaderEXT;
         isInShadow = true;
         traceRayEXT(tlas, // acceleration structure
                     flags, // rayFlags

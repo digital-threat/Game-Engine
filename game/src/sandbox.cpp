@@ -36,7 +36,6 @@ void Sandbox::Awake()
 		mGlobalCoordinator.AddComponent<Camera>(entity, camera);
 	}
 
-	//
 	mScenes.push_back(MirrorScene());
 	mScenes.push_back(SponzaScene());
 

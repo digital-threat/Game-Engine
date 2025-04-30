@@ -1,5 +1,6 @@
 #version 460
 #extension GL_EXT_ray_tracing: require
+#extension GL_EXT_nonuniform_qualifier: enable
 #extension GL_EXT_scalar_block_layout: enable
 #extension GL_EXT_shader_explicit_arithmetic_types_int64: require
 #extension GL_EXT_buffer_reference2: require
@@ -7,9 +8,55 @@
 #include "rt_input.glsl"
 #include "rt_common.glsl"
 
-layout (location = 0) rayPayloadInEXT HitPayload inPayload;
+hitAttributeEXT vec2 attributes;
+
+layout (buffer_reference, scalar) buffer VertexBuffer
+{
+    Vertex vertices[];
+};
+
+layout (buffer_reference, scalar) buffer IndexBuffer
+{
+    ivec3 indices[];
+};
+
+layout (buffer_reference, scalar) buffer MaterialBuffer
+{
+    Material materials[];
+};
+
+layout (buffer_reference, scalar) buffer MatIdBuffer
+{
+    int indices[];
+};
 
 void main()
 {
-    
+    ObjectData data = objData.i[gl_InstanceCustomIndexEXT];
+    VertexBuffer vertexBuffer = VertexBuffer(data.vertexAddress);
+    IndexBuffer indexBuffer = IndexBuffer(data.indexAddress);
+    MaterialBuffer materialBuffer = MaterialBuffer(data.materialAddress);
+    MatIdBuffer matIdBuffer = MatIdBuffer(data.matIdAddress);
+
+    ivec3 primitive = indexBuffer.indices[gl_PrimitiveID];
+
+    Vertex v0 = vertexBuffer.vertices[primitive.x];
+    Vertex v1 = vertexBuffer.vertices[primitive.y];
+    Vertex v2 = vertexBuffer.vertices[primitive.z];
+
+    int matId = matIdBuffer.indices[gl_PrimitiveID];
+    Material material = materialBuffer.materials[matId];
+
+    if (material.diffuseTextureId >= 0)
+    {
+        uint index = data.txtOffset + material.diffuseTextureId;
+        vec3 barycentrics = vec3(1.0 - attributes.x - attributes.y, attributes.x, attributes.y);
+        vec2 uv = v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * barycentrics.z;
+        vec4 color = texture(textures[nonuniformEXT (index)], vec2(uv.x, 1 - uv.y));
+
+        if (color.a < 0.5f)
+        {
+            ignoreIntersectionEXT;
+        }
+    }
 }

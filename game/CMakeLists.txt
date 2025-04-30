@@ -36,6 +36,7 @@ file(GLOB_RECURSE SHADER_FILES
         ${SHADER_SOURCE_DIR}/*.rchit
         ${SHADER_SOURCE_DIR}/*.rmiss
         ${SHADER_SOURCE_DIR}/*.rgen
+        ${SHADER_SOURCE_DIR}/*.rahit
 )
 
 foreach (SHADER ${SHADER_FILES})
