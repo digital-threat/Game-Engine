@@ -15,13 +15,12 @@ void main()
     float tMin = 0.001f;
     float tMax = 10000.0f;
 
+    uint seed = tea(gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x, 42);
+
     vec3 finalColor = vec3(0);
     for (uint i = 0; i < samplesPerPixel; i++)
     {
-        uint seed = tea(gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x, i);
-        float r1 = rnd(seed);
-        float r2 = rnd(seed);
-        vec2 sampleLocation = i == 0 ? vec2(0.5f, 0.5f) : vec2(r1, r2);
+        vec2 sampleLocation = i == 0 ? vec2(0.5f) : vec2(0.5f) + 0.375f * RandomGaussian(seed);
 
         const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + sampleLocation;
         const vec2 inUV = pixelCenter / vec2(gl_LaunchSizeEXT.xy);

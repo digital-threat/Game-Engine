@@ -17,7 +17,7 @@ void Sandbox::ImGuiApplication()
 {
 	if (ImGui::Begin("Application"))
 	{
-		ImGui::SliderInt("Samples Per Pixel", &mRenderContext.samplesPerPixel, 1, 16);
+		ImGui::SliderInt("Samples Per Pixel", &mRenderContext.samplesPerPixel, 1, 128);
 	}
 	ImGui::End();
 }
