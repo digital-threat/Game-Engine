@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.29)
-project(engine VERSION 0.0.1 LANGUAGES CXX)
+project(engine LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -29,17 +29,17 @@ add_compile_definitions(BUILD_DLL)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/vendor/stb>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/vendor/stb>
 )
 
 target_link_libraries(${PROJECT_NAME}
         PUBLIC
-            Vulkan::Vulkan
-            imgui
-            glfw
-            glm::glm-header-only
-            vk-bootstrap::vk-bootstrap
-            GPUOpen::VulkanMemoryAllocator
-            rapidobj
+        Vulkan::Vulkan
+        imgui
+        glfw
+        glm::glm-header-only
+        vk-bootstrap::vk-bootstrap
+        GPUOpen::VulkanMemoryAllocator
+        rapidobj
 )

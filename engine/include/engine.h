@@ -69,37 +69,12 @@ public:
 	std::vector<VkImageView> mSwapchainImageViews;
 
 	VulkanImage mColorTarget{};
-	VulkanImage mDepthTarget{};
-	VulkanImage mShadowmapTarget{};
 
 	DescriptorAllocator mGlobalDescriptorAllocator{};
 
-	VkDescriptorSetLayout mSceneDescriptorLayout;
-
 	VkExtent2D mRenderExtent{};
 
-	// Pipelines
-	VkPipelineLayout mMeshPipelineLayout = VK_NULL_HANDLE;
-	VkPipeline mMeshPipeline = VK_NULL_HANDLE;
-
-	VkPipelineLayout mShadowmapPipelineLayout = VK_NULL_HANDLE;
-	VkPipeline mShadowmapPipeline = VK_NULL_HANDLE;
-
 	Application* mApplication;
-
-	// Ray tracing
-	VkPhysicalDeviceRayTracingPipelinePropertiesKHR mRtProperties{
-			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
-	VkDescriptorSetLayout mRtDescriptorLayout;
-	VkDescriptorSetLayout mRtSceneDescriptorLayout;
-	std::vector<VkRayTracingShaderGroupCreateInfoKHR> mRtShaderGroups;
-	VkPipelineLayout mRtPipelineLayout;
-	VkPipeline mRtPipeline;
-	VulkanBuffer mRtSBTBuffer;
-	VkStridedDeviceAddressRegionKHR mRgenRegion{};
-	VkStridedDeviceAddressRegionKHR mMissRegion{};
-	VkStridedDeviceAddressRegionKHR mHitRegion{};
-	VkStridedDeviceAddressRegionKHR mCallRegion{};
 
 public:
 	Engine()
@@ -143,25 +118,6 @@ private:
 	// ImGui
 	void InitImGui();
 	void RenderImgui(VkCommandBuffer cmd, VkImageView targetImageView);
-
-	// Rasterized
-	void InitRasterSceneDescriptorLayout();
-	void InitRasterPipeline();
-	void UpdateSceneDescriptorSet(VkDescriptorSet sceneSet, FrameData& currentFrame);
-	void RenderRaster(VkCommandBuffer cmd, FrameData& currentFrame);
-
-	// Rasterized shadow mapping
-	void InitShadowmapPipeline();
-	void RenderShadowmap(VkCommandBuffer cmd);
-
-	// Ray tracing
-	void InitRt();
-	void InitRtDescriptorLayout();
-	void InitRtSceneDescriptorLayout();
-	void InitRtPipeline();
-	void InitRtSBT();
-	void UpdateRtSceneDescriptorSet(VkDescriptorSet sceneSet, FrameData& currentFrame);
-	void RenderRt(VkCommandBuffer cmd, FrameData& currentFrame);
 
 	// Compute background
 	void InitBackgroundDescriptorLayout();

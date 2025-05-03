@@ -114,7 +114,6 @@ void Engine::InitVulkan(FrameData* frames)
 	CreateCommandObjects(vkbDevice, frames);
 	InitDescriptors(frames);
 	InitBuffers(frames);
-	InitRt();
 }
 
 void Engine::MainLoop(FrameData* frames)
@@ -123,15 +122,6 @@ void Engine::MainLoop(FrameData* frames)
 
 	TextureManager::Instance().Awake();
 	mApplication->Awake();
-
-	InitRasterSceneDescriptorLayout();
-	InitRasterPipeline();
-	InitShadowmapPipeline();
-
-	InitRtDescriptorLayout();
-	InitRtSceneDescriptorLayout();
-	InitRtPipeline();
-	InitRtSBT();
 
 	double lastTime = 0;
 
@@ -154,9 +144,9 @@ void Engine::MainLoop(FrameData* frames)
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-
-		mApplication->Render();
+		mApplication->OnGUI();
 		ImGui::Render();
+
 		Render(frames[currentFrame % MAX_FRAMES_IN_FLIGHT]);
 		currentFrame++;
 	}
@@ -354,42 +344,6 @@ void Engine::CreateSwapchain(u32 width, u32 height)
 	{
 		throw std::runtime_error("Failed to create color image view.");
 	}
-
-	std::array<VkFormat, 3> candidates = {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
-	VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
-	VkFormatFeatureFlags features = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
-
-	mDepthTarget.format = FindSupportedFormat(mPhysicalDevice, candidates, tiling, features);
-	mDepthTarget.extent = {mVkbSwapchain.extent.width, mVkbSwapchain.extent.height, 1};
-
-	VkImageUsageFlags depthTargetUsage{};
-	depthTargetUsage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-
-	VkImageCreateInfo depthInfo = ImageCreateInfo(mDepthTarget.format, depthTargetUsage, mDepthTarget.extent);
-	CreateImage(mAllocator, depthInfo, VMA_MEMORY_USAGE_GPU_ONLY, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mDepthTarget);
-	VkImageViewCreateInfo depthViewInfo = ImageViewCreateInfo(mDepthTarget.image, mDepthTarget.format, VK_IMAGE_ASPECT_DEPTH_BIT);
-	if (vkCreateImageView(mDevice, &depthViewInfo, nullptr, &mDepthTarget.imageView) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create depth image view.");
-	}
-
-	// Shadowmap
-
-	mShadowmapTarget.format = mDepthTarget.format;
-	mShadowmapTarget.extent = {1024, 1024, 1};
-
-	VkImageUsageFlags shadowmapDepthTargetUsage{};
-	shadowmapDepthTargetUsage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	shadowmapDepthTargetUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-
-	VkImageCreateInfo shadowmapInfo = ImageCreateInfo(mShadowmapTarget.format, shadowmapDepthTargetUsage, mShadowmapTarget.extent);
-	CreateImage(mAllocator, shadowmapInfo, VMA_MEMORY_USAGE_GPU_ONLY, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mShadowmapTarget);
-	VkImageViewCreateInfo shadowmapViewInfo =
-			ImageViewCreateInfo(mShadowmapTarget.image, mShadowmapTarget.format, VK_IMAGE_ASPECT_DEPTH_BIT);
-	if (vkCreateImageView(mDevice, &shadowmapViewInfo, nullptr, &mShadowmapTarget.imageView) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create depth image view.");
-	}
 }
 
 void Engine::CreateCommandObjects(vkb::Device& device, FrameData* frames)
@@ -517,7 +471,8 @@ void Engine::Render(FrameData& currentFrame)
 	}
 
 	mRenderExtent.width = std::min(mVkbSwapchain.extent.width, mColorTarget.extent.width) * mApplication->mRenderContext.renderScale;
-	mRenderExtent.height = std::min(mVkbSwapchain.extent.height, mColorTarget.extent.height) * mApplication->mRenderContext.renderScale;
+	mRenderExtent.height =
+			std::min(mVkbSwapchain.extent.height, mColorTarget.extent.height) * mApplication->mRenderContext.renderScale;
 
 	vkResetFences(mDevice, 1, &currentFrame.renderFence);
 	vkResetCommandBuffer(currentFrame.mainCommandBuffer, 0);
@@ -530,27 +485,13 @@ void Engine::Render(FrameData& currentFrame)
 		throw std::runtime_error("Failed to begin recording command buffer.");
 	}
 
-	TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-	RenderRt(cmd, currentFrame);
-	TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-
-	// TransitionImageLayout(cmd, mShadowmapTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-	// RenderShadowmap(cmd);
-	// TransitionImageLayout(cmd, mShadowmapTarget.image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-	// 					  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	//
-	// TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	// TransitionImageLayout(cmd, mDepthTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-	//
-	// RenderRaster(cmd, currentFrame);
-	//
-	// TransitionImageLayout(cmd, mColorTarget.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	mApplication->Render(cmd, currentFrame);
 
 	TransitionImageLayout(cmd, mSwapchainImages[imageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	VkExtent2D extent = { mColorTarget.extent.width, mColorTarget.extent.height };
+	VkExtent2D extent = {mColorTarget.extent.width, mColorTarget.extent.height};
 	CopyImage(cmd, mColorTarget.image, mSwapchainImages[imageIndex], extent, mVkbSwapchain.extent, true);
-	//CopyImage(cmd, mColorTarget.image, mSwapchainImages[imageIndex], mRenderExtent, mVkbSwapchain.extent, true);
+	// CopyImage(cmd, mColorTarget.image, mSwapchainImages[imageIndex], mRenderExtent, mVkbSwapchain.extent, true);
 
 	TransitionImageLayout(cmd, mSwapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 						  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
