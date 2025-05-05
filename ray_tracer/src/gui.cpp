@@ -5,6 +5,7 @@ void Sandbox::ImGuiScene(Scene& scene)
 {
 	if (ImGui::Begin("Scene"))
 	{
+		ImGui::SliderInt("Scene", reinterpret_cast<int*>(&mCurrentScene), 0, mScenes.size() - 1);
 		ImGui::InputFloat3("Sun Position", reinterpret_cast<float*>(&scene.mainLightPosition));
 		ImGui::ColorEdit3("Sun Color", reinterpret_cast<float*>(&scene.mainLightColor));
 		ImGui::SliderFloat("Sun Intensity", &scene.mainLightIntensity, 0.0f, 1.0f);
@@ -17,7 +18,7 @@ void Sandbox::ImGuiApplication()
 {
 	if (ImGui::Begin("Application"))
 	{
-		ImGui::SliderInt("Samples Per Pixel", &mRenderContext.samplesPerPixel, 1, 128);
+		ImGui::SliderInt("Samples Per Pixel", &mRenderContext.samplesPerPixel, 1, 32);
 	}
 	ImGui::End();
 }

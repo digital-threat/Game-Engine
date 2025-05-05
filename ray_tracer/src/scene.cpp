@@ -51,7 +51,7 @@ void Scene::CreateTlas()
 		Renderer& renderer = coordinator.mComponentManager.GetComponent<Renderer>(entity);
 
 		glm::mat4 matrixM = glm::translate(glm::mat4(1.0f), transform.position);
-		matrixM *= glm::mat4_cast(transform.rotation);
+		matrixM *= glm::mat4_cast(glm::quat(glm::radians(transform.rotation)));
 		matrixM = glm::scale(matrixM, glm::vec3(transform.scale));
 
 		VkAccelerationStructureInstanceKHR instance{};

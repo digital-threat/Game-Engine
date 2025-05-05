@@ -4,10 +4,6 @@
 #include <mesh_manager.h>
 #include <sandbox.h>
 
-
-struct BoxCollider;
-struct SphereCollider;
-
 Scene Sandbox::MirrorScene()
 {
 	Scene scene(mEngine);
@@ -22,25 +18,60 @@ Scene Sandbox::MirrorScene()
 	scene.skyColor = glm::vec4(0.27f, 0.69f, 0.86f, 1.0f);
 
 	MeshManager& meshManager = MeshManager::Instance();
-	MeshHandle cube = meshManager.LoadMesh("models\\cube\\cube.obj");
-	MeshHandle mirror = meshManager.LoadMesh("models\\mirror\\mirror.obj");
-	// MeshHandle plane = meshManager.LoadMesh("models\\plane\\plane.obj");
-	// MeshHandle sphere = meshManager.LoadMesh("models\\sphere\\sphere.obj");
+	MeshHandle teapot = meshManager.LoadMesh("models\\teapot\\teapot.obj");
+	MeshHandle cube = meshManager.LoadMesh("models\\mirror\\mirror.obj");
+	MeshHandle plane = meshManager.LoadMesh("models\\plane\\plane.obj");
+	scene.meshes.push_back(teapot);
 	scene.meshes.push_back(cube);
-	scene.meshes.push_back(mirror);
-	// scene.meshes.push_back(plane);
+	scene.meshes.push_back(plane);
 
 	{
 		Entity entity = scene.coordinator.CreateEntity();
 
 		Name name;
-		name.name = "Cube";
+		name.name = "Teapot";
+		scene.coordinator.AddComponent<Name>(entity, name);
+
+		Transform transform;
+		transform.position = glm::vec3(0.0f, 0.5f, 0.0f);
+		transform.rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+		transform.scale = 0.015f;
+		scene.coordinator.AddComponent<Transform>(entity, transform);
+
+		Renderer renderer;
+		renderer.meshHandle = teapot;
+		scene.coordinator.AddComponent<Renderer>(entity, renderer);
+	}
+
+	{
+		Entity entity = scene.coordinator.CreateEntity();
+
+		Name name;
+		name.name = "Plane";
 		scene.coordinator.AddComponent<Name>(entity, name);
 
 		Transform transform;
 		transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
-		transform.rotation = glm::quat(0.0f, 0.0f, 0.0f, 0.0f);
-		transform.scale = 1;
+		transform.rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+		transform.scale = 5.0f;
+		scene.coordinator.AddComponent<Transform>(entity, transform);
+
+		Renderer renderer;
+		renderer.meshHandle = plane;
+		scene.coordinator.AddComponent<Renderer>(entity, renderer);
+	}
+
+	{
+		Entity entity = scene.coordinator.CreateEntity();
+
+		Name name;
+		name.name = "Mirror";
+		scene.coordinator.AddComponent<Name>(entity, name);
+
+		Transform transform;
+		transform.position = glm::vec3(0.0f, 2.0f, 3.0f);
+		transform.rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+		transform.scale = 1.0f;
 		scene.coordinator.AddComponent<Transform>(entity, transform);
 
 		Renderer renderer;
@@ -48,24 +79,6 @@ Scene Sandbox::MirrorScene()
 		scene.coordinator.AddComponent<Renderer>(entity, renderer);
 	}
 
-	// {
-	// 	Entity entity = scene.coordinator.CreateEntity();
-	//
-	// 	Name name;
-	// 	name.name = "Plane";
-	// 	scene.coordinator.AddComponent<Name>(entity, name);
-	//
-	// 	Transform transform;
-	// 	transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
-	// 	transform.rotation = glm::quat(0.0f, 0.0f, 0.0f, 0.0f);
-	// 	transform.scale = 5.0f;
-	// 	scene.coordinator.AddComponent<Transform>(entity, transform);
-	//
-	// 	Renderer renderer;
-	// 	renderer.meshHandle = plane;
-	// 	scene.coordinator.AddComponent<Renderer>(entity, renderer);
-	// }
-
 	{
 		Entity entity = scene.coordinator.CreateEntity();
 
@@ -74,51 +87,15 @@ Scene Sandbox::MirrorScene()
 		scene.coordinator.AddComponent<Name>(entity, name);
 
 		Transform transform;
-		transform.position = glm::vec3(0.0f, 2.0f, 0.0f);
-		transform.rotation = glm::quat(0.0f, 0.0f, 0.0f, 0.0f);
-		transform.scale = 5.0f;
+		transform.position = glm::vec3(0.0f, 2.0f, -3.0f);
+		transform.rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+		transform.scale = 1.0f;
 		scene.coordinator.AddComponent<Transform>(entity, transform);
 
 		Renderer renderer;
-		renderer.meshHandle = mirror;
+		renderer.meshHandle = cube;
 		scene.coordinator.AddComponent<Renderer>(entity, renderer);
 	}
-
-	{
-		Entity entity = scene.coordinator.CreateEntity();
-
-		Name name;
-		name.name = "Mirror";
-		scene.coordinator.AddComponent<Name>(entity, name);
-
-		Transform transform;
-		transform.position = glm::vec3(0.0f, -2.0f, 0.0f);
-		transform.rotation = glm::quat(0.0f, 0.0f, 0.0f, 0.0f);
-		transform.scale = 5.0f;
-		scene.coordinator.AddComponent<Transform>(entity, transform);
-
-		Renderer renderer;
-		renderer.meshHandle = mirror;
-		scene.coordinator.AddComponent<Renderer>(entity, renderer);
-	}
-
-	// {
-	// 	Entity entity = scene.coordinator.CreateEntity();
-	//
-	// 	Name name;
-	// 	name.name = "Sphere";
-	// 	scene.coordinator.AddComponent<Name>(entity, name);
-	//
-	// 	Transform transform;
-	// 	transform.position = glm::vec3(-1.5f, 0.6f, -1.5f);
-	// 	transform.rotation = glm::quat(0.0f, 0.0f, 0.0f, 0.0f);
-	// 	transform.scale = 0.5f;
-	// 	scene.coordinator.AddComponent<Transform>(entity, transform);
-	//
-	// 	Renderer renderer;
-	// 	renderer.meshHandle = sphere;
-	// 	scene.coordinator.AddComponent<Renderer>(entity, renderer);
-	// }
 
 	scene.CreateBlas();
 	scene.CreateTlas();
@@ -152,8 +129,8 @@ Scene Sandbox::SponzaScene()
 
 		Transform transform;
 		transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
-		transform.rotation = glm::quat(0.0f, 0.0f, 0.0f, 0.0f);
-		transform.scale = 1;
+		transform.rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+		transform.scale = 0.1f;
 		scene.coordinator.AddComponent<Transform>(entity, transform);
 
 		Renderer renderer;
