@@ -5,6 +5,7 @@
 #include <engine.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <imgui.h>
 #include <sandbox.h>
 #include <systems/camera_system.h>
 #include <systems/rt_render_system.h>
@@ -72,15 +73,22 @@ void Sandbox::Render(VkCommandBuffer cmd, FrameData& currentFrame)
 	RenderRt(cmd, currentFrame);
 	TransitionImageLayout(cmd, mEngine.mColorTarget.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 }
+
 void Sandbox::OnGUI()
 {
-	Scene& scene = mScenes[mCurrentScene];
+	ImGuiCustomStyle();
 
-	CameraSystem::OnGUI(mGlobalCoordinator.mEntityManager, mGlobalCoordinator.mComponentManager);
-	TransformGUISystem::Update(scene.coordinator.mEntityManager, scene.coordinator.mComponentManager);
+	if (ImGui::Begin("Settings"))
+	{
+		Scene& scene = mScenes[mCurrentScene];
 
-	ImGuiApplication();
-	ImGuiScene(scene);
+		ImGuiApplication();
+		CameraSystem::OnGUI(mGlobalCoordinator.mEntityManager, mGlobalCoordinator.mComponentManager);
+		ImGuiScene(scene);
+		TransformGUISystem::Update(scene.coordinator.mEntityManager, scene.coordinator.mComponentManager);
+
+		ImGui::End();
+	}
 }
 
 void Sandbox::Destroy() {}

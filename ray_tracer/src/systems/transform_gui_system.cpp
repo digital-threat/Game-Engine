@@ -8,27 +8,26 @@
 
 void TransformGUISystem::Update(EntityManager& entityManager, ComponentManager& componentManager)
 {
-	Archetype archetype;
-	archetype.set(componentManager.GetComponentType<Transform>());
-	archetype.set(componentManager.GetComponentType<Name>());
-
-	ImGui::Begin("Entities");
-
-	auto func = [&](Entity entity)
+	if (ImGui::CollapsingHeader("Entities"))
 	{
-		Transform& transform = componentManager.GetComponent<Transform>(entity);
-		Name& name = componentManager.GetComponent<Name>(entity);
+		Archetype archetype;
+		archetype.set(componentManager.GetComponentType<Transform>());
+		archetype.set(componentManager.GetComponentType<Name>());
 
-		if (ImGui::TreeNode((name.name + "##" + std::to_string(entity)).c_str()))
+		auto func = [&](Entity entity)
 		{
-			ImGui::DragFloat3("Position", reinterpret_cast<float*>(&transform.position), 0.1f);
-			ImGui::DragFloat3("Rotation", reinterpret_cast<float*>(&transform.rotation), 0.1f);
-			ImGui::DragFloat("Scale", &transform.scale, 0.1f);
-			ImGui::TreePop();
-		}
-	};
+			Transform& transform = componentManager.GetComponent<Transform>(entity);
+			Name& name = componentManager.GetComponent<Name>(entity);
 
-	entityManager.Each(archetype, func);
+			if (ImGui::TreeNode((name.name + "##" + std::to_string(entity)).c_str()))
+			{
+				ImGui::DragFloat3("Position", reinterpret_cast<float*>(&transform.position), 0.1f);
+				ImGui::DragFloat3("Rotation", reinterpret_cast<float*>(&transform.rotation), 0.1f);
+				ImGui::DragFloat("Scale", &transform.scale, 0.1f);
+				ImGui::TreePop();
+			}
+		};
 
-	ImGui::End();
+		entityManager.Each(archetype, func);
+	}
 }

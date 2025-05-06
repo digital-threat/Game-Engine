@@ -1,12 +1,12 @@
-#include <systems/camera_system.h>
-#include <imgui.h>
-#include <input.h>
-#include <iostream>
-#include <render_context.h>
 #include <components/camera.h>
 #include <ecs/component_manager.h>
 #include <ecs/entity_manager.h>
 #include <ecs/typedefs.h>
+#include <imgui.h>
+#include <input.h>
+#include <iostream>
+#include <render_context.h>
+#include <systems/camera_system.h>
 
 void CameraSystem::Update(EntityManager& entityManager, ComponentManager& componentManager, CameraRenderData& context, f32 deltaTime)
 {
@@ -30,12 +30,18 @@ void CameraSystem::Update(EntityManager& entityManager, ComponentManager& compon
 		f32 scrollFactor = Input::GetMouseScrollFactor();
 
 		glm::vec3 direction = glm::vec3(0.0f, 0.0f, 0.0f);
-		if (Input::GetKeyDown(GLFW_KEY_W)) direction.z += 1;
-		if (Input::GetKeyDown(GLFW_KEY_A)) direction.x += -1;
-		if (Input::GetKeyDown(GLFW_KEY_S)) direction.z += -1;
-		if (Input::GetKeyDown(GLFW_KEY_D)) direction.x += 1;
-		if (Input::GetKeyDown(GLFW_KEY_Q)) direction.y += -1;
-		if (Input::GetKeyDown(GLFW_KEY_E)) direction.y += 1;
+		if (Input::GetKeyDown(GLFW_KEY_W))
+			direction.z += 1;
+		if (Input::GetKeyDown(GLFW_KEY_A))
+			direction.x += -1;
+		if (Input::GetKeyDown(GLFW_KEY_S))
+			direction.z += -1;
+		if (Input::GetKeyDown(GLFW_KEY_D))
+			direction.x += 1;
+		if (Input::GetKeyDown(GLFW_KEY_Q))
+			direction.y += -1;
+		if (Input::GetKeyDown(GLFW_KEY_E))
+			direction.y += 1;
 
 		glm::vec2 mousePos = Input::GetMousePosition();
 		glm::vec2 mouseDelta = camera.prevMousePos - mousePos;
@@ -70,7 +76,7 @@ void CameraSystem::Update(EntityManager& entityManager, ComponentManager& compon
 	entityManager.Each(archetype, func);
 }
 
-void CameraSystem::OnGUI(EntityManager &entityManager, ComponentManager &componentManager)
+void CameraSystem::OnGUI(EntityManager& entityManager, ComponentManager& componentManager)
 {
 	Archetype archetype;
 	archetype.set(componentManager.GetComponentType<Camera>());
@@ -79,14 +85,13 @@ void CameraSystem::OnGUI(EntityManager &entityManager, ComponentManager &compone
 	{
 		Camera& camera = componentManager.GetComponent<Camera>(entity);
 
-		if (ImGui::Begin("Camera"))
+		if (ImGui::CollapsingHeader("Camera"))
 		{
-			ImGui::InputFloat3("Position:", reinterpret_cast<float *>(&camera.position));
+			ImGui::InputFloat3("Position", reinterpret_cast<float*>(&camera.position));
 			ImGui::InputFloat("Speed", &camera.speed);
 			ImGui::InputFloat("Sensitivity", &camera.sensitivity);
 			ImGui::InputFloat("FOV", &camera.fov);
 		}
-		ImGui::End();
 	};
 
 	entityManager.Each(archetype, func);

@@ -75,7 +75,7 @@ void main()
     }
 
     vec3 specular = vec3(0);
-    float attenuation = 1;
+    float attenuation = 0.3f;
     if (dot(normal, mainLight.direction) > 0)
     {
         float tMin = 0.001f;
@@ -96,13 +96,11 @@ void main()
                     tMax, // ray max range
                     1 // payload (location = 1)
         );
+        
+        if (!isInShadow)
+        {
+            attenuation = 1.0f;
 
-        if (isInShadow)
-        {
-            attenuation = 0.3;
-        }
-        else
-        {
             specular = ComputeSpecular(material, mainLight.direction, normalWS, gl_WorldRayDirectionEXT);
             if (material.specularTextureId >= 0)
             {

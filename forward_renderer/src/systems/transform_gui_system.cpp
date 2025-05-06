@@ -12,7 +12,7 @@ void TransformGUISystem::Update(EntityManager& entityManager, ComponentManager& 
 	archetype.set(componentManager.GetComponentType<Transform>());
 	archetype.set(componentManager.GetComponentType<Name>());
 
-	ImGui::Begin("Entities");
+	ImGui::CollapsingHeader("Entities");
 
 	auto func = [&](Entity entity)
 	{
@@ -29,6 +29,4 @@ void TransformGUISystem::Update(EntityManager& entityManager, ComponentManager& 
 	};
 
 	entityManager.Each(archetype, func);
-
-	ImGui::End();
 }

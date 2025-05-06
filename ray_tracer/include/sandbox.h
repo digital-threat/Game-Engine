@@ -37,6 +37,7 @@ public:
 	void Destroy() override;
 
 private:
+	void ImGuiCustomStyle();
 	void ImGuiApplication();
 	void ImGuiMaterials();
 	void ImGuiScene(Scene& scene);
