@@ -13,7 +13,7 @@ Scene Sandbox::MirrorScene()
 	scene.coordinator.RegisterComponent<Name>();
 
 	scene.mainLightColor = glm::vec3(1, 1, 1);
-	scene.mainLightPosition = glm::vec3(0, 5, -10);
+	scene.mainLightPosition = glm::vec3(5, 10, 5);
 	scene.mainLightIntensity = 0.5f;
 	scene.skyColor = glm::vec4(0.27f, 0.69f, 0.86f, 1.0f);
 
@@ -112,7 +112,7 @@ Scene Sandbox::SponzaScene()
 	scene.coordinator.RegisterComponent<Name>();
 
 	scene.mainLightColor = glm::vec3(1, 1, 1);
-	scene.mainLightPosition = glm::vec3(0, 5, -10);
+	scene.mainLightPosition = glm::vec3(5, 25, 5);
 	scene.mainLightIntensity = 0.5f;
 	scene.skyColor = glm::vec4(0.27f, 0.69f, 0.86f, 1.0f);
 
