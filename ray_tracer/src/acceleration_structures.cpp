@@ -234,7 +234,7 @@ void RaytracingBuilder::BuildTlas(std::vector<VkAccelerationStructureInstanceKHR
 	ImmediateSubmit(mEngine.mDevice, mEngine.mGraphicsQueue, mEngine.mImmediate, func2);
 }
 
-void RaytracingBuilder::UpdateTlas(TLAS& tlas, VkBuildAccelerationStructureFlagsKHR flags)
+void RaytracingBuilder::UpdateTlas(VkCommandBuffer cmd, TLAS& tlas, VkBuildAccelerationStructureFlagsKHR flags)
 {
 	assert(tlas.handle != VK_NULL_HANDLE);
 
@@ -266,10 +266,19 @@ void RaytracingBuilder::UpdateTlas(TLAS& tlas, VkBuildAccelerationStructureFlags
 	buildRangeInfo.primitiveCount = tlas.instanceCount;
 	const VkAccelerationStructureBuildRangeInfoKHR* pBuildRangeInfo = &buildRangeInfo;
 
-	auto func = [&](VkCommandBuffer cmd)
-	{
-		mEngine.mVkbDT.fp_vkCmdBuildAccelerationStructuresKHR(cmd, 1, &buildInfo, &pBuildRangeInfo);
-	};
+	mEngine.mVkbDT.fp_vkCmdBuildAccelerationStructuresKHR(cmd, 1, &buildInfo, &pBuildRangeInfo);
 
-	ImmediateSubmit(mEngine.mDevice, mEngine.mGraphicsQueue, mEngine.mImmediate, func);
+	VkMemoryBarrier2 barrier{};
+	barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR;
+	barrier.srcStageMask = VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+	barrier.srcAccessMask = VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
+	barrier.dstStageMask = VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+	barrier.dstAccessMask = VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+
+	VkDependencyInfo dependencyInfo{};
+	dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
+	dependencyInfo.memoryBarrierCount = 1;
+	dependencyInfo.pMemoryBarriers = &barrier;
+
+	vkCmdPipelineBarrier2(cmd, &dependencyInfo);
 }

@@ -3,6 +3,7 @@
 #include <components/transform.h>
 #include <mesh_manager.h>
 #include <sandbox.h>
+#include <texture_manager.h>
 
 Scene Sandbox::MirrorScene()
 {
@@ -16,6 +17,7 @@ Scene Sandbox::MirrorScene()
 	scene.mainLightPosition = glm::vec3(5, 10, 5);
 	scene.mainLightIntensity = 0.5f;
 	scene.skyColor = glm::vec4(0.27f, 0.69f, 0.86f, 1.0f);
+	scene.skyTextureIndex = -1;
 
 	MeshManager& meshManager = MeshManager::Instance();
 	MeshHandle teapot = meshManager.LoadMesh("models\\teapot\\teapot.obj");
@@ -115,6 +117,11 @@ Scene Sandbox::SponzaScene()
 	scene.mainLightPosition = glm::vec3(5, 25, 5);
 	scene.mainLightIntensity = 0.5f;
 	scene.skyColor = glm::vec4(0.27f, 0.69f, 0.86f, 1.0f);
+	scene.skyTextureIndex = -1;
+
+	std::string skyTextureName = "blue_sunset_equirect.png";
+	TextureManager::Instance().LoadTexture("models", skyTextureName);
+	scene.skyTextureIndex = TextureManager::Instance().GetTextureCount() - 1;
 
 	MeshManager& meshManager = MeshManager::Instance();
 	MeshHandle sponza = meshManager.LoadMesh("models\\crytek_sponza\\sponza.obj");

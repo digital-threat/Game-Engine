@@ -17,6 +17,7 @@ struct Scene
 	float mainLightIntensity;
 
 	glm::vec3 skyColor;
+	int skyTextureIndex;
 
 	Coordinator coordinator;
 

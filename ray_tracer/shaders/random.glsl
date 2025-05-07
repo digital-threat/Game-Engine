@@ -1,3 +1,5 @@
+#include "constants.glsl"
+
 // Generate a random unsigned int from two unsigned int values, using 16 pairs
 // of rounds of the Tiny Encryption Algorithm. See Zafar, Olano, and Curtis,
 // "GPU Random Numbers via the Tiny Encryption Algorithm"
@@ -49,14 +51,12 @@ float StepAndOutputRNGFloat(inout uint rngState)
     return float(word) / 4294967295.0f;
 }
 
-const float k_pi = 3.14159265;
-
 vec2 RandomGaussian(inout uint rngState)
 {
     // Almost uniform in (0,1] - make sure the value is never 0:
     const float u1 = max(1e-38, StepAndOutputRNGFloat(rngState));
     const float u2 = StepAndOutputRNGFloat(rngState);  // In [0, 1]
     const float r = sqrt(-2.0 * log(u1));
-    const float theta = 2 * k_pi * u2;  // Random in [0, 2pi]
+    const float theta = 2 * K_PI * u2;  // Random in [0, 2pi]
     return r * vec2(cos(theta), sin(theta));
 }

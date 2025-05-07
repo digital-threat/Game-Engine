@@ -12,6 +12,7 @@ struct SceneRenderData
 	glm::vec3 mainLightPos;
 	glm::vec4 mainLightColor;
 	glm::vec3 skyColor;
+	i32 skyTextureId;
 };
 
 struct CameraRenderData

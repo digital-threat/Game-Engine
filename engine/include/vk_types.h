@@ -67,4 +67,5 @@ struct SceneData
 	glm::vec4 cameraPos;
 	std::array<LightData, MAX_LIGHTS> lightBuffer;
 	u32 lightCount;
+	i32 skyTextureId;
 };

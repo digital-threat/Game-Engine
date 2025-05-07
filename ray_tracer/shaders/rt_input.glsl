@@ -24,6 +24,7 @@ layout (set = 1, binding = 0) uniform Scene
     vec4 cameraPos;
     LightData lightBuffer[MAX_LIGHTS];
     uint lightCount;
+    int skyTextureId;
 };
 
 layout (set = 1, binding = 1, scalar) readonly buffer ObjectData_

@@ -8,7 +8,7 @@
 #include <imgui.h>
 #include <sandbox.h>
 #include <systems/camera_system.h>
-#include <systems/rt_render_system.h>
+#include <systems/render_system.h>
 #include <systems/transform_gui_system.h>
 
 Sandbox::Sandbox(Engine& engine) : Application(engine)
@@ -63,11 +63,12 @@ void Sandbox::Render(VkCommandBuffer cmd, FrameData& currentFrame)
 	mRenderContext.scene.mainLightPos = scene.mainLightPosition;
 	mRenderContext.scene.mainLightColor = glm::vec4(scene.mainLightColor, scene.mainLightIntensity);
 	mRenderContext.scene.skyColor = scene.skyColor;
+	mRenderContext.scene.skyTextureId = scene.skyTextureIndex;
 	mRenderContext.instances.clear();
 	mRenderContext.light.lightCount = 0;
 	mRenderContext.raytracing.tlas = scene.tlas.handle;
 
-	RtRenderSystem::Update(mEngine, scene.coordinator.mEntityManager, scene.coordinator.mComponentManager, scene);
+	RenderSystem::Update(cmd, currentFrame, mEngine, scene);
 
 	TransitionImageLayout(cmd, mEngine.mColorTarget.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 	RenderRt(cmd, currentFrame);
@@ -86,9 +87,9 @@ void Sandbox::OnGUI()
 		CameraSystem::OnGUI(mGlobalCoordinator.mEntityManager, mGlobalCoordinator.mComponentManager);
 		ImGuiScene(scene);
 		TransformGUISystem::Update(scene.coordinator.mEntityManager, scene.coordinator.mComponentManager);
-
-		ImGui::End();
 	}
+
+	ImGui::End();
 }
 
 void Sandbox::Destroy() {}

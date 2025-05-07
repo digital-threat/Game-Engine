@@ -96,7 +96,7 @@ void main()
                     tMax, // ray max range
                     1 // payload (location = 1)
         );
-        
+
         if (!isInShadow)
         {
             attenuation = 1.0f;

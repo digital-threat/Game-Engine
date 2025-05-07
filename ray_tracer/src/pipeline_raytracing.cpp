@@ -33,13 +33,10 @@ void Sandbox::InitRtSceneDescriptorLayout()
 
 	DescriptorLayoutBuilder builder;
 	builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-					   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR |
-							   VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
-	builder.AddBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-					   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
-							   VK_SHADER_STAGE_ANY_HIT_BIT_KHR);
+					   VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
+	builder.AddBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR);
 	builder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, textureCount,
-					   VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR);
+					   VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
 	mRtSceneDescriptorLayout = builder.Build(mEngine.mDevice);
 }
 
@@ -221,6 +218,7 @@ void Sandbox::UpdateRtSceneDescriptorSet(VkDescriptorSet sceneSet, FrameData& cu
 	scene.mainLightColor = sceneRenderData.mainLightColor;
 	scene.mainLightDir = glm::normalize(glm::vec4(sceneRenderData.mainLightPos - glm::vec3(0.0f), 1.0f));
 	scene.skyColor = glm::vec4(sceneRenderData.skyColor, 1.0f);
+	scene.skyTextureId = sceneRenderData.skyTextureId;
 	scene.lightBuffer = mRenderContext.light.lightBuffer;
 	scene.lightCount = mRenderContext.light.lightCount;
 	scene.cameraPos = glm::vec4(camera.pos, 0.0f);
@@ -248,6 +246,7 @@ void Sandbox::UpdateRtSceneDescriptorSet(VkDescriptorSet sceneSet, FrameData& cu
 
 	memcpy(currentFrame.objectDataBuffer.info.pMappedData, objects.data(), objects.size() * sizeof(ObjectData));
 
+	// TODO(Sergei): Textures should be updated either on scene load or never.
 	u32 textureCount = TextureManager::Instance().mTextures.size();
 	std::vector<VkDescriptorImageInfo> imageInfos;
 	for (u32 i = 0; i < textureCount; i++)

@@ -1,11 +1,12 @@
 #pragma once
 
+
+struct Scene;
 class EntityManager;
 class ComponentManager;
-struct RenderContext;
 
 class RenderSystem
 {
 public:
-	static void Update(EntityManager& entityManager, ComponentManager& componentManager, RenderContext &context);
+	static void Update(VkCommandBuffer cmd, FrameData& currentFrame, Engine& engine, Scene& scene);
 };

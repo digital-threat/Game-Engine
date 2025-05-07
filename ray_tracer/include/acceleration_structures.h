@@ -67,7 +67,7 @@ public:
 	void BuildTlas(std::vector<VkAccelerationStructureInstanceKHR>& instances, TLAS& tlas,
 				   VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
 
-	void UpdateTlas(TLAS& tlas,
+	void UpdateTlas(VkCommandBuffer cmd, TLAS& tlas,
 					VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
 
 private:
