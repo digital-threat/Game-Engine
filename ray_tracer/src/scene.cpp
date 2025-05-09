@@ -4,10 +4,7 @@
 #include <scene.h>
 
 // TODO(Sergei): I should probably have a globally accessible instance of Engine
-Scene::Scene(Engine& engine) : rtBuilder(engine)
-{
-
-}
+Scene::Scene(Engine& engine) : rtBuilder(engine) {}
 
 VkDeviceAddress Scene::GetBlasDeviceAddress(MeshHandle handle)
 {
@@ -28,9 +25,12 @@ void Scene::CreateBlas()
 		BlasInput blas = MeshToVkGeometryKHR(meshManager.mMeshes[meshes[i]]);
 		input.push_back(blas);
 	}
+	VkBuildAccelerationStructureFlagsKHR flags{};
+	flags |= VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+	flags |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
 
 	std::vector<BLAS> blas;
-	rtBuilder.BuildBlas(input, blas);
+	rtBuilder.BuildBlas(input, blas, flags);
 
 	for (u32 i = 0; i < size; i++)
 	{

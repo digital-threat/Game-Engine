@@ -71,16 +71,4 @@ void RenderSystem::Update(VkCommandBuffer cmd, FrameData& currentFrame, Engine& 
 	flags |= VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
 	flags |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
 	scene.rtBuilder.UpdateTlas(cmd, scene.tlas, flags);
-
-	// VkAccessFlags2 accessMask{};
-	// accessMask |= VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
-	// accessMask |= VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
-	// accessMask |= VK_ACCESS_SHADER_READ_BIT;
-	//
-	// VkMemoryBarrier2 barrier{};
-	// barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
-	// barrier.srcStageMask = VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
-	// barrier.srcAccessMask = accessMask;
-	// barrier.dstStageMask = VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
-	// barrier.dstAccessMask = accessMask;
 }
